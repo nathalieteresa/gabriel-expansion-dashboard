@@ -3,54 +3,118 @@ import pandas as pd
 import plotly.express as px
 from pathlib import Path
 
-# -----------------------------
-# PAGE CONFIG
-# -----------------------------
 st.set_page_config(
     page_title="Strategic Expansion Intelligence",
-    layout="wide"
+    layout="wide",
+    initial_sidebar_state="expanded"
 )
 
 # -----------------------------
-# CUSTOM CSS
+# CSS DARK LUXURY THEME
 # -----------------------------
 st.markdown("""
 <style>
-    .main {
-        background-color: #FAFAF8;
+    .stApp {
+        background-color: #0B0B0D;
+        color: #F5F2EA;
+    }
+
+    section[data-testid="stSidebar"] {
+        background-color: #080809;
+        border-right: 1px solid #2A2418;
+    }
+
+    section[data-testid="stSidebar"] * {
+        color: #E8D28A !important;
+    }
+
+    .main .block-container {
+        padding-top: 2rem;
+        padding-left: 2.5rem;
+        padding-right: 2.5rem;
     }
 
     .hero {
-        background: linear-gradient(135deg, #0B0B0B 0%, #1E1E1E 100%);
-        padding: 2rem;
-        border-radius: 22px;
+        background: linear-gradient(135deg, #111111 0%, #1A1A1A 100%);
+        border: 1px solid #3B321F;
+        padding: 2rem 2.2rem;
+        border-radius: 24px;
         margin-bottom: 1.5rem;
-        color: white;
+        box-shadow: 0 10px 35px rgba(0,0,0,0.45);
     }
 
     .hero-title {
+        color: #F6E6A8;
         font-size: 2.4rem;
-        font-weight: 700;
-        margin-bottom: 0.3rem;
+        font-weight: 800;
+        margin-bottom: 0.4rem;
     }
 
     .hero-subtitle {
+        color: #D8D1BF;
         font-size: 1rem;
-        color: #D6C28D;
         max-width: 900px;
+        line-height: 1.6;
     }
 
-    .section-note {
-        color: #666666;
-        font-size: 0.95rem;
+    .metric-card {
+        background-color: #171719;
+        border: 1px solid #3B321F;
+        padding: 1.2rem;
+        border-radius: 20px;
+        box-shadow: 0 8px 28px rgba(0,0,0,0.35);
     }
 
     div[data-testid="stMetric"] {
-        background-color: #FFFFFF;
-        border: 1px solid #E8E3D5;
+        background-color: #171719;
+        border: 1px solid #3B321F;
         padding: 1rem;
         border-radius: 18px;
-        box-shadow: 0 4px 14px rgba(0,0,0,0.04);
+        box-shadow: 0 8px 28px rgba(0,0,0,0.35);
+    }
+
+    div[data-testid="stMetricLabel"] {
+        color: #C8B56E !important;
+        font-weight: 600;
+    }
+
+    div[data-testid="stMetricValue"] {
+        color: #FFFFFF !important;
+        font-size: 1.7rem;
+        font-weight: 800;
+    }
+
+    .stTabs [data-baseweb="tab-list"] {
+        gap: 10px;
+    }
+
+    .stTabs [data-baseweb="tab"] {
+        background-color: #171719;
+        border: 1px solid #3B321F;
+        border-radius: 14px;
+        color: #E8D28A;
+        padding: 10px 18px;
+    }
+
+    .stTabs [aria-selected="true"] {
+        background-color: #E8D28A !important;
+        color: #090909 !important;
+        font-weight: 700;
+    }
+
+    h1, h2, h3 {
+        color: #F6E6A8 !important;
+    }
+
+    .section-note {
+        color: #BFB8A6;
+        font-size: 0.95rem;
+        margin-bottom: 1rem;
+    }
+
+    .stDataFrame {
+        background-color: #111111;
+        border-radius: 18px;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -59,6 +123,13 @@ st.markdown("""
 # LOAD DATA
 # -----------------------------
 df = pd.read_csv("beauty_expansion_data.csv")
+df.columns = df.columns.str.strip()
+
+if "City" not in df.columns:
+    st.error("The CSV must include a column named 'City'. Please check the file.")
+    st.stop()
+
+df = df.dropna(subset=["City"])
 
 # -----------------------------
 # SIDEBAR
@@ -66,45 +137,29 @@ df = pd.read_csv("beauty_expansion_data.csv")
 logo_path = Path("logo.png")
 
 if logo_path.exists():
-    st.sidebar.image("logo.png", width=160)
+    st.sidebar.image("logo.png", width=120)
 
-st.sidebar.title("Scenario Controls")
+st.sidebar.markdown("## Scenario Controls")
 st.sidebar.markdown("Adjust assumptions to test expansion scenarios.")
 
 selected_cities = st.sidebar.multiselect(
     "Select Markets",
-    options=df["City"].unique(),
-    default=df["City"].unique()
+    options=sorted(df["City"].unique()),
+    default=sorted(df["City"].unique())
 )
 
-rent_change = st.sidebar.slider(
-    "Rent Change (%)",
-    min_value=-30,
-    max_value=50,
-    value=0,
-    step=5
-)
-
-ticket_change = st.sidebar.slider(
-    "Revenue / Average Ticket Change (%)",
-    min_value=-30,
-    max_value=50,
-    value=0,
-    step=5
-)
-
-customer_change = st.sidebar.slider(
-    "Customer Volume Change (%)",
-    min_value=-30,
-    max_value=50,
-    value=0,
-    step=5
-)
+rent_change = st.sidebar.slider("Rent Change (%)", -30, 50, 0, 5)
+ticket_change = st.sidebar.slider("Revenue / Average Ticket Change (%)", -30, 50, 0, 5)
+customer_change = st.sidebar.slider("Customer Volume Change (%)", -30, 50, 0, 5)
 
 # -----------------------------
-# FILTER DATA
+# FILTER
 # -----------------------------
 filtered = df[df["City"].isin(selected_cities)].copy()
+
+if filtered.empty:
+    st.warning("Please select at least one market from the sidebar.")
+    st.stop()
 
 # -----------------------------
 # SCENARIO CALCULATIONS
@@ -117,30 +172,22 @@ filtered["Scenario_Revenue"] = (
     * (1 + customer_change / 100)
 )
 
-filtered["Non_Rent_Cost"] = (
-    filtered["Estimated_Monthly_Cost"] - filtered["Estimated_Monthly_Rent"]
-)
-
+filtered["Non_Rent_Cost"] = filtered["Estimated_Monthly_Cost"] - filtered["Estimated_Monthly_Rent"]
 filtered["Scenario_Cost"] = filtered["Non_Rent_Cost"] + filtered["Scenario_Rent"]
-
 filtered["Scenario_Profit"] = filtered["Scenario_Revenue"] - filtered["Scenario_Cost"]
-
 filtered["Scenario_ROI"] = filtered["Scenario_Profit"] / filtered["Scenario_Cost"]
 
-# -----------------------------
-# RECOMMENDATION LOGIC
-# -----------------------------
 def recommendation(row):
     if row["Scenario_Profit"] > 0 and row["Scenario_ROI"] >= 0.15:
-        return "Priority Expansion Market"
-    elif row["Scenario_Profit"] > 0 and row["Scenario_ROI"] < 0.15:
+        return "Priority Expansion"
+    elif row["Scenario_Profit"] > 0:
         return "Validate Further"
     elif row["Premium_Fit_Score"] >= 70 and row["Scenario_Profit"] < 0:
-        return "Premium Niche / High Cost Risk"
+        return "Premium Strategy"
     else:
-        return "High Risk Under Current Assumptions"
+        return "High Risk"
 
-filtered["AI_Strategic_Recommendation"] = filtered.apply(recommendation, axis=1)
+filtered["Recommendation"] = filtered.apply(recommendation, axis=1)
 
 filtered["Final_Scenario_Score"] = (
     filtered["Beauty_Expansion_Score"] * 0.5
@@ -150,105 +197,75 @@ filtered["Final_Scenario_Score"] = (
 filtered = filtered.sort_values("Final_Scenario_Score", ascending=False)
 
 # -----------------------------
-# HERO HEADER
+# HERO
 # -----------------------------
 st.markdown("""
 <div class="hero">
     <div class="hero-title">Strategic Expansion Intelligence Platform</div>
     <div class="hero-subtitle">
-        Interactive decision-support system for beauty franchise expansion,
-        market prioritization, ROI simulation, and executive recommendations.
+        Executive dashboard for beauty franchise expansion, market prioritization,
+        ROI scenario simulation, and strategic recommendations.
     </div>
 </div>
 """, unsafe_allow_html=True)
 
 # -----------------------------
-# EMPTY STATE
-# -----------------------------
-if filtered.empty:
-    st.warning("Please select at least one market from the sidebar.")
-    st.stop()
-
-# -----------------------------
-# KPI CARDS
+# KPIs
 # -----------------------------
 top_market = filtered.iloc[0]["City"]
 avg_roi = filtered["Scenario_ROI"].mean()
 total_profit = filtered["Scenario_Profit"].sum()
-priority_count = (
-    filtered["AI_Strategic_Recommendation"] == "Priority Expansion Market"
-).sum()
+priority_count = (filtered["Recommendation"] == "Priority Expansion").sum()
 
 col1, col2, col3, col4 = st.columns(4)
 
 col1.metric("Top Market", top_market)
-col2.metric("Average Scenario ROI", f"{avg_roi:.1%}")
-col3.metric("Total Scenario Profit", f"${total_profit:,.0f}")
+col2.metric("Average ROI", f"{avg_roi:.1%}")
+col3.metric("Scenario Profit", f"${total_profit:,.0f}")
 col4.metric("Priority Markets", priority_count)
 
-st.divider()
+st.markdown("<br>", unsafe_allow_html=True)
 
 # -----------------------------
 # TABS
 # -----------------------------
 tab1, tab2, tab3, tab4, tab5 = st.tabs([
-    "Overview",
-    "Financial Scenario",
+    "Dashboard",
+    "Financials",
     "Market Positioning",
-    "Recommendation Engine",
+    "Recommendations",
     "Executive Summary"
 ])
 
 # -----------------------------
-# TAB 1 — OVERVIEW
+# TAB 1
 # -----------------------------
 with tab1:
     st.subheader("Market Expansion Ranking")
-    st.markdown(
-        '<p class="section-note">Markets are ranked based on expansion score and scenario-adjusted ROI.</p>',
-        unsafe_allow_html=True
-    )
+    st.markdown('<p class="section-note">Markets ranked by scenario-adjusted expansion score.</p>', unsafe_allow_html=True)
 
     fig = px.bar(
         filtered,
         x="City",
         y="Final_Scenario_Score",
-        color="AI_Strategic_Recommendation",
+        color="Recommendation",
         text="Final_Scenario_Score",
-        title="Final Scenario Score by Market"
+        color_discrete_sequence=["#E8D28A", "#B89A45", "#6F5B2E", "#3A3A3A"]
+    )
+    fig.update_layout(
+        paper_bgcolor="#111111",
+        plot_bgcolor="#111111",
+        font_color="#F5F2EA",
+        height=520
     )
     fig.update_traces(texttemplate="%{text:.1f}", textposition="outside")
-    fig.update_layout(height=520)
     st.plotly_chart(fig, use_container_width=True)
 
-    st.subheader("Executive Ranking Table")
-
-    overview_cols = [
-        "City",
-        "Beauty_Demand_Signal",
-        "Premium_Fit_Score",
-        "Competitive_Pressure",
-        "Beauty_Expansion_Score",
-        "Scenario_ROI",
-        "Scenario_Profit",
-        "Final_Scenario_Score",
-        "AI_Strategic_Recommendation"
-    ]
-
-    st.dataframe(
-        filtered[overview_cols],
-        use_container_width=True
-    )
-
 # -----------------------------
-# TAB 2 — FINANCIAL SCENARIO
+# TAB 2
 # -----------------------------
 with tab2:
-    st.subheader("Revenue vs. Cost Simulation")
-    st.markdown(
-        '<p class="section-note">This view shows whether each market remains financially viable under the selected assumptions.</p>',
-        unsafe_allow_html=True
-    )
+    st.subheader("Revenue vs Cost")
 
     revenue_cost = filtered.melt(
         id_vars="City",
@@ -263,66 +280,65 @@ with tab2:
         y="Amount",
         color="Metric",
         barmode="group",
-        title="Scenario Revenue vs Scenario Cost"
+        color_discrete_sequence=["#E8D28A", "#8C6F2F"]
     )
-    fig2.update_layout(height=520)
+    fig2.update_layout(
+        paper_bgcolor="#111111",
+        plot_bgcolor="#111111",
+        font_color="#F5F2EA",
+        height=520
+    )
     st.plotly_chart(fig2, use_container_width=True)
 
-    st.subheader("Scenario ROI by Market")
+    st.subheader("Scenario ROI")
 
     fig3 = px.bar(
         filtered,
         x="City",
         y="Scenario_ROI",
-        color="AI_Strategic_Recommendation",
+        color="Recommendation",
         text="Scenario_ROI",
-        title="Scenario ROI"
+        color_discrete_sequence=["#E8D28A", "#B89A45", "#6F5B2E", "#3A3A3A"]
+    )
+    fig3.update_layout(
+        paper_bgcolor="#111111",
+        plot_bgcolor="#111111",
+        font_color="#F5F2EA",
+        height=480
     )
     fig3.update_traces(texttemplate="%{text:.1%}", textposition="outside")
-    fig3.update_layout(height=500)
     st.plotly_chart(fig3, use_container_width=True)
 
 # -----------------------------
-# TAB 3 — MARKET POSITIONING
+# TAB 3
 # -----------------------------
 with tab3:
-    st.subheader("Demand vs Premium Fit Matrix")
-    st.markdown(
-        '<p class="section-note">This matrix compares demand strength against premium positioning potential.</p>',
-        unsafe_allow_html=True
-    )
+    st.subheader("Demand vs Premium Fit")
 
     fig4 = px.scatter(
         filtered,
         x="Beauty_Demand_Signal",
         y="Premium_Fit_Score",
         size="Population",
-        color="AI_Strategic_Recommendation",
+        color="Recommendation",
         hover_name="City",
-        title="Market Positioning Matrix"
+        color_discrete_sequence=["#E8D28A", "#B89A45", "#6F5B2E", "#3A3A3A"]
     )
-    fig4.update_layout(height=560)
+    fig4.update_layout(
+        paper_bgcolor="#111111",
+        plot_bgcolor="#111111",
+        font_color="#F5F2EA",
+        height=560
+    )
     st.plotly_chart(fig4, use_container_width=True)
 
-    st.subheader("Competitive Pressure")
-
-    fig5 = px.bar(
-        filtered,
-        x="City",
-        y="Competitive_Pressure",
-        color="AI_Strategic_Recommendation",
-        title="Competitive Pressure by Market"
-    )
-    fig5.update_layout(height=480)
-    st.plotly_chart(fig5, use_container_width=True)
-
 # -----------------------------
-# TAB 4 — RECOMMENDATION ENGINE
+# TAB 4
 # -----------------------------
 with tab4:
-    st.subheader("AI-Assisted Strategic Recommendation")
+    st.subheader("Recommendation Engine")
 
-    recommendation_cols = [
+    cols = [
         "City",
         "Scenario_Revenue",
         "Scenario_Cost",
@@ -330,25 +346,21 @@ with tab4:
         "Scenario_ROI",
         "Premium_Fit_Score",
         "Final_Scenario_Score",
-        "AI_Strategic_Recommendation"
+        "Recommendation"
     ]
 
-    st.dataframe(
-        filtered[recommendation_cols],
-        use_container_width=True
-    )
-
-    st.markdown("### Recommendation Logic")
+    st.dataframe(filtered[cols], use_container_width=True)
 
     st.markdown("""
-    - **Priority Expansion Market:** positive profit and ROI equal to or above 15%.
+    ### Logic
+    - **Priority Expansion:** positive profit and ROI ≥ 15%.
     - **Validate Further:** positive profit but ROI below 15%.
-    - **Premium Niche / High Cost Risk:** strong premium fit but negative profit.
-    - **High Risk Under Current Assumptions:** weak financial viability under current assumptions.
+    - **Premium Strategy:** strong premium fit but negative profit.
+    - **High Risk:** weak financial viability under current assumptions.
     """)
 
 # -----------------------------
-# TAB 5 — EXECUTIVE SUMMARY
+# TAB 5
 # -----------------------------
 with tab5:
     top = filtered.iloc[0]
@@ -360,23 +372,14 @@ with tab5:
 
     **Top recommended market:** {top["City"]}
 
-    Under the selected scenario assumptions, **{top["City"]}** ranks as the strongest expansion opportunity with a final scenario score of **{top["Final_Scenario_Score"]:.1f}**.
+    Under the selected scenario, **{top["City"]}** ranks as the strongest expansion opportunity with a final scenario score of **{top["Final_Scenario_Score"]:.1f}**.
 
-    **Current scenario assumptions:**
+    **Scenario assumptions:**
     - Rent change: **{rent_change}%**
-    - Revenue / average ticket change: **{ticket_change}%**
+    - Revenue / ticket change: **{ticket_change}%**
     - Customer volume change: **{customer_change}%**
 
-    **Model recommendation:** **{top["AI_Strategic_Recommendation"]}**
+    **Model recommendation:** **{top["Recommendation"]}**
 
-    This market shows the strongest balance between demand potential, premium fit, competitive positioning, and financial viability under the current scenario.
-    """)
-
-    st.markdown("### Suggested Next Steps")
-
-    st.markdown("""
-    1. Validate top markets using real estate listings and broker input.
-    2. Move from city-level analysis to ZIP-code or trade-area analysis.
-    3. Replace assumptions with internal revenue, service mix, and customer data.
-    4. Use the dashboard as a recurring decision-support tool for expansion planning.
+    This market shows the strongest balance between demand potential, premium fit, competitive positioning, and financial viability.
     """)
