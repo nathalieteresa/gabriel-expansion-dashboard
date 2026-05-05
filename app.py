@@ -3,7 +3,7 @@ import pandas as pd
 import plotly.express as px
 
 st.set_page_config(
-    page_title="Gabriel Samra Expansion Intelligence",
+    page_title="Expansion Intelligence",
     layout="wide"
 )
 
@@ -96,7 +96,7 @@ filtered = filtered.sort_values("Final_Scenario_Score", ascending=False)
 # -----------------------------
 # Header
 # -----------------------------
-st.title("Gabriel Samra Expansion Intelligence Dashboard")
+st.title("Expansion Intelligence Dashboard")
 st.markdown(
     "Interactive decision-support tool for beauty franchise expansion, market prioritization, and ROI scenario analysis."
 )
