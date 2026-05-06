@@ -198,21 +198,18 @@ if missing_cols:
 st.sidebar.markdown("## Scenario Controls")
 st.sidebar.markdown("Adjust assumptions to test expansion scenarios.")
 
-selected_cities = st.sidebar.multiselect(
-    "Select Markets",
-    options=sorted(df["City"].unique()),
-    default=sorted(df["City"].unique())
+selected_city = st.sidebar.selectbox(
+    "Select Market",
+    options=sorted(df["City"].unique())
 )
+
+filtered = df[df["City"] == selected_city].copy()
 
 rent_change = st.sidebar.slider("Rent Change (%)", -30, 50, 0, 5)
 ticket_change = st.sidebar.slider("Revenue / Average Ticket Change (%)", -30, 50, 0, 5)
 customer_change = st.sidebar.slider("Customer Volume Change (%)", -30, 50, 0, 5)
 
 filtered = df[df["City"].isin(selected_cities)].copy()
-
-if filtered.empty:
-    st.warning("Please select at least one market from the sidebar.")
-    st.stop()
 
 filtered["Scenario_Rent"] = filtered["Estimated_Monthly_Rent"] * (1 + rent_change / 100)
 
