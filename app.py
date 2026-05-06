@@ -20,10 +20,11 @@ st.markdown(f"""
     }}
 
     .block-container {{
-        padding-top: 2rem;
-        padding-left: 3rem;
-        padding-right: 3rem;
-        max-width: 1450px;
+    padding-top: 5rem;
+    padding-left: 3rem;
+    padding-right: 3rem;
+    max-width: 1450px;
+}}
     }}
 
     section[data-testid="stSidebar"] {{
