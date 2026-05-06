@@ -172,7 +172,7 @@ st.markdown(f"""
 
 GOOGLE_SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRlzu0foii8Px9Kajtdoa84Cy3rYy9VdCG3tBa-Hwt7rmisBrXF_x8dYdrn2RgHIhimS0YJNQFAoZVD/pub?gid=0&single=true&output=csv"
 
-@st.cache_data(ttl=600)
+@st.cache_data(ttl=1)
 def load_data(url):
     try:
         return pd.read_csv(url)
