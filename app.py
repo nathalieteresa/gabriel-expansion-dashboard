@@ -131,6 +131,42 @@ st.markdown(f"""
         font-size: 0.95rem;
         line-height: 1.55;
     }}
+
+    /* MULTISELECT TAGS */
+    span[data-baseweb="tag"] {{
+        background-color: #C6A052 !important;
+        border-radius: 10px !important;
+        border: none !important;
+    }}
+
+    span[data-baseweb="tag"] * {{
+        color: #FFFFFF !important;
+        font-weight: 600 !important;
+    }}
+
+    /* MULTISELECT INPUT BOX */
+    div[data-baseweb="select"] > div {{
+        border-radius: 14px !important;
+        border: 1px solid #D8C28A !important;
+        background-color: rgba(255,255,255,0.72) !important;
+    }}
+
+    /* SLIDER THUMB */
+    .stSlider div[role="slider"] {{
+        background-color: #C6A052 !important;
+        border: 2px solid #B8923D !important;
+        box-shadow: 0 2px 8px rgba(198,160,82,0.35) !important;
+    }}
+
+    /* SLIDER ACTIVE TRACK */
+    .stSlider [data-baseweb="slider"] [data-testid="stTickBar"] + div {{
+        background-color: #C6A052 !important;
+    }}
+
+    /* SLIDER GENERAL ACCENT */
+    .stSlider div[data-baseweb="slider"] div {{
+        color: #8A6A24 !important;
+    }}
 </style>
 """, unsafe_allow_html=True)
 
