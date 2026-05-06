@@ -49,7 +49,7 @@ st.markdown(f"""
         color: #F7F3EA !important;
     }}
 
-    .hero {
+    .hero {{
     background: linear-gradient(
         135deg,
         #FFFFFF 0%,
@@ -65,15 +65,15 @@ st.markdown(f"""
     box-shadow:
         0 10px 35px rgba(0,0,0,0.06);
 
-}
+}}
 
-.hero-inner {
+.hero-inner {{
     display: flex;
     align-items: center;
     gap: 1.8rem;
-}
+}}
 
-.hero-title {
+.hero-title {{
     color: #111111;
 
     font-size: 2.4rem;
@@ -81,14 +81,14 @@ st.markdown(f"""
 
     letter-spacing: -1px;
     margin-bottom: 0.35rem;
-}
+}}
 
-.hero-subtitle {
+.hero-subtitle {{
     color: #7B6A3D;
 
     font-size: 1.05rem;
     line-height: 1.5;
-}
+}}
 
     div[data-testid="stMetric"] {{
         background: rgba(255,255,255,0.92);
