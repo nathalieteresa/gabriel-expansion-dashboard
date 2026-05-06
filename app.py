@@ -24,13 +24,13 @@ WHITE = "#F7F3EA"
 MUTED = "#B8B1A3"
 
 # -----------------------------
-# CSS
+# CSS - LUXURY LIGHT THEME
 # -----------------------------
 st.markdown(f"""
 <style>
     .stApp {{
-        background-color: {BLACK};
-        color: {WHITE};
+        background: linear-gradient(135deg, #F7F3EA 0%, #FFFFFF 45%, #EFE6D1 100%);
+        color: #111111;
     }}
 
     .block-container {{
@@ -41,133 +41,121 @@ st.markdown(f"""
     }}
 
     section[data-testid="stSidebar"] {{
-        background-color: #080808;
-        border-right: 1px solid #2C2415;
+        background: linear-gradient(180deg, #080808 0%, #15120D 100%);
+        border-right: 1px solid #C6A052;
     }}
 
     section[data-testid="stSidebar"] * {{
-        color: {WHITE};
+        color: #F7F3EA !important;
     }}
 
     .hero {{
-        background: linear-gradient(135deg, #141414 0%, #23201A 100%);
-        border: 1px solid {GOLD};
-        border-radius: 22px;
-        padding: 1.8rem 2rem;
-        margin-bottom: 1.4rem;
-        box-shadow: 0 12px 35px rgba(0,0,0,0.45);
+        background: linear-gradient(135deg, #080808 0%, #1E1A12 55%, #C6A052 140%);
+        border: 1px solid #D6B35F;
+        border-radius: 26px;
+        padding: 2rem 2.3rem;
+        margin-bottom: 1.5rem;
+        box-shadow: 0 16px 40px rgba(0,0,0,0.18);
     }}
 
     .hero-inner {{
         display: flex;
         align-items: center;
-        gap: 1.5rem;
+        gap: 1.6rem;
     }}
 
     .hero-title {{
-        color: {WHITE};
-        font-size: 2.1rem;
-        font-weight: 800;
+        color: #FFFFFF;
+        font-size: 2.15rem;
+        font-weight: 850;
         letter-spacing: -0.5px;
-        margin-bottom: 0.25rem;
+        margin-bottom: 0.35rem;
     }}
 
     .hero-subtitle {{
-        color: {GOLD_LIGHT};
+        color: #E8D28A;
         font-size: 1rem;
         line-height: 1.5;
     }}
 
-    .logo-box {{
-        width: 92px;
-        height: 92px;
-        border-radius: 18px;
-        background-color: {GOLD};
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }}
-
-    .section-title {{
-        color: {GOLD_LIGHT};
-        font-size: 1.3rem;
-        font-weight: 750;
-        margin-top: 0.5rem;
-        margin-bottom: 0.2rem;
-    }}
-
-    .section-note {{
-        color: {MUTED};
-        font-size: 0.95rem;
-        margin-bottom: 1rem;
-    }}
-
     div[data-testid="stMetric"] {{
-        background-color: {CARD};
-        border: 1px solid #3A301F;
-        border-radius: 18px;
-        padding: 1rem;
-        box-shadow: 0 8px 28px rgba(0,0,0,0.32);
+        background: rgba(255,255,255,0.92);
+        border: 1px solid #E5D6AF;
+        border-radius: 22px;
+        padding: 1.1rem;
+        box-shadow: 0 12px 30px rgba(0,0,0,0.08);
     }}
 
     div[data-testid="stMetricLabel"] {{
-        color: {GOLD_LIGHT} !important;
-        font-weight: 650;
+        color: #6F5725 !important;
+        font-weight: 700;
     }}
 
     div[data-testid="stMetricValue"] {{
-        color: {WHITE} !important;
-        font-weight: 800;
+        color: #111111 !important;
+        font-weight: 850;
     }}
 
     .stTabs [data-baseweb="tab-list"] {{
         gap: 10px;
         margin-bottom: 1rem;
+        border-bottom: 1px solid #E6D8B6;
+        padding-bottom: 0.8rem;
     }}
 
     .stTabs [data-baseweb="tab"] {{
-        background-color: #0D0D0D;
-        border: 1px solid #4A3A1E;
+        background-color: #FFFFFF;
+        border: 1px solid #E5D6AF;
         border-radius: 14px;
-        color: {WHITE};
+        color: #111111;
         padding: 10px 18px;
         font-weight: 650;
+        box-shadow: 0 6px 18px rgba(0,0,0,0.04);
     }}
 
     .stTabs [aria-selected="true"] {{
-        background-color: {GOLD} !important;
-        color: #050505 !important;
-        border: 1px solid {GOLD_LIGHT};
+        background: linear-gradient(135deg, #C6A052 0%, #E8D28A 100%) !important;
+        color: #080808 !important;
+        border: 1px solid #C6A052;
     }}
 
     h1, h2, h3 {{
-        color: {GOLD_LIGHT} !important;
+        color: #1A1A1A !important;
+    }}
+
+    .section-title {{
+        color: #8A6A24;
+        font-size: 1.35rem;
+        font-weight: 800;
+        margin-bottom: 0.25rem;
+    }}
+
+    .section-note {{
+        color: #6F6A60;
+        font-size: 0.95rem;
+        margin-bottom: 1rem;
     }}
 
     .insight-card {{
-        background-color: {CARD};
-        border: 1px solid #3A301F;
-        border-radius: 20px;
-        padding: 1.2rem;
+        background: rgba(255,255,255,0.95);
+        border: 1px solid #E5D6AF;
+        border-radius: 22px;
+        padding: 1.3rem;
         min-height: 150px;
-        box-shadow: 0 8px 28px rgba(0,0,0,0.3);
+        box-shadow: 0 12px 30px rgba(0,0,0,0.07);
     }}
 
     .insight-title {{
-        color: {GOLD_LIGHT};
+        color: #8A6A24;
         font-size: 1rem;
-        font-weight: 750;
+        font-weight: 800;
         margin-bottom: 0.5rem;
     }}
 
     .insight-body {{
-        color: {WHITE};
+        color: #171717;
         font-size: 0.95rem;
-        line-height: 1.5;
-    }}
-
-    .dataframe {{
-        background-color: {CARD};
+        line-height: 1.55;
     }}
 </style>
 """, unsafe_allow_html=True)
@@ -273,18 +261,18 @@ filtered = filtered.sort_values("Final_Scenario_Score", ascending=False)
 # -----------------------------
 def dark_layout(fig, height=500):
     fig.update_layout(
-        paper_bgcolor=CHARCOAL,
-        plot_bgcolor=CHARCOAL,
-        font=dict(color=WHITE),
+        paper_bgcolor="rgba(255,255,255,0.92)",
+        plot_bgcolor="rgba(255,255,255,0.92)",
+        font=dict(color="#111111"),
         height=height,
         margin=dict(l=40, r=30, t=60, b=40),
         legend=dict(
-            bgcolor="rgba(0,0,0,0)",
-            font=dict(color=WHITE)
+            bgcolor="rgba(255,255,255,0)",
+            font=dict(color="#111111")
         )
     )
-    fig.update_xaxes(gridcolor="#2A2A2A", zerolinecolor="#333333")
-    fig.update_yaxes(gridcolor="#2A2A2A", zerolinecolor="#333333")
+    fig.update_xaxes(gridcolor="#EEE6D3", zerolinecolor="#D8C896")
+    fig.update_yaxes(gridcolor="#EEE6D3", zerolinecolor="#D8C896")
     return fig
 
 # -----------------------------
