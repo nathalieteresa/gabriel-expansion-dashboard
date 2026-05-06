@@ -66,7 +66,7 @@ st.markdown(f"""
         font-weight: 700;
     }}
 
-    div[data-testid="stMetricValue"] {
+    div[data-testid="stMetricValue"] {{
         color: #111111 !important;
         font-weight: 800;
         font-size: 2rem !important;
