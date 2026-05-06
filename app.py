@@ -3,29 +3,15 @@ import pandas as pd
 import plotly.express as px
 from pathlib import Path
 
-# -----------------------------
-# PAGE CONFIG
-# -----------------------------
 st.set_page_config(
-    page_title="Strategic Expansion Intelligence TEST",
+    page_title="Strategic Expansion Intelligence",
     layout="wide",
     initial_sidebar_state="collapsed"
 )
 
-# -----------------------------
-# COLORS
-# -----------------------------
 GOLD = "#C6A052"
 GOLD_LIGHT = "#E8D28A"
-BLACK = "#050505"
-CHARCOAL = "#151515"
-CARD = "#1B1B1D"
-WHITE = "#F7F3EA"
-MUTED = "#B8B1A3"
 
-# -----------------------------
-# CSS - LUXURY LIGHT THEME
-# -----------------------------
 st.markdown(f"""
 <style>
     .stApp {{
@@ -49,39 +35,20 @@ st.markdown(f"""
         color: #F7F3EA !important;
     }}
 
-  .hero-clean {{
-    padding-top: 0.5rem;
-    padding-bottom: 1.2rem;
-    background:
-        radial-gradient(circle at top right, rgba(198,160,82,0.18), transparent 35%),
-        linear-gradient(135deg, #FFFFFF 0%, #FAF7F0 45%, #EFE2BD 100%);
-    margin-bottom: 1.5rem;
-}}
+    .hero-title {{
+        font-size: 2.5rem;
+        font-weight: 900;
+        color: #111111;
+        letter-spacing: -1px;
+        line-height: 1.1;
+    }}
 
-.hero-clean-inner {{
-    display: flex;
-    align-items: center;
-    gap: 1.5rem;
-}}
-
-.hero-clean-title {{
-    font-size: 2.5rem;
-    font-weight: 900;
-    color: #111111;
-    letter-spacing: -1px;
-    line-height: 1.1;
-}}
-
-.hero-clean-subtitle {{
-    margin-top: 0.4rem;
-    font-size: 1.05rem;
-    color: #7A6330;
-    font-weight: 500;
-}}
-
-.hero-logo img {{
-    width: 90px !important;
-}}
+    .hero-subtitle {{
+        margin-top: 0.4rem;
+        font-size: 1.05rem;
+        color: #7A6330;
+        font-weight: 500;
+    }}
 
     div[data-testid="stMetric"] {{
         background: rgba(255,255,255,0.92);
@@ -165,9 +132,6 @@ st.markdown(f"""
 </style>
 """, unsafe_allow_html=True)
 
-# -----------------------------
-# LOAD DATA
-# -----------------------------
 df = pd.read_csv("beauty_expansion_data.csv")
 df.columns = df.columns.str.strip()
 
@@ -193,9 +157,6 @@ if missing_cols:
     st.error(f"Missing columns in CSV: {missing_cols}")
     st.stop()
 
-# -----------------------------
-# SIDEBAR CONTROLS
-# -----------------------------
 logo_path = Path("logo.png")
 
 if logo_path.exists():
@@ -214,18 +175,12 @@ rent_change = st.sidebar.slider("Rent Change (%)", -30, 50, 0, 5)
 ticket_change = st.sidebar.slider("Revenue / Average Ticket Change (%)", -30, 50, 0, 5)
 customer_change = st.sidebar.slider("Customer Volume Change (%)", -30, 50, 0, 5)
 
-# -----------------------------
-# FILTER DATA
-# -----------------------------
 filtered = df[df["City"].isin(selected_cities)].copy()
 
 if filtered.empty:
     st.warning("Please select at least one market from the sidebar.")
     st.stop()
 
-# -----------------------------
-# SCENARIO CALCULATIONS
-# -----------------------------
 filtered["Scenario_Rent"] = filtered["Estimated_Monthly_Rent"] * (1 + rent_change / 100)
 
 filtered["Scenario_Revenue"] = (
@@ -234,10 +189,7 @@ filtered["Scenario_Revenue"] = (
     * (1 + customer_change / 100)
 )
 
-filtered["Non_Rent_Cost"] = (
-    filtered["Estimated_Monthly_Cost"] - filtered["Estimated_Monthly_Rent"]
-)
-
+filtered["Non_Rent_Cost"] = filtered["Estimated_Monthly_Cost"] - filtered["Estimated_Monthly_Rent"]
 filtered["Scenario_Cost"] = filtered["Non_Rent_Cost"] + filtered["Scenario_Rent"]
 filtered["Scenario_Profit"] = filtered["Scenario_Revenue"] - filtered["Scenario_Cost"]
 filtered["Scenario_ROI"] = filtered["Scenario_Profit"] / filtered["Scenario_Cost"]
@@ -261,10 +213,7 @@ filtered["Final_Scenario_Score"] = (
 
 filtered = filtered.sort_values("Final_Scenario_Score", ascending=False)
 
-# -----------------------------
-# PLOTLY THEME HELPER
-# -----------------------------
-def dark_layout(fig, height=500):
+def chart_layout(fig, height=500):
     fig.update_layout(
         paper_bgcolor="rgba(255,255,255,0.92)",
         plot_bgcolor="rgba(255,255,255,0.92)",
@@ -281,44 +230,26 @@ def dark_layout(fig, height=500):
     return fig
 
 # -----------------------------
-# HERO HEADER
+# CLEAN HEADER — NO RECTANGLE
 # -----------------------------
-logo_html = ""
+header_col1, header_col2 = st.columns([1, 9])
 
-if logo_path.exists():
-    import base64
-    with open("logo.png", "rb") as image_file:
-        encoded = base64.b64encode(image_file.read()).decode()
+with header_col1:
+    if logo_path.exists():
+        st.image("logo.png", width=95)
 
-    logo_html = f"""
-    <img src="data:image/png;base64,{encoded}"
-    style="width:95px;height:95px;object-fit:contain;
-    filter:drop-shadow(0px 4px 10px rgba(0,0,0,0.08));">
-    """
-
-st.markdown(f"""
-<div class="hero-clean">
-    <div class="hero-clean-inner">
-        <div class="hero-logo">
-            {logo_html}
-        </div>
-
-        <div>
-            <div class="hero-clean-title">
-                STRATEGIC EXPANSION INTELLIGENCE PLATFORM
-            </div>
-
-            <div class="hero-clean-subtitle">
-                Market prioritization, ROI scenarios, and expansion recommendations.
-            </div>
-        </div>
+with header_col2:
+    st.markdown("""
+    <div class="hero-title">
+        STRATEGIC EXPANSION INTELLIGENCE PLATFORM
     </div>
-</div>
-""", unsafe_allow_html=True)
+    <div class="hero-subtitle">
+        Market prioritization, ROI scenarios, and expansion recommendations.
+    </div>
+    """, unsafe_allow_html=True)
 
-# -----------------------------
-# TOP KPIs
-# -----------------------------
+st.markdown("<br>", unsafe_allow_html=True)
+
 top_market = filtered.iloc[0]["City"]
 avg_roi = filtered["Scenario_ROI"].mean()
 total_profit = filtered["Scenario_Profit"].sum()
@@ -332,9 +263,6 @@ k4.metric("Priority Markets", priority_count)
 
 st.markdown("<br>", unsafe_allow_html=True)
 
-# -----------------------------
-# TABS
-# -----------------------------
 tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
     "Overview",
     "Market Ranking",
@@ -344,9 +272,6 @@ tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
     "Data Quality & Assumptions"
 ])
 
-# -----------------------------
-# TAB 1: OVERVIEW
-# -----------------------------
 with tab1:
     left, right = st.columns([1, 2])
 
@@ -391,11 +316,8 @@ with tab1:
             color_discrete_sequence=[GOLD_LIGHT, GOLD, "#7D6838", "#3E3E3E"]
         )
         fig.update_traces(texttemplate="%{text:.1f}", textposition="outside")
-        st.plotly_chart(dark_layout(fig, 520), use_container_width=True)
+        st.plotly_chart(chart_layout(fig, 520), use_container_width=True)
 
-# -----------------------------
-# TAB 2: MARKET RANKING
-# -----------------------------
 with tab2:
     st.markdown('<div class="section-title">Executive Market Ranking Table</div>', unsafe_allow_html=True)
     st.markdown('<div class="section-note">Consolidated ranking based on demand, premium fit, competition, ROI, and final recommendation.</div>', unsafe_allow_html=True)
@@ -414,9 +336,6 @@ with tab2:
 
     st.dataframe(filtered[ranking_cols], use_container_width=True, height=420)
 
-# -----------------------------
-# TAB 3: FINANCIAL SCENARIO
-# -----------------------------
 with tab3:
     colA, colB = st.columns(2)
 
@@ -438,7 +357,7 @@ with tab3:
             barmode="group",
             color_discrete_sequence=[GOLD_LIGHT, "#8C6F2F"]
         )
-        st.plotly_chart(dark_layout(fig2, 500), use_container_width=True)
+        st.plotly_chart(chart_layout(fig2, 500), use_container_width=True)
 
     with colB:
         st.markdown('<div class="section-title">Scenario ROI</div>', unsafe_allow_html=True)
@@ -452,11 +371,8 @@ with tab3:
             color_discrete_sequence=[GOLD_LIGHT, GOLD, "#7D6838", "#3E3E3E"]
         )
         fig3.update_traces(texttemplate="%{text:.1%}", textposition="outside")
-        st.plotly_chart(dark_layout(fig3, 500), use_container_width=True)
+        st.plotly_chart(chart_layout(fig3, 500), use_container_width=True)
 
-# -----------------------------
-# TAB 4: MARKET POSITIONING
-# -----------------------------
 with tab4:
     colA, colB = st.columns(2)
 
@@ -472,7 +388,7 @@ with tab4:
             hover_name="City",
             color_discrete_sequence=[GOLD_LIGHT, GOLD, "#7D6838", "#3E3E3E"]
         )
-        st.plotly_chart(dark_layout(fig4, 520), use_container_width=True)
+        st.plotly_chart(chart_layout(fig4, 520), use_container_width=True)
 
     with colB:
         st.markdown('<div class="section-title">Competitive Pressure</div>', unsafe_allow_html=True)
@@ -484,11 +400,8 @@ with tab4:
             color="Recommendation",
             color_discrete_sequence=[GOLD_LIGHT, GOLD, "#7D6838", "#3E3E3E"]
         )
-        st.plotly_chart(dark_layout(fig5, 520), use_container_width=True)
+        st.plotly_chart(chart_layout(fig5, 520), use_container_width=True)
 
-# -----------------------------
-# TAB 5: RECOMMENDATION ENGINE
-# -----------------------------
 with tab5:
     st.markdown('<div class="section-title">AI-Assisted Recommendation Engine</div>', unsafe_allow_html=True)
     st.markdown('<div class="section-note">Rules-based recommendation logic based on profit, ROI, and premium fit.</div>', unsafe_allow_html=True)
@@ -515,16 +428,13 @@ with tab5:
     - **High Risk:** weak financial viability under current assumptions.
     """)
 
-# -----------------------------
-# TAB 6: DATA QUALITY & ASSUMPTIONS
-# -----------------------------
 with tab6:
     st.markdown('<div class="section-title">Data Quality & Assumptions</div>', unsafe_allow_html=True)
 
     c1, c2, c3 = st.columns(3)
 
     with c1:
-        st.markdown(f"""
+        st.markdown("""
         <div class="insight-card">
             <div class="insight-title">Current Data Sources</div>
             <div class="insight-body">
@@ -534,7 +444,7 @@ with tab6:
         """, unsafe_allow_html=True)
 
     with c2:
-        st.markdown(f"""
+        st.markdown("""
         <div class="insight-card">
             <div class="insight-title">Current Limitations</div>
             <div class="insight-body">
@@ -544,7 +454,7 @@ with tab6:
         """, unsafe_allow_html=True)
 
     with c3:
-        st.markdown(f"""
+        st.markdown("""
         <div class="insight-card">
             <div class="insight-title">Next Improvement</div>
             <div class="insight-body">
