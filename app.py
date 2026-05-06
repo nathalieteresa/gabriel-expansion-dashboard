@@ -173,6 +173,7 @@ st.markdown(f"""
 
 GOOGLE_SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRlzu0foii8Px9Kajtdoa84Cy3rYy9VdCG3tBa-Hwt7rmisBrXF_x8dYdrn2RgHIhimS0YJNQFAoZVD/pub?gid=0&single=true&output=csv"
 COMPETITORS_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRlzu0foii8Px9Kajtdoa84Cy3rYy9VdCG3tBa-Hwt7rmisBrXF_x8dYdrn2RgHIhimS0YJNQFAoZVD/pub?gid=324687326&single=true&output=csv"
+
 @st.cache_data(ttl=60)
 def load_data(url):
     try:
@@ -184,6 +185,8 @@ def load_data(url):
         st.stop()
 
 df = load_data(GOOGLE_SHEET_CSV_URL)
+competitors_df = load_data(COMPETITORS_CSV_URL)
+competitors_df.columns = competitors_df.columns.str.strip()
 df.columns = df.columns.str.strip()
 
 if "City" not in df.columns:
@@ -287,6 +290,15 @@ ticket_change = st.sidebar.slider("Revenue / Average Ticket Change (%)", -30, 50
 customer_change = st.sidebar.slider("Customer Volume Change (%)", -30, 50, 0, 5)
 
 filtered = df[df["City"] == selected_city].copy()
+city_competitors = competitors_df[
+    competitors_df["city"].str.lower() == selected_city.lower()
+].copy()
+
+competitor_count = len(city_competitors)
+
+avg_rating = city_competitors["totalScore"].mean()
+
+total_reviews = city_competitors["reviewsCount"].sum()
 
 filtered["Scenario_Rent"] = filtered["Estimated_Monthly_Rent"] * (1 + rent_change / 100)
 
@@ -363,12 +375,14 @@ median_income = filtered.iloc[0]["Median_Income"]
 avg_roi = filtered["Scenario_ROI"].mean()
 total_profit = filtered["Scenario_Profit"].sum()
 
-k1, k2, k3, k4, k5 = st.columns(5)
+k1, k2, k3, k4, k5, k6, k7 = st.columns(7)
 k1.metric("Selected Market", top_market)
 k2.metric("Population", f"{population:,.0f}" if pd.notna(population) else "Not found")
 k3.metric("Median Income", f"${median_income:,.0f}" if pd.notna(median_income) else "Not found")
 k4.metric("Scenario ROI", f"{avg_roi:.1%}")
-k5.metric("Scenario Profit", f"${total_profit:,.0f}")
+k5.metric("Avg Rating", f"{avg_rating:.2f}")
+k6.metric("Competitors", f"{competitor_count:,}")
+k7.metric("Total Reviews", f"{int(total_reviews):,}")
 
 st.markdown("<br>", unsafe_allow_html=True)
 
