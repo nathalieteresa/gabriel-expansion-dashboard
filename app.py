@@ -7,7 +7,7 @@ from pathlib import Path
 # PAGE CONFIG
 # -----------------------------
 st.set_page_config(
-    page_title="Strategic Expansion Intelligence",
+    page_title="Strategic Expansion Intelligence TEST",
     layout="wide",
     initial_sidebar_state="collapsed"
 )
