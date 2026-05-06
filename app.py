@@ -170,7 +170,7 @@ st.markdown(f"""
 </style>
 """, unsafe_allow_html=True)
 
-GOOGLE_SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/1TDEk0iVLmS4506y5W1m5OSZynvbGEpF_NhkQXqMwspM/edit?usp=share_link"
+GOOGLE_SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/1TDEk0iVLmS4506y5W1m5OSZynvbGEpF_NhkQXqMwspM/export?format=csv&gid=0"
 
 @st.cache_data(ttl=600)
 def load_data(url):
