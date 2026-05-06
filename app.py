@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 from pathlib import Path
+import requests
 
 st.set_page_config(
     page_title="Strategic Expansion Intelligence",
@@ -192,20 +193,86 @@ if "City" not in df.columns:
 df = df.dropna(subset=["City"])
 
 required_cols = [
+    "City",
+    "State",
     "Estimated_Monthly_Rent",
     "Estimated_Monthly_Revenue",
     "Estimated_Monthly_Cost",
     "Premium_Fit_Score",
     "Beauty_Expansion_Score",
     "Beauty_Demand_Signal",
-    "Competitive_Pressure",
-    "Population"
+    "Competitive_Pressure"
 ]
 
 missing_cols = [col for col in required_cols if col not in df.columns]
 if missing_cols:
     st.error(f"Missing columns in CSV: {missing_cols}")
     st.stop()
+
+STATE_FIPS = {
+    "FL": "12",
+    "TX": "48",
+    "GA": "13",
+    "NC": "37",
+    "TN": "47",
+    "AZ": "04",
+    "CA": "06",
+    "NY": "36",
+    "IL": "17"
+}
+
+@st.cache_data(ttl=86400)
+def get_census_place_data(year=2023):
+    url = f"https://api.census.gov/data/{year}/acs/acs5"
+    params = {
+        "get": "NAME,B01003_001E,B19013_001E",
+        "for": "place:*"
+    }
+
+    response = requests.get(url, params=params, timeout=20)
+    response.raise_for_status()
+
+    data = response.json()
+    cols = data[0]
+    rows = data[1:]
+
+    census_df = pd.DataFrame(rows, columns=cols)
+
+    census_df = census_df.rename(columns={
+        "NAME": "Census_Name",
+        "B01003_001E": "Population",
+        "B19013_001E": "Median_Income",
+        "state": "State_FIPS"
+    })
+
+    census_df["Population"] = pd.to_numeric(census_df["Population"], errors="coerce")
+    census_df["Median_Income"] = pd.to_numeric(census_df["Median_Income"], errors="coerce")
+
+    return census_df
+
+
+def normalize_city_name(city):
+    city = str(city).strip()
+    return city.lower()
+
+
+def extract_city_from_census_name(name):
+    return str(name).split(",")[0].lower().replace(" city", "").replace(" town", "").replace(" village", "").strip()
+
+
+census_df = get_census_place_data()
+
+census_df["City_Key"] = census_df["Census_Name"].apply(extract_city_from_census_name)
+df["City_Key"] = df["City"].apply(normalize_city_name)
+df["State_FIPS"] = df["State"].map(STATE_FIPS)
+
+df = df.merge(
+    census_df[["City_Key", "State_FIPS", "Population", "Median_Income"]],
+    on=["City_Key", "State_FIPS"],
+    how="left"
+)
+
+df = df.drop(columns=["City_Key", "State_FIPS"])
 
 st.sidebar.markdown("## Scenario Controls")
 st.sidebar.markdown("Adjust assumptions to test expansion scenarios.")
