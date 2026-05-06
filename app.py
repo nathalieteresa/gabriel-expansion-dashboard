@@ -27,15 +27,19 @@ st.markdown(f"""
 }}
     }}
 
-    section[data-testid="stSidebar"] {{
-        background: linear-gradient(180deg, #080808 0%, #15120D 100%);
-        border-right: 1px solid #C6A052;
-    }}
+section[data-testid="stSidebar"] {{
+    background: linear-gradient(
+        180deg,
+        #F7F1E4 0%,
+        #EFE2BD 100%
+    );
+
+    border-right: 1px solid #D8C28A;
+}}
 
     section[data-testid="stSidebar"] * {{
-        color: #F7F3EA !important;
-    }}
-
+    color: #111111 !important;
+}}
     .hero-title {{
         font-size: 2.5rem;
         font-weight: 900;
