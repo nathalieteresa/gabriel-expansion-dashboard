@@ -358,15 +358,17 @@ with header_col2:
 st.markdown("<br>", unsafe_allow_html=True)
 
 top_market = filtered.iloc[0]["City"]
+population = filtered.iloc[0]["Population"]
+median_income = filtered.iloc[0]["Median_Income"]
 avg_roi = filtered["Scenario_ROI"].mean()
 total_profit = filtered["Scenario_Profit"].sum()
-priority_count = (filtered["Recommendation"] == "Priority Expansion").sum()
 
-k1, k2, k3, k4 = st.columns(4)
-k1.metric("Top Market", top_market)
-k2.metric("Average ROI", f"{avg_roi:.1%}")
-k3.metric("Scenario Profit", f"${total_profit:,.0f}")
-k4.metric("Priority Markets", priority_count)
+k1, k2, k3, k4, k5 = st.columns(5)
+k1.metric("Selected Market", top_market)
+k2.metric("Population", f"{population:,.0f}" if pd.notna(population) else "Not found")
+k3.metric("Median Income", f"${median_income:,.0f}" if pd.notna(median_income) else "Not found")
+k4.metric("Scenario ROI", f"{avg_roi:.1%}")
+k5.metric("Scenario Profit", f"${total_profit:,.0f}")
 
 st.markdown("<br>", unsafe_allow_html=True)
 
@@ -431,6 +433,8 @@ with tab2:
 
     ranking_cols = [
         "City",
+        "Population",
+        "Median_Income",
         "Beauty_Demand_Signal",
         "Premium_Fit_Score",
         "Competitive_Pressure",
