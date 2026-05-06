@@ -63,14 +63,15 @@ st.markdown(f"""
 
     div[data-testid="stMetricLabel"] {{
         color: #6F5725 !important;
-        font-weight: 700;
+        font-weight: 650;
+        font-size: 0.82rem !important;
     }}
 
     div[data-testid="stMetricValue"] {{
         color: #111111 !important;
-        font-weight: 800;
-        font-size: 2rem !important;
-        line-height: 1.1 !important;
+        font-weight: 750;
+        font-size: 1.55rem !important;
+        line-height: 1.05 !important;
     }}
 
     .stTabs [data-baseweb="tab-list"] {{
