@@ -174,7 +174,13 @@ GOOGLE_SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRlzu0fo
 
 @st.cache_data(ttl=600)
 def load_data(url):
-    return pd.read_csv(url)
+    try:
+        return pd.read_csv(url)
+    except Exception as e:
+        st.error("Could not load Google Sheet. Make sure it is published to the web as CSV.")
+        st.write("Current URL:", url)
+        st.write("Error:", e)
+        st.stop()
 
 df = load_data(GOOGLE_SHEET_CSV_URL)
 df.columns = df.columns.str.strip()
