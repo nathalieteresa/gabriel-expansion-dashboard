@@ -53,11 +53,11 @@ st.markdown(f"""
         font-weight: 500;
     }}
 
-    div[data-testid="stMetric"] {{
+    div[data-testid="stMetric"] {
         background: rgba(255,255,255,0.92);
         border: 1px solid #E5D6AF;
         border-radius: 22px;
-        padding: 1.1rem;
+        padding: 0.8rem;
         box-shadow: 0 12px 30px rgba(0,0,0,0.08);
     }}
 
@@ -66,9 +66,11 @@ st.markdown(f"""
         font-weight: 700;
     }}
 
-    div[data-testid="stMetricValue"] {{
+    div[data-testid="stMetricValue"] {
         color: #111111 !important;
-        font-weight: 850;
+        font-weight: 800;
+        font-size: 2rem !important;
+        line-height: 1.1 !important;
     }}
 
     .stTabs [data-baseweb="tab-list"] {{
