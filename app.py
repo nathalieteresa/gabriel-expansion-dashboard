@@ -203,13 +203,11 @@ selected_city = st.sidebar.selectbox(
     options=sorted(df["City"].unique())
 )
 
-filtered = df[df["City"] == selected_city].copy()
-
 rent_change = st.sidebar.slider("Rent Change (%)", -30, 50, 0, 5)
 ticket_change = st.sidebar.slider("Revenue / Average Ticket Change (%)", -30, 50, 0, 5)
 customer_change = st.sidebar.slider("Customer Volume Change (%)", -30, 50, 0, 5)
 
-filtered = df[df["City"].isin(selected_cities)].copy()
+filtered = df[df["City"] == selected_city].copy()
 
 filtered["Scenario_Rent"] = filtered["Estimated_Monthly_Rent"] * (1 + rent_change / 100)
 
