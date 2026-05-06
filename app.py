@@ -52,16 +52,9 @@ st.markdown(f"""
   .hero-clean {{
     padding-top: 0.5rem;
     padding-bottom: 1.2rem;
-
     background:
         radial-gradient(circle at top right, rgba(198,160,82,0.18), transparent 35%),
-        linear-gradient(
-            135deg,
-            #FFFFFF 0%,
-            #FAF7F0 45%,
-            #EFE2BD 100%
-        );
-
+        linear-gradient(135deg, #FFFFFF 0%, #FAF7F0 45%, #EFE2BD 100%);
     margin-bottom: 1.5rem;
 }}
 
@@ -305,27 +298,26 @@ filter: drop-shadow(0px 4px 10px rgba(0,0,0,0.08));
 ">
 '''
     
-st.markdown(f"""
-<div class="hero-clean">
-    <div class="hero-clean-inner">
-
-        <div class="hero-logo">
-            {logo_html}
-        </div>
-
-        <div>
-            <div class="hero-clean-title">
-                STRATEGIC EXPANSION INTELLIGENCE PLATFORM
+st.markdown(
+    f"""
+    <div class="hero-clean">
+        <div class="hero-clean-inner">
+            <div class="hero-logo">
+                {logo_html}
             </div>
-
-            <div class="hero-clean-subtitle">
-                Market prioritization, ROI scenarios, and expansion recommendations.
+            <div>
+                <div class="hero-clean-title">
+                    STRATEGIC EXPANSION INTELLIGENCE PLATFORM
+                </div>
+                <div class="hero-clean-subtitle">
+                    Market prioritization, ROI scenarios, and expansion recommendations.
+                </div>
             </div>
         </div>
-
     </div>
-</div>
-""", unsafe_allow_html=True)
+    """,
+    unsafe_allow_html=True
+)
 
 # -----------------------------
 # TOP KPIs
