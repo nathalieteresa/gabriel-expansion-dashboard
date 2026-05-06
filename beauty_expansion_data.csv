@@ -1,1 +1,21 @@
-﻿City,Population,Median_Income,Salon_Count,Avg_Rating,Avg_Reviews,Rent_per_sqft_year,Typical_sqft,Beauty_Demand_Signal,Premium_Fit_Score,Competitive_Pressure,Beauty_Expansion_Score,Adjusted_Customers_per_Day,Estimated_Monthly_Revenue,Estimated_Monthly_Rent,Estimated_Monthly_Cost,Estimated_Monthly_Profit,Estimated_ROI
+City,Population,Median_Income,Salon_Count,Beauty_Demand_Signal,Premium_Fit_Score,Competitive_Pressure,Beauty_Expansion_Score,Estimated_Monthly_Revenue,Estimated_Monthly_Rent,Estimated_Monthly_Cost
+Miami,443665,54858,239,88,92,78,90,95000,18000,52000
+Coral Gables,49600,121000,72,95,98,55,96,110000,22000,60000
+Brickell,35000,145000,61,97,99,70,98,125000,28000,72000
+Orlando,309154,52500,180,76,74,60,78,78000,14000,45000
+Tampa,398173,59000,165,73,71,58,74,72000,13000,42000
+Aventura,40000,89000,54,85,91,52,89,91000,19000,50000
+Doral,75000,68000,88,79,80,64,81,83000,16000,47000
+Fort Lauderdale,182760,67000,120,82,84,66,85,87000,17000,49000
+Boca Raton,97422,87000,110,89,94,61,91,102000,21000,56000
+West Palm Beach,117000,65000,95,77,79,57,80,79000,14500,44000
+Houston,2304580,56000,310,70,69,82,71,68000,12000,43000
+Dallas,1304379,62000,280,74,73,75,76,74000,13500,45000
+Atlanta,510823,64000,205,80,82,68,83,86000,16000,48000
+Charlotte,897720,63000,150,75,76,59,77,76000,13800,44500
+Nashville,689447,67000,132,78,80,55,82,81000,15000,46000
+Scottsdale,241361,92000,84,92,95,48,94,108000,20500,57000
+Los Angeles,3898747,76000,520,90,97,90,88,130000,35000,85000
+New York,8467513,78000,730,93,99,95,89,145000,42000,98000
+Chicago,2693976,65000,340,72,70,77,73,70000,14000,46000
+San Diego,1386932,85000,190,88,93,58,90,98000,19500,54000
