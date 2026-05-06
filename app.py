@@ -164,9 +164,6 @@ if missing_cols:
 
 logo_path = Path("logo.png")
 
-if logo_path.exists():
-    st.sidebar.image("logo.png", width=140)
-
 st.sidebar.markdown("## Scenario Controls")
 st.sidebar.markdown("Adjust assumptions to test expansion scenarios.")
 
