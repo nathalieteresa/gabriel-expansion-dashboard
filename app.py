@@ -12,6 +12,8 @@ st.set_page_config(
 GOLD = "#C6A052"
 GOLD_LIGHT = "#E8D28A"
 
+logo_path = Path("logo.png")
+
 st.markdown(f"""
 <style>
     .stApp {{
@@ -20,26 +22,21 @@ st.markdown(f"""
     }}
 
     .block-container {{
-    padding-top: 5rem;
-    padding-left: 3rem;
-    padding-right: 3rem;
-    max-width: 1450px;
-}}
+        padding-top: 5rem;
+        padding-left: 3rem;
+        padding-right: 3rem;
+        max-width: 1450px;
     }}
 
-section[data-testid="stSidebar"] {{
-    background: linear-gradient(
-        180deg,
-        #F7F1E4 0%,
-        #EFE2BD 100%
-    );
-
-    border-right: 1px solid #D8C28A;
-}}
+    section[data-testid="stSidebar"] {{
+        background: linear-gradient(180deg, #F7F1E4 0%, #EFE2BD 100%);
+        border-right: 1px solid #D8C28A;
+    }}
 
     section[data-testid="stSidebar"] * {{
-    color: #111111 !important;
-}}
+        color: #111111 !important;
+    }}
+
     .hero-title {{
         font-size: 2.5rem;
         font-weight: 900;
