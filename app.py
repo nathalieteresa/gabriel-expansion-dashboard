@@ -162,8 +162,6 @@ if missing_cols:
     st.error(f"Missing columns in CSV: {missing_cols}")
     st.stop()
 
-logo_path = Path("logo.png")
-
 st.sidebar.markdown("## Scenario Controls")
 st.sidebar.markdown("Adjust assumptions to test expansion scenarios.")
 
