@@ -170,7 +170,13 @@ st.markdown(f"""
 </style>
 """, unsafe_allow_html=True)
 
-df = pd.read_csv("beauty_expansion_data.csv")
+GOOGLE_SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/1TDEk0iVLmS4506y5W1m5OSZynvbGEpF_NhkQXqMwspM/edit?usp=share_link"
+
+@st.cache_data(ttl=600)
+def load_data(url):
+    return pd.read_csv(url)
+
+df = load_data(GOOGLE_SHEET_CSV_URL)
 df.columns = df.columns.str.strip()
 
 if "City" not in df.columns:
