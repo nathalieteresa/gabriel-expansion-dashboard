@@ -284,40 +284,37 @@ def dark_layout(fig, height=500):
 # HERO HEADER
 # -----------------------------
 logo_html = ""
+
 if logo_path.exists():
     import base64
     with open("logo.png", "rb") as image_file:
         encoded = base64.b64encode(image_file.read()).decode()
-    logo_html = f'''
-<img src="data:image/png;base64,{encoded}"
-style="
-width:95px;
-height:95px;
-object-fit:contain;
-filter: drop-shadow(0px 4px 10px rgba(0,0,0,0.08));
-">
-'''
-    
-st.markdown(
-    f"""
-    <div class="hero-clean">
-        <div class="hero-clean-inner">
-            <div class="hero-logo">
-                {logo_html}
+
+    logo_html = f"""
+    <img src="data:image/png;base64,{encoded}"
+    style="width:95px;height:95px;object-fit:contain;
+    filter:drop-shadow(0px 4px 10px rgba(0,0,0,0.08));">
+    """
+
+st.markdown(f"""
+<div class="hero-clean">
+    <div class="hero-clean-inner">
+        <div class="hero-logo">
+            {logo_html}
+        </div>
+
+        <div>
+            <div class="hero-clean-title">
+                STRATEGIC EXPANSION INTELLIGENCE PLATFORM
             </div>
-            <div>
-                <div class="hero-clean-title">
-                    STRATEGIC EXPANSION INTELLIGENCE PLATFORM
-                </div>
-                <div class="hero-clean-subtitle">
-                    Market prioritization, ROI scenarios, and expansion recommendations.
-                </div>
+
+            <div class="hero-clean-subtitle">
+                Market prioritization, ROI scenarios, and expansion recommendations.
             </div>
         </div>
     </div>
-    """,
-    unsafe_allow_html=True
-)
+</div>
+""", unsafe_allow_html=True)
 
 # -----------------------------
 # TOP KPIs
