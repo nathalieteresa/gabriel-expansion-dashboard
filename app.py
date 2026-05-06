@@ -53,7 +53,7 @@ st.markdown(f"""
         font-weight: 500;
     }}
 
-    div[data-testid="stMetric"] {
+    div[data-testid="stMetric"] {{
         background: rgba(255,255,255,0.92);
         border: 1px solid #E5D6AF;
         border-radius: 22px;
