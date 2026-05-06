@@ -49,34 +49,46 @@ st.markdown(f"""
         color: #F7F3EA !important;
     }}
 
-    .hero {{
-        background: linear-gradient(135deg, #080808 0%, #1E1A12 55%, #C6A052 140%);
-        border: 1px solid #D6B35F;
-        border-radius: 26px;
-        padding: 2rem 2.3rem;
-        margin-bottom: 1.5rem;
-        box-shadow: 0 16px 40px rgba(0,0,0,0.18);
-    }}
+    .hero {
+    background: linear-gradient(
+        135deg,
+        #FFFFFF 0%,
+        #F8F4EA 35%,
+        #EFE2BD 100%
+    );
 
-    .hero-inner {{
-        display: flex;
-        align-items: center;
-        gap: 1.6rem;
-    }}
+    border: 1px solid #E3D0A0;
+    border-radius: 28px;
+    padding: 2rem 2.5rem;
+    margin-bottom: 1.8rem;
 
-    .hero-title {{
-        color: #FFFFFF;
-        font-size: 2.15rem;
-        font-weight: 850;
-        letter-spacing: -0.5px;
-        margin-bottom: 0.35rem;
-    }}
+    box-shadow:
+        0 10px 35px rgba(0,0,0,0.06);
 
-    .hero-subtitle {{
-        color: #E8D28A;
-        font-size: 1rem;
-        line-height: 1.5;
-    }}
+}
+
+.hero-inner {
+    display: flex;
+    align-items: center;
+    gap: 1.8rem;
+}
+
+.hero-title {
+    color: #111111;
+
+    font-size: 2.4rem;
+    font-weight: 850;
+
+    letter-spacing: -1px;
+    margin-bottom: 0.35rem;
+}
+
+.hero-subtitle {
+    color: #7B6A3D;
+
+    font-size: 1.05rem;
+    line-height: 1.5;
+}
 
     div[data-testid="stMetric"] {{
         background: rgba(255,255,255,0.92);
@@ -283,8 +295,16 @@ if logo_path.exists():
     import base64
     with open("logo.png", "rb") as image_file:
         encoded = base64.b64encode(image_file.read()).decode()
-    logo_html = f'<img src="data:image/png;base64,{encoded}" style="width:88px; height:88px; object-fit:contain;">'
-
+    logo_html = f'''
+<img src="data:image/png;base64,{encoded}"
+style="
+width:95px;
+height:95px;
+object-fit:contain;
+filter: drop-shadow(0px 4px 10px rgba(0,0,0,0.08));
+">
+'''
+    
 st.markdown(f"""
 <div class="hero">
     <div class="hero-inner">
