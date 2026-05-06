@@ -3,119 +3,172 @@ import pandas as pd
 import plotly.express as px
 from pathlib import Path
 
+# -----------------------------
+# PAGE CONFIG
+# -----------------------------
 st.set_page_config(
     page_title="Strategic Expansion Intelligence",
     layout="wide",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="collapsed"
 )
 
 # -----------------------------
-# CSS DARK LUXURY THEME
+# COLORS
 # -----------------------------
-st.markdown("""
+GOLD = "#C6A052"
+GOLD_LIGHT = "#E8D28A"
+BLACK = "#050505"
+CHARCOAL = "#151515"
+CARD = "#1B1B1D"
+WHITE = "#F7F3EA"
+MUTED = "#B8B1A3"
+
+# -----------------------------
+# CSS
+# -----------------------------
+st.markdown(f"""
 <style>
-    .stApp {
-        background-color: #0B0B0D;
-        color: #F5F2EA;
-    }
+    .stApp {{
+        background-color: {BLACK};
+        color: {WHITE};
+    }}
 
-    section[data-testid="stSidebar"] {
-        background-color: #080809;
-        border-right: 1px solid #2A2418;
-    }
-
-    section[data-testid="stSidebar"] * {
-        color: #E8D28A !important;
-    }
-
-    .main .block-container {
+    .block-container {{
         padding-top: 2rem;
-        padding-left: 2.5rem;
-        padding-right: 2.5rem;
-    }
+        padding-left: 3rem;
+        padding-right: 3rem;
+        max-width: 1450px;
+    }}
 
-    .hero {
-        background: linear-gradient(135deg, #111111 0%, #1A1A1A 100%);
-        border: 1px solid #3B321F;
-        padding: 2rem 2.2rem;
-        border-radius: 24px;
-        margin-bottom: 1.5rem;
-        box-shadow: 0 10px 35px rgba(0,0,0,0.45);
-    }
+    section[data-testid="stSidebar"] {{
+        background-color: #080808;
+        border-right: 1px solid #2C2415;
+    }}
 
-    .hero-title {
-        color: #F6E6A8;
-        font-size: 2.4rem;
+    section[data-testid="stSidebar"] * {{
+        color: {WHITE};
+    }}
+
+    .hero {{
+        background: linear-gradient(135deg, #141414 0%, #23201A 100%);
+        border: 1px solid {GOLD};
+        border-radius: 22px;
+        padding: 1.8rem 2rem;
+        margin-bottom: 1.4rem;
+        box-shadow: 0 12px 35px rgba(0,0,0,0.45);
+    }}
+
+    .hero-inner {{
+        display: flex;
+        align-items: center;
+        gap: 1.5rem;
+    }}
+
+    .hero-title {{
+        color: {WHITE};
+        font-size: 2.1rem;
         font-weight: 800;
-        margin-bottom: 0.4rem;
-    }
+        letter-spacing: -0.5px;
+        margin-bottom: 0.25rem;
+    }}
 
-    .hero-subtitle {
-        color: #D8D1BF;
+    .hero-subtitle {{
+        color: {GOLD_LIGHT};
         font-size: 1rem;
-        max-width: 900px;
-        line-height: 1.6;
-    }
+        line-height: 1.5;
+    }}
 
-    .metric-card {
-        background-color: #171719;
-        border: 1px solid #3B321F;
-        padding: 1.2rem;
-        border-radius: 20px;
-        box-shadow: 0 8px 28px rgba(0,0,0,0.35);
-    }
-
-    div[data-testid="stMetric"] {
-        background-color: #171719;
-        border: 1px solid #3B321F;
-        padding: 1rem;
+    .logo-box {{
+        width: 92px;
+        height: 92px;
         border-radius: 18px;
-        box-shadow: 0 8px 28px rgba(0,0,0,0.35);
-    }
+        background-color: {GOLD};
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }}
 
-    div[data-testid="stMetricLabel"] {
-        color: #C8B56E !important;
-        font-weight: 600;
-    }
+    .section-title {{
+        color: {GOLD_LIGHT};
+        font-size: 1.3rem;
+        font-weight: 750;
+        margin-top: 0.5rem;
+        margin-bottom: 0.2rem;
+    }}
 
-    div[data-testid="stMetricValue"] {
-        color: #FFFFFF !important;
-        font-size: 1.7rem;
-        font-weight: 800;
-    }
-
-    .stTabs [data-baseweb="tab-list"] {
-        gap: 10px;
-    }
-
-    .stTabs [data-baseweb="tab"] {
-        background-color: #171719;
-        border: 1px solid #3B321F;
-        border-radius: 14px;
-        color: #E8D28A;
-        padding: 10px 18px;
-    }
-
-    .stTabs [aria-selected="true"] {
-        background-color: #E8D28A !important;
-        color: #090909 !important;
-        font-weight: 700;
-    }
-
-    h1, h2, h3 {
-        color: #F6E6A8 !important;
-    }
-
-    .section-note {
-        color: #BFB8A6;
+    .section-note {{
+        color: {MUTED};
         font-size: 0.95rem;
         margin-bottom: 1rem;
-    }
+    }}
 
-    .stDataFrame {
-        background-color: #111111;
+    div[data-testid="stMetric"] {{
+        background-color: {CARD};
+        border: 1px solid #3A301F;
         border-radius: 18px;
-    }
+        padding: 1rem;
+        box-shadow: 0 8px 28px rgba(0,0,0,0.32);
+    }}
+
+    div[data-testid="stMetricLabel"] {{
+        color: {GOLD_LIGHT} !important;
+        font-weight: 650;
+    }}
+
+    div[data-testid="stMetricValue"] {{
+        color: {WHITE} !important;
+        font-weight: 800;
+    }}
+
+    .stTabs [data-baseweb="tab-list"] {{
+        gap: 10px;
+        margin-bottom: 1rem;
+    }}
+
+    .stTabs [data-baseweb="tab"] {{
+        background-color: #0D0D0D;
+        border: 1px solid #4A3A1E;
+        border-radius: 14px;
+        color: {WHITE};
+        padding: 10px 18px;
+        font-weight: 650;
+    }}
+
+    .stTabs [aria-selected="true"] {{
+        background-color: {GOLD} !important;
+        color: #050505 !important;
+        border: 1px solid {GOLD_LIGHT};
+    }}
+
+    h1, h2, h3 {{
+        color: {GOLD_LIGHT} !important;
+    }}
+
+    .insight-card {{
+        background-color: {CARD};
+        border: 1px solid #3A301F;
+        border-radius: 20px;
+        padding: 1.2rem;
+        min-height: 150px;
+        box-shadow: 0 8px 28px rgba(0,0,0,0.3);
+    }}
+
+    .insight-title {{
+        color: {GOLD_LIGHT};
+        font-size: 1rem;
+        font-weight: 750;
+        margin-bottom: 0.5rem;
+    }}
+
+    .insight-body {{
+        color: {WHITE};
+        font-size: 0.95rem;
+        line-height: 1.5;
+    }}
+
+    .dataframe {{
+        background-color: {CARD};
+    }}
 </style>
 """, unsafe_allow_html=True)
 
@@ -126,18 +179,34 @@ df = pd.read_csv("beauty_expansion_data.csv")
 df.columns = df.columns.str.strip()
 
 if "City" not in df.columns:
-    st.error("The CSV must include a column named 'City'. Please check the file.")
+    st.error("Your CSV must include a column named 'City'.")
     st.stop()
 
 df = df.dropna(subset=["City"])
 
+required_cols = [
+    "Estimated_Monthly_Rent",
+    "Estimated_Monthly_Revenue",
+    "Estimated_Monthly_Cost",
+    "Premium_Fit_Score",
+    "Beauty_Expansion_Score",
+    "Beauty_Demand_Signal",
+    "Competitive_Pressure",
+    "Population"
+]
+
+missing_cols = [col for col in required_cols if col not in df.columns]
+if missing_cols:
+    st.error(f"Missing columns in CSV: {missing_cols}")
+    st.stop()
+
 # -----------------------------
-# SIDEBAR
+# SIDEBAR CONTROLS
 # -----------------------------
 logo_path = Path("logo.png")
 
 if logo_path.exists():
-    st.sidebar.image("logo.png", width=120)
+    st.sidebar.image("logo.png", width=140)
 
 st.sidebar.markdown("## Scenario Controls")
 st.sidebar.markdown("Adjust assumptions to test expansion scenarios.")
@@ -153,7 +222,7 @@ ticket_change = st.sidebar.slider("Revenue / Average Ticket Change (%)", -30, 50
 customer_change = st.sidebar.slider("Customer Volume Change (%)", -30, 50, 0, 5)
 
 # -----------------------------
-# FILTER
+# FILTER DATA
 # -----------------------------
 filtered = df[df["City"].isin(selected_cities)].copy()
 
@@ -172,7 +241,10 @@ filtered["Scenario_Revenue"] = (
     * (1 + customer_change / 100)
 )
 
-filtered["Non_Rent_Cost"] = filtered["Estimated_Monthly_Cost"] - filtered["Estimated_Monthly_Rent"]
+filtered["Non_Rent_Cost"] = (
+    filtered["Estimated_Monthly_Cost"] - filtered["Estimated_Monthly_Rent"]
+)
+
 filtered["Scenario_Cost"] = filtered["Non_Rent_Cost"] + filtered["Scenario_Rent"]
 filtered["Scenario_Profit"] = filtered["Scenario_Revenue"] - filtered["Scenario_Cost"]
 filtered["Scenario_ROI"] = filtered["Scenario_Profit"] / filtered["Scenario_Cost"]
@@ -197,148 +269,226 @@ filtered["Final_Scenario_Score"] = (
 filtered = filtered.sort_values("Final_Scenario_Score", ascending=False)
 
 # -----------------------------
-# HERO
+# PLOTLY THEME HELPER
 # -----------------------------
-st.markdown("""
+def dark_layout(fig, height=500):
+    fig.update_layout(
+        paper_bgcolor=CHARCOAL,
+        plot_bgcolor=CHARCOAL,
+        font=dict(color=WHITE),
+        height=height,
+        margin=dict(l=40, r=30, t=60, b=40),
+        legend=dict(
+            bgcolor="rgba(0,0,0,0)",
+            font=dict(color=WHITE)
+        )
+    )
+    fig.update_xaxes(gridcolor="#2A2A2A", zerolinecolor="#333333")
+    fig.update_yaxes(gridcolor="#2A2A2A", zerolinecolor="#333333")
+    return fig
+
+# -----------------------------
+# HERO HEADER
+# -----------------------------
+logo_html = ""
+if logo_path.exists():
+    import base64
+    with open("logo.png", "rb") as image_file:
+        encoded = base64.b64encode(image_file.read()).decode()
+    logo_html = f'<img src="data:image/png;base64,{encoded}" style="width:88px; height:88px; object-fit:contain;">'
+
+st.markdown(f"""
 <div class="hero">
-    <div class="hero-title">Strategic Expansion Intelligence Platform</div>
-    <div class="hero-subtitle">
-        Executive dashboard for beauty franchise expansion, market prioritization,
-        ROI scenario simulation, and strategic recommendations.
+    <div class="hero-inner">
+        <div>{logo_html}</div>
+        <div>
+            <div class="hero-title">STRATEGIC EXPANSION INTELLIGENCE PLATFORM</div>
+            <div class="hero-subtitle">
+                Market prioritization, ROI scenarios, and expansion recommendations.
+            </div>
+        </div>
     </div>
 </div>
 """, unsafe_allow_html=True)
 
 # -----------------------------
-# KPIs
+# TOP KPIs
 # -----------------------------
 top_market = filtered.iloc[0]["City"]
 avg_roi = filtered["Scenario_ROI"].mean()
 total_profit = filtered["Scenario_Profit"].sum()
 priority_count = (filtered["Recommendation"] == "Priority Expansion").sum()
 
-col1, col2, col3, col4 = st.columns(4)
-
-col1.metric("Top Market", top_market)
-col2.metric("Average ROI", f"{avg_roi:.1%}")
-col3.metric("Scenario Profit", f"${total_profit:,.0f}")
-col4.metric("Priority Markets", priority_count)
+k1, k2, k3, k4 = st.columns(4)
+k1.metric("Top Market", top_market)
+k2.metric("Average ROI", f"{avg_roi:.1%}")
+k3.metric("Scenario Profit", f"${total_profit:,.0f}")
+k4.metric("Priority Markets", priority_count)
 
 st.markdown("<br>", unsafe_allow_html=True)
 
 # -----------------------------
 # TABS
 # -----------------------------
-tab1, tab2, tab3, tab4, tab5 = st.tabs([
-    "Dashboard",
-    "Financials",
+tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
+    "Overview",
+    "Market Ranking",
+    "Financial Scenario",
     "Market Positioning",
-    "Recommendations",
-    "Executive Summary"
+    "Recommendation Engine",
+    "Data Quality & Assumptions"
 ])
 
 # -----------------------------
-# TAB 1
+# TAB 1: OVERVIEW
 # -----------------------------
 with tab1:
-    st.subheader("Market Expansion Ranking")
-    st.markdown('<p class="section-note">Markets ranked by scenario-adjusted expansion score.</p>', unsafe_allow_html=True)
+    left, right = st.columns([1, 2])
 
-    fig = px.bar(
-        filtered,
-        x="City",
-        y="Final_Scenario_Score",
-        color="Recommendation",
-        text="Final_Scenario_Score",
-        color_discrete_sequence=["#E8D28A", "#B89A45", "#6F5B2E", "#3A3A3A"]
-    )
-    fig.update_layout(
-        paper_bgcolor="#111111",
-        plot_bgcolor="#111111",
-        font_color="#F5F2EA",
-        height=520
-    )
-    fig.update_traces(texttemplate="%{text:.1f}", textposition="outside")
-    st.plotly_chart(fig, use_container_width=True)
+    with left:
+        st.markdown('<div class="section-title">Executive Snapshot</div>', unsafe_allow_html=True)
+        st.markdown('<div class="section-note">High-level view of the strongest expansion opportunities.</div>', unsafe_allow_html=True)
+
+        top = filtered.iloc[0]
+        second = filtered.iloc[1] if len(filtered) > 1 else top
+
+        st.markdown(f"""
+        <div class="insight-card">
+            <div class="insight-title">Top Recommended Market</div>
+            <div class="insight-body">
+                <b>{top["City"]}</b> currently ranks highest under the selected scenario.
+                <br><br>
+                Recommendation: <b>{top["Recommendation"]}</b>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+
+        st.markdown("<br>", unsafe_allow_html=True)
+
+        st.markdown(f"""
+        <div class="insight-card">
+            <div class="insight-title">Second Strongest Market</div>
+            <div class="insight-body">
+                <b>{second["City"]}</b> is the next strongest market based on scenario-adjusted score.
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+
+    with right:
+        st.markdown('<div class="section-title">Expansion Score by Market</div>', unsafe_allow_html=True)
+
+        fig = px.bar(
+            filtered,
+            x="City",
+            y="Final_Scenario_Score",
+            color="Recommendation",
+            text="Final_Scenario_Score",
+            color_discrete_sequence=[GOLD_LIGHT, GOLD, "#7D6838", "#3E3E3E"]
+        )
+        fig.update_traces(texttemplate="%{text:.1f}", textposition="outside")
+        st.plotly_chart(dark_layout(fig, 520), use_container_width=True)
 
 # -----------------------------
-# TAB 2
+# TAB 2: MARKET RANKING
 # -----------------------------
 with tab2:
-    st.subheader("Revenue vs Cost")
+    st.markdown('<div class="section-title">Executive Market Ranking Table</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-note">Consolidated ranking based on demand, premium fit, competition, ROI, and final recommendation.</div>', unsafe_allow_html=True)
 
-    revenue_cost = filtered.melt(
-        id_vars="City",
-        value_vars=["Scenario_Revenue", "Scenario_Cost"],
-        var_name="Metric",
-        value_name="Amount"
-    )
+    ranking_cols = [
+        "City",
+        "Beauty_Demand_Signal",
+        "Premium_Fit_Score",
+        "Competitive_Pressure",
+        "Beauty_Expansion_Score",
+        "Scenario_ROI",
+        "Scenario_Profit",
+        "Final_Scenario_Score",
+        "Recommendation"
+    ]
 
-    fig2 = px.bar(
-        revenue_cost,
-        x="City",
-        y="Amount",
-        color="Metric",
-        barmode="group",
-        color_discrete_sequence=["#E8D28A", "#8C6F2F"]
-    )
-    fig2.update_layout(
-        paper_bgcolor="#111111",
-        plot_bgcolor="#111111",
-        font_color="#F5F2EA",
-        height=520
-    )
-    st.plotly_chart(fig2, use_container_width=True)
-
-    st.subheader("Scenario ROI")
-
-    fig3 = px.bar(
-        filtered,
-        x="City",
-        y="Scenario_ROI",
-        color="Recommendation",
-        text="Scenario_ROI",
-        color_discrete_sequence=["#E8D28A", "#B89A45", "#6F5B2E", "#3A3A3A"]
-    )
-    fig3.update_layout(
-        paper_bgcolor="#111111",
-        plot_bgcolor="#111111",
-        font_color="#F5F2EA",
-        height=480
-    )
-    fig3.update_traces(texttemplate="%{text:.1%}", textposition="outside")
-    st.plotly_chart(fig3, use_container_width=True)
+    st.dataframe(filtered[ranking_cols], use_container_width=True, height=420)
 
 # -----------------------------
-# TAB 3
+# TAB 3: FINANCIAL SCENARIO
 # -----------------------------
 with tab3:
-    st.subheader("Demand vs Premium Fit")
+    colA, colB = st.columns(2)
 
-    fig4 = px.scatter(
-        filtered,
-        x="Beauty_Demand_Signal",
-        y="Premium_Fit_Score",
-        size="Population",
-        color="Recommendation",
-        hover_name="City",
-        color_discrete_sequence=["#E8D28A", "#B89A45", "#6F5B2E", "#3A3A3A"]
-    )
-    fig4.update_layout(
-        paper_bgcolor="#111111",
-        plot_bgcolor="#111111",
-        font_color="#F5F2EA",
-        height=560
-    )
-    st.plotly_chart(fig4, use_container_width=True)
+    with colA:
+        st.markdown('<div class="section-title">Revenue vs Cost</div>', unsafe_allow_html=True)
+
+        revenue_cost = filtered.melt(
+            id_vars="City",
+            value_vars=["Scenario_Revenue", "Scenario_Cost"],
+            var_name="Metric",
+            value_name="Amount"
+        )
+
+        fig2 = px.bar(
+            revenue_cost,
+            x="City",
+            y="Amount",
+            color="Metric",
+            barmode="group",
+            color_discrete_sequence=[GOLD_LIGHT, "#8C6F2F"]
+        )
+        st.plotly_chart(dark_layout(fig2, 500), use_container_width=True)
+
+    with colB:
+        st.markdown('<div class="section-title">Scenario ROI</div>', unsafe_allow_html=True)
+
+        fig3 = px.bar(
+            filtered,
+            x="City",
+            y="Scenario_ROI",
+            color="Recommendation",
+            text="Scenario_ROI",
+            color_discrete_sequence=[GOLD_LIGHT, GOLD, "#7D6838", "#3E3E3E"]
+        )
+        fig3.update_traces(texttemplate="%{text:.1%}", textposition="outside")
+        st.plotly_chart(dark_layout(fig3, 500), use_container_width=True)
 
 # -----------------------------
-# TAB 4
+# TAB 4: MARKET POSITIONING
 # -----------------------------
 with tab4:
-    st.subheader("Recommendation Engine")
+    colA, colB = st.columns(2)
 
-    cols = [
+    with colA:
+        st.markdown('<div class="section-title">Demand vs Premium Fit</div>', unsafe_allow_html=True)
+
+        fig4 = px.scatter(
+            filtered,
+            x="Beauty_Demand_Signal",
+            y="Premium_Fit_Score",
+            size="Population",
+            color="Recommendation",
+            hover_name="City",
+            color_discrete_sequence=[GOLD_LIGHT, GOLD, "#7D6838", "#3E3E3E"]
+        )
+        st.plotly_chart(dark_layout(fig4, 520), use_container_width=True)
+
+    with colB:
+        st.markdown('<div class="section-title">Competitive Pressure</div>', unsafe_allow_html=True)
+
+        fig5 = px.bar(
+            filtered,
+            x="City",
+            y="Competitive_Pressure",
+            color="Recommendation",
+            color_discrete_sequence=[GOLD_LIGHT, GOLD, "#7D6838", "#3E3E3E"]
+        )
+        st.plotly_chart(dark_layout(fig5, 520), use_container_width=True)
+
+# -----------------------------
+# TAB 5: RECOMMENDATION ENGINE
+# -----------------------------
+with tab5:
+    st.markdown('<div class="section-title">AI-Assisted Recommendation Engine</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-note">Rules-based recommendation logic based on profit, ROI, and premium fit.</div>', unsafe_allow_html=True)
+
+    rec_cols = [
         "City",
         "Scenario_Revenue",
         "Scenario_Cost",
@@ -349,27 +499,59 @@ with tab4:
         "Recommendation"
     ]
 
-    st.dataframe(filtered[cols], use_container_width=True)
+    st.dataframe(filtered[rec_cols], use_container_width=True, height=360)
 
     st.markdown("""
-    ### Logic
-    - **Priority Expansion:** positive profit and ROI ≥ 15%.
+    ### Recommendation Logic
+
+    - **Priority Expansion:** positive profit and ROI equal to or above 15%.
     - **Validate Further:** positive profit but ROI below 15%.
     - **Premium Strategy:** strong premium fit but negative profit.
     - **High Risk:** weak financial viability under current assumptions.
     """)
 
 # -----------------------------
-# TAB 5
+# TAB 6: DATA QUALITY & ASSUMPTIONS
 # -----------------------------
-with tab5:
+with tab6:
+    st.markdown('<div class="section-title">Data Quality & Assumptions</div>', unsafe_allow_html=True)
+
+    c1, c2, c3 = st.columns(3)
+
+    with c1:
+        st.markdown(f"""
+        <div class="insight-card">
+            <div class="insight-title">Current Data Sources</div>
+            <div class="insight-body">
+                Census demographic data, competitive market data, rent assumptions, and operating assumptions.
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+
+    with c2:
+        st.markdown(f"""
+        <div class="insight-card">
+            <div class="insight-title">Current Limitations</div>
+            <div class="insight-body">
+                Market-level data should be validated with ZIP-level, trade-area, lease, and internal performance data.
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+
+    with c3:
+        st.markdown(f"""
+        <div class="insight-card">
+            <div class="insight-title">Next Improvement</div>
+            <div class="insight-body">
+                Connect the dashboard to Google Sheets or external data sources for continuous updates.
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+
     top = filtered.iloc[0]
 
-    st.subheader("Auto-Generated Executive Summary")
-
+    st.markdown("### Auto-Generated Executive Summary")
     st.markdown(f"""
-    ### Key Recommendation
-
     **Top recommended market:** {top["City"]}
 
     Under the selected scenario, **{top["City"]}** ranks as the strongest expansion opportunity with a final scenario score of **{top["Final_Scenario_Score"]:.1f}**.
@@ -380,6 +562,4 @@ with tab5:
     - Customer volume change: **{customer_change}%**
 
     **Model recommendation:** **{top["Recommendation"]}**
-
-    This market shows the strongest balance between demand potential, premium fit, competitive positioning, and financial viability.
     """)
