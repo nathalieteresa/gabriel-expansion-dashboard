@@ -49,45 +49,45 @@ st.markdown(f"""
         color: #F7F3EA !important;
     }}
 
-    .hero {{
-    background: linear-gradient(
-        135deg,
-        #FFFFFF 0%,
-        #F8F4EA 35%,
-        #EFE2BD 100%
-    );
+  .hero-clean {{
+    padding-top: 0.5rem;
+    padding-bottom: 1.2rem;
 
-    border: 1px solid #E3D0A0;
-    border-radius: 28px;
-    padding: 2rem 2.5rem;
-    margin-bottom: 1.8rem;
+    background:
+        radial-gradient(circle at top right, rgba(198,160,82,0.18), transparent 35%),
+        linear-gradient(
+            135deg,
+            #FFFFFF 0%,
+            #FAF7F0 45%,
+            #EFE2BD 100%
+        );
 
-    box-shadow:
-        0 10px 35px rgba(0,0,0,0.06);
-
+    margin-bottom: 1.5rem;
 }}
 
-.hero-inner {{
+.hero-clean-inner {{
     display: flex;
     align-items: center;
-    gap: 1.8rem;
+    gap: 1.5rem;
 }}
 
-.hero-title {{
+.hero-clean-title {{
+    font-size: 2.5rem;
+    font-weight: 900;
     color: #111111;
-
-    font-size: 2.4rem;
-    font-weight: 850;
-
     letter-spacing: -1px;
-    margin-bottom: 0.35rem;
+    line-height: 1.1;
 }}
 
-.hero-subtitle {{
-    color: #7B6A3D;
-
+.hero-clean-subtitle {{
+    margin-top: 0.4rem;
     font-size: 1.05rem;
-    line-height: 1.5;
+    color: #7A6330;
+    font-weight: 500;
+}}
+
+.hero-logo img {{
+    width: 90px !important;
 }}
 
     div[data-testid="stMetric"] {{
@@ -306,15 +306,23 @@ filter: drop-shadow(0px 4px 10px rgba(0,0,0,0.08));
 '''
     
 st.markdown(f"""
-<div class="hero">
-    <div class="hero-inner">
-        <div>{logo_html}</div>
+<div class="hero-clean">
+    <div class="hero-clean-inner">
+
+        <div class="hero-logo">
+            {logo_html}
+        </div>
+
         <div>
-            <div class="hero-title">STRATEGIC EXPANSION INTELLIGENCE PLATFORM</div>
-            <div class="hero-subtitle">
+            <div class="hero-clean-title">
+                STRATEGIC EXPANSION INTELLIGENCE PLATFORM
+            </div>
+
+            <div class="hero-clean-subtitle">
                 Market prioritization, ROI scenarios, and expansion recommendations.
             </div>
         </div>
+
     </div>
 </div>
 """, unsafe_allow_html=True)
