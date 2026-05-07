@@ -190,6 +190,9 @@ def load_data(url):
 df = load_data(GOOGLE_SHEET_CSV_URL)
 competitors_df = load_data(COMPETITORS_CSV_URL)
 competitors_df.columns = competitors_df.columns.str.strip()
+competitors_df["city"] = competitors_df["city"].astype(str).str.strip()
+competitors_df["totalScore"] = pd.to_numeric(competitors_df["totalScore"], errors="coerce")
+competitors_df["reviewsCount"] = pd.to_numeric(competitors_df["reviewsCount"], errors="coerce").fillna(0)
 df.columns = df.columns.str.strip()
 
 if "City" not in df.columns:
@@ -389,11 +392,12 @@ k7.metric("Total Reviews", f"{int(total_reviews):,}")
 
 st.markdown("<br>", unsafe_allow_html=True)
 
-tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
+tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs([
     "Overview",
     "Market Ranking",
     "Financial Scenario",
     "Market Positioning",
+    "Competitive Intelligence",
     "Recommendation Engine",
     "Data Quality & Assumptions"
 ])
@@ -531,6 +535,91 @@ with tab4:
         st.plotly_chart(chart_layout(fig5, 520), use_container_width=True)
 
 with tab5:
+    st.markdown('<div class="section-title">Competitive Intelligence</div>', unsafe_allow_html=True)
+    st.markdown(
+        '<div class="section-note">External market intelligence based on competitor listings, ratings, and review volume.</div>',
+        unsafe_allow_html=True
+    )
+
+    if city_competitors.empty:
+        st.warning(f"No competitor data found for {selected_city}.")
+    else:
+        top_competitors = city_competitors.sort_values("reviewsCount", ascending=False).head(10)
+
+        c1, c2 = st.columns([1, 1])
+
+        with c1:
+            st.markdown('<div class="section-title">Top Competitors by Reviews</div>', unsafe_allow_html=True)
+
+            fig_comp = px.bar(
+                top_competitors,
+                x="reviewsCount",
+                y="title",
+                orientation="h",
+                color="totalScore",
+                color_continuous_scale=["#EFE2BD", "#C6A052", "#7D6838"],
+                text="reviewsCount"
+            )
+
+            fig_comp.update_layout(
+                yaxis=dict(autorange="reversed"),
+                coloraxis_showscale=False
+            )
+
+            st.plotly_chart(chart_layout(fig_comp, 520), use_container_width=True)
+
+        with c2:
+            st.markdown('<div class="section-title">Rating Distribution</div>', unsafe_allow_html=True)
+
+            fig_rating = px.histogram(
+                city_competitors,
+                x="totalScore",
+                nbins=10,
+                color_discrete_sequence=[GOLD]
+            )
+
+            st.plotly_chart(chart_layout(fig_rating, 520), use_container_width=True)
+
+        st.markdown('<div class="section-title">Market Insight</div>', unsafe_allow_html=True)
+
+        st.markdown(f"""
+        <div class="insight-card">
+            <div class="insight-title">{selected_city} Competitive Landscape</div>
+            <div class="insight-body">
+                {selected_city} currently shows <b>{competitor_count:,}</b> identified competitors,
+                an average rating of <b>{avg_rating:.2f}</b>, and a total review volume of
+                <b>{int(total_reviews):,}</b>.
+                <br><br>
+                High review volume suggests strong customer activity and beauty-service demand,
+                while a large competitor base may indicate higher market saturation.
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+
+        st.markdown("<br>", unsafe_allow_html=True)
+
+        st.markdown('<div class="section-title">Competitor Detail Table</div>', unsafe_allow_html=True)
+
+        competitor_cols = [
+            "title",
+            "totalScore",
+            "reviewsCount",
+            "street",
+            "city",
+            "state",
+            "categoryName",
+            "website",
+            "url"
+        ]
+
+        available_cols = [col for col in competitor_cols if col in city_competitors.columns]
+
+        st.dataframe(
+            city_competitors[available_cols].sort_values("reviewsCount", ascending=False),
+            use_container_width=True,
+            height=420
+        )
+with tab6:
     st.markdown('<div class="section-title">AI-Assisted Recommendation Engine</div>', unsafe_allow_html=True)
     st.markdown('<div class="section-note">Rules-based recommendation logic based on profit, ROI, and premium fit.</div>', unsafe_allow_html=True)
 
@@ -556,7 +645,7 @@ with tab5:
     - **High Risk:** weak financial viability under current assumptions.
     """)
 
-with tab6:
+with tab7:
     st.markdown('<div class="section-title">Data Quality & Assumptions</div>', unsafe_allow_html=True)
 
     c1, c2, c3 = st.columns(3)
