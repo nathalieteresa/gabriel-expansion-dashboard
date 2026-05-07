@@ -338,6 +338,82 @@ filtered["Final_Scenario_Score"] = (
 
 filtered = filtered.sort_values("Final_Scenario_Score", ascending=False)
 
+# -----------------------------
+# OPPORTUNITY SCORING ENGINE
+# -----------------------------
+def normalize_score(value, min_value, max_value):
+    if pd.isna(value) or max_value == min_value:
+        return 0
+    score = ((value - min_value) / (max_value - min_value)) * 100
+    return max(0, min(100, score))
+
+
+population_value = filtered.iloc[0]["Population"]
+income_value = filtered.iloc[0]["Median_Income"]
+roi_value = filtered.iloc[0]["Scenario_ROI"]
+manual_demand_value = filtered.iloc[0]["Beauty_Demand_Signal"]
+premium_fit_value = filtered.iloc[0]["Premium_Fit_Score"]
+
+population_score = normalize_score(
+    population_value,
+    df["Population"].min(),
+    df["Population"].max()
+)
+
+income_score = normalize_score(
+    income_value,
+    df["Median_Income"].min(),
+    df["Median_Income"].max()
+)
+
+roi_score = max(0, min(100, roi_value * 100))
+
+review_score = normalize_score(
+    total_reviews,
+    0,
+    competitors_df.groupby(competitors_df["city"].str.lower())["reviewsCount"].sum().max()
+)
+
+saturation_score = normalize_score(
+    competitor_count,
+    0,
+    competitors_df.groupby(competitors_df["city"].str.lower()).size().max()
+)
+
+market_attractiveness_score = (
+    population_score * 0.35
+    + income_score * 0.35
+    + manual_demand_value * 0.30
+)
+
+financial_viability_score = (
+    roi_score * 0.60
+    + premium_fit_value * 0.40
+)
+
+competitive_market_score = (
+    review_score * 0.60
+    + avg_rating * 20 * 0.40
+)
+
+final_opportunity_score = (
+    market_attractiveness_score * 0.35
+    + financial_viability_score * 0.35
+    + competitive_market_score * 0.20
+    - saturation_score * 0.10
+)
+
+final_opportunity_score = max(0, min(100, final_opportunity_score))
+
+if final_opportunity_score >= 80:
+    opportunity_recommendation = "High-Priority Expansion Opportunity"
+elif final_opportunity_score >= 65:
+    opportunity_recommendation = "Strong Opportunity — Validate with Local Real Estate"
+elif final_opportunity_score >= 50:
+    opportunity_recommendation = "Moderate Opportunity — Requires Further Validation"
+else:
+    opportunity_recommendation = "Lower Priority Under Current Assumptions"
+
 def chart_layout(fig, height=500):
     fig.update_layout(
         paper_bgcolor="rgba(255,255,255,0.92)",
