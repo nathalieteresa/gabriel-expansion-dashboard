@@ -457,7 +457,7 @@ median_income = filtered.iloc[0]["Median_Income"]
 avg_roi = filtered["Scenario_ROI"].mean()
 total_profit = filtered["Scenario_Profit"].sum()
 
-k1, k2, k3, k4, k5, k6, k7 = st.columns(7)
+k1, k2, k3, k4, k5, k6, k7, k8 = st.columns(8)
 k1.metric("Selected Market", top_market)
 k2.metric("Population", f"{population:,.0f}" if pd.notna(population) else "Not found")
 k3.metric("Median Income", f"${median_income:,.0f}" if pd.notna(median_income) else "Not found")
@@ -465,15 +465,17 @@ k4.metric("Scenario ROI", f"{avg_roi:.1%}")
 k5.metric("Avg Rating", f"{avg_rating:.2f}")
 k6.metric("Competitors", f"{competitor_count:,}")
 k7.metric("Total Reviews", f"{int(total_reviews):,}")
+k8.metric("Opportunity Score", f"{final_opportunity_score:.1f}")
 
 st.markdown("<br>", unsafe_allow_html=True)
 
-tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs([
+tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8 = st.tabs([
     "Overview",
     "Market Ranking",
     "Financial Scenario",
     "Market Positioning",
     "Competitive Intelligence",
+    "Opportunity Scoring",
     "Recommendation Engine",
     "Data Quality & Assumptions"
 ])
@@ -695,7 +697,59 @@ with tab5:
             use_container_width=True,
             height=420
         )
+
 with tab6:
+    st.markdown('<div class="section-title">Opportunity Scoring Engine</div>', unsafe_allow_html=True)
+    st.markdown(
+        '<div class="section-note">Composite scoring model combining demographics, financial viability, customer activity, and competitive saturation.</div>',
+        unsafe_allow_html=True
+    )
+
+    score_data = pd.DataFrame({
+        "Score Component": [
+            "Market Attractiveness",
+            "Financial Viability",
+            "Competitive Market Signal",
+            "Competitive Saturation Penalty",
+            "Final Opportunity Score"
+        ],
+        "Score": [
+            market_attractiveness_score,
+            financial_viability_score,
+            competitive_market_score,
+            saturation_score,
+            final_opportunity_score
+        ]
+    })
+
+    fig_score = px.bar(
+        score_data,
+        x="Score Component",
+        y="Score",
+        text="Score",
+        color="Score Component",
+        color_discrete_sequence=[GOLD_LIGHT, GOLD, "#A9843C", "#D8C28A", "#7D6838"]
+    )
+    fig_score.update_traces(texttemplate="%{text:.1f}", textposition="outside")
+    fig_score.update_layout(showlegend=False)
+
+    st.plotly_chart(chart_layout(fig_score, 520), use_container_width=True)
+
+    st.markdown(f"""
+    <div class="insight-card">
+        <div class="insight-title">{selected_city} Opportunity Recommendation</div>
+        <div class="insight-body">
+            <b>Final Opportunity Score:</b> {final_opportunity_score:.1f}/100
+            <br><br>
+            <b>Recommendation:</b> {opportunity_recommendation}
+            <br><br>
+            This score combines Census demographics, income strength, financial scenario performance,
+            competitor review volume, average rating, and competitive saturation.
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+    
+with tab7:
     st.markdown('<div class="section-title">AI-Assisted Recommendation Engine</div>', unsafe_allow_html=True)
     st.markdown('<div class="section-note">Rules-based recommendation logic based on profit, ROI, and premium fit.</div>', unsafe_allow_html=True)
 
@@ -721,7 +775,7 @@ with tab6:
     - **High Risk:** weak financial viability under current assumptions.
     """)
 
-with tab7:
+with tab8:
     st.markdown('<div class="section-title">Data Quality & Assumptions</div>', unsafe_allow_html=True)
 
     c1, c2, c3 = st.columns(3)
