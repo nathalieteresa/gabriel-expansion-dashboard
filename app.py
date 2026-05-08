@@ -4,6 +4,13 @@ import plotly.express as px
 from pathlib import Path
 import requests
 
+from io import BytesIO
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, HRFlowable
+from reportlab.lib import colors
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib.pagesizes import letter
+from reportlab.lib.enums import TA_CENTER
+
 st.set_page_config(
     page_title="Strategic Expansion Intelligence",
     layout="wide",
@@ -521,6 +528,147 @@ def chart_layout(fig, height=500):
     fig.update_yaxes(gridcolor="#EEE6D3", zerolinecolor="#D8C896")
     return fig
 
+def generate_executive_pdf():
+    buffer = BytesIO()
+
+    doc = SimpleDocTemplate(
+        buffer,
+        pagesize=letter,
+        rightMargin=40,
+        leftMargin=40,
+        topMargin=40,
+        bottomMargin=35
+    )
+
+    styles = getSampleStyleSheet()
+
+    title_style = ParagraphStyle(
+        "TitleStyle",
+        parent=styles["Heading1"],
+        fontSize=22,
+        leading=28,
+        textColor=colors.HexColor("#8A6A24"),
+        alignment=TA_CENTER,
+        spaceAfter=10
+    )
+
+    subtitle_style = ParagraphStyle(
+        "SubtitleStyle",
+        parent=styles["BodyText"],
+        fontSize=10,
+        textColor=colors.HexColor("#6F5725"),
+        alignment=TA_CENTER,
+        spaceAfter=18
+    )
+
+    section_style = ParagraphStyle(
+        "SectionStyle",
+        parent=styles["Heading2"],
+        fontSize=14,
+        leading=18,
+        textColor=colors.HexColor("#8A6A24"),
+        spaceBefore=16,
+        spaceAfter=8
+    )
+
+    body_style = ParagraphStyle(
+        "BodyStyle",
+        parent=styles["BodyText"],
+        fontSize=10,
+        leading=15,
+        textColor=colors.HexColor("#222222")
+    )
+
+    elements = []
+
+    elements.append(Paragraph("Strategic Expansion Intelligence Report", title_style))
+    elements.append(Paragraph(f"{selected_city} Market Analysis & Expansion Recommendation", subtitle_style))
+
+    elements.append(HRFlowable(
+        width="100%",
+        thickness=1,
+        color=colors.HexColor("#C6A052")
+    ))
+
+    elements.append(Spacer(1, 16))
+
+    kpi_data = [
+        ["Metric", "Value"],
+        ["Selected Market", selected_city],
+        ["Population", f"{population:,.0f}" if pd.notna(population) else "Not found"],
+        ["Median Income", f"${median_income:,.0f}" if pd.notna(median_income) else "Not found"],
+        ["Scenario ROI", f"{avg_roi:.1%}"],
+        ["Average Competitor Rating", f"{avg_rating:.2f}" if pd.notna(avg_rating) else "Not found"],
+        ["Competitor Count", f"{competitor_count:,}"],
+        ["Total Reviews", f"{int(total_reviews):,}"],
+        ["Opportunity Score", f"{final_opportunity_score:.1f}/100"],
+        ["Recommendation", opportunity_recommendation],
+    ]
+
+    table = Table(kpi_data, colWidths=[210, 300])
+
+    table.setStyle(TableStyle([
+        ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#C6A052")),
+        ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+        ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+        ("FONTSIZE", (0, 0), (-1, 0), 11),
+        ("BACKGROUND", (0, 1), (-1, -1), colors.HexColor("#FAF7F0")),
+        ("GRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#D8C28A")),
+        ("FONTNAME", (0, 1), (-1, -1), "Helvetica"),
+        ("FONTSIZE", (0, 1), (-1, -1), 9),
+        ("TOPPADDING", (0, 0), (-1, -1), 7),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 7),
+    ]))
+
+    elements.append(table)
+
+    elements.append(Spacer(1, 18))
+
+    elements.append(Paragraph("Executive Summary", section_style))
+
+    summary_text = f"""
+    Under the selected scenario assumptions, <b>{selected_city}</b> demonstrates an opportunity score of
+    <b>{final_opportunity_score:.1f}/100</b>. The market presents a population of
+    <b>{population:,.0f}</b> and a median household income of <b>${median_income:,.0f}</b>.
+    Competitive analysis identified <b>{competitor_count:,}</b> competitors, with a combined review volume of
+    <b>{int(total_reviews):,}</b> and an average customer rating of <b>{avg_rating:.2f}</b>.
+    Based on demographic attractiveness, financial viability, and competitive market signals, the current recommendation is:
+    <b>{opportunity_recommendation}</b>.
+    """
+
+    elements.append(Paragraph(summary_text, body_style))
+
+    elements.append(Paragraph("Scenario Assumptions", section_style))
+
+    assumptions = f"""
+    Rent adjustment: <b>{rent_change}%</b><br/>
+    Revenue / ticket adjustment: <b>{ticket_change}%</b><br/>
+    Customer volume adjustment: <b>{customer_change}%</b>
+    """
+
+    elements.append(Paragraph(assumptions, body_style))
+
+    elements.append(Paragraph("Recommended Next Actions", section_style))
+
+    next_actions = """
+    1. Validate lease economics and available locations in the selected trade area.<br/>
+    2. Compare top competitors by service offering, pricing, reviews, and digital presence.<br/>
+    3. Refine revenue assumptions using average ticket, expected customer volume, and service mix.<br/>
+    4. Move from city-level analysis to ZIP-code or neighborhood-level validation before final site selection.
+    """
+
+    elements.append(Paragraph(next_actions, body_style))
+
+    elements.append(Spacer(1, 18))
+
+    footer = '<font size="8" color="#777777">Generated by Strategic Expansion Intelligence Platform</font>'
+    elements.append(Paragraph(footer, body_style))
+
+    doc.build(elements)
+    buffer.seek(0)
+
+    return buffer
+
 # -----------------------------
 # CLEAN HEADER — NO RECTANGLE
 # -----------------------------
@@ -1034,6 +1182,17 @@ with tab8:
         </div>
     </div>
     """, unsafe_allow_html=True)
+
+st.markdown("<br>", unsafe_allow_html=True)
+
+pdf_file = generate_executive_pdf()
+
+st.download_button(
+    label="Download Executive PDF Report",
+    data=pdf_file,
+    file_name=f"{selected_city.lower().replace(' ', '_')}_executive_report.pdf",
+    mime="application/pdf"
+)
     
 with tab9:
     st.markdown('<div class="section-title">AI-Assisted Recommendation Engine</div>', unsafe_allow_html=True)
