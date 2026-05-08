@@ -560,7 +560,7 @@ k8.metric("Opportunity Score", f"{final_opportunity_score:.1f}")
 
 st.markdown("<br>", unsafe_allow_html=True)
 
-tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9 = st.tabs([
+tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9, tab10 = st.tabs([
     "Overview",
     "Market Ranking",
     "Financial Scenario",
@@ -568,6 +568,7 @@ tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9 = st.tabs([
     "Competitive Intelligence",
     "Opportunity Scoring",
     "All Markets Comparison",
+    "Executive Narrative",
     "Recommendation Engine",
     "Data Quality & Assumptions"
 ])
@@ -933,6 +934,108 @@ with tab7:
     )
     
 with tab8:
+    st.markdown('<div class="section-title">Executive Narrative</div>', unsafe_allow_html=True)
+    st.markdown(
+        '<div class="section-note">Auto-generated strategic interpretation based on demographics, financial scenario, competitor intelligence, and opportunity scoring.</div>',
+        unsafe_allow_html=True
+    )
+
+    selected_market = filtered.iloc[0]
+
+    if final_opportunity_score >= 80:
+        strategic_tone = "high-priority expansion candidate"
+    elif final_opportunity_score >= 65:
+        strategic_tone = "strong expansion candidate that should be validated further"
+    elif final_opportunity_score >= 50:
+        strategic_tone = "moderate opportunity requiring additional due diligence"
+    else:
+        strategic_tone = "lower-priority market under the current assumptions"
+
+    if competitor_count >= 100:
+        competition_interpretation = "The market shows elevated competitive saturation, which indicates strong category activity but also requires clear differentiation."
+    elif competitor_count >= 40:
+        competition_interpretation = "The market shows moderate competitive intensity, suggesting room for expansion if positioning and site selection are strong."
+    else:
+        competition_interpretation = "The market shows relatively limited visible competition, which may indicate whitespace opportunity or the need to validate demand more deeply."
+
+    if total_reviews >= 10000:
+        review_interpretation = "High review volume suggests strong customer engagement and active beauty-service demand."
+    elif total_reviews >= 3000:
+        review_interpretation = "Moderate review volume suggests meaningful customer activity, though additional local validation is recommended."
+    else:
+        review_interpretation = "Lower review volume suggests that demand should be validated through neighborhood-level research, search trends, and local customer data."
+
+    if avg_roi >= 0.15:
+        financial_interpretation = "The current scenario shows attractive financial viability, with ROI meeting or exceeding the priority threshold."
+    elif avg_roi > 0:
+        financial_interpretation = "The current scenario shows positive financial potential, but ROI remains below the priority threshold."
+    else:
+        financial_interpretation = "The current scenario shows financial pressure, meaning pricing, cost structure, location size, or customer volume assumptions may need adjustment."
+
+    st.markdown(f"""
+    <div class="insight-card">
+        <div class="insight-title">Executive Summary</div>
+        <div class="insight-body">
+            <b>{selected_city}</b> is currently assessed as a <b>{strategic_tone}</b>, with a final opportunity score of
+            <b>{final_opportunity_score:.1f}/100</b>.
+            <br><br>
+            The market combines demographic indicators, financial scenario performance, and external competitor intelligence to support expansion decision-making.
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    st.markdown("<br>", unsafe_allow_html=True)
+
+    n1, n2 = st.columns(2)
+
+    with n1:
+        st.markdown(f"""
+        <div class="insight-card">
+            <div class="insight-title">Market Strengths</div>
+            <div class="insight-body">
+                Population: <b>{population:,.0f}</b><br>
+                Median income: <b>${median_income:,.0f}</b><br>
+                Average competitor rating: <b>{avg_rating:.2f}</b><br>
+                Total review volume: <b>{int(total_reviews):,}</b>
+                <br><br>
+                {review_interpretation}
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+
+    with n2:
+        st.markdown(f"""
+        <div class="insight-card">
+            <div class="insight-title">Risk Interpretation</div>
+            <div class="insight-body">
+                Identified competitors: <b>{competitor_count:,}</b><br>
+                Scenario ROI: <b>{avg_roi:.1%}</b><br>
+                Scenario profit: <b>${total_profit:,.0f}</b>
+                <br><br>
+                {competition_interpretation}
+                <br><br>
+                {financial_interpretation}
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+
+    st.markdown("<br>", unsafe_allow_html=True)
+
+    st.markdown(f"""
+    <div class="insight-card">
+        <div class="insight-title">Recommended Next Actions</div>
+        <div class="insight-body">
+            1. Validate lease economics and real estate availability in the selected trade area.<br>
+            2. Compare top competitors by service offering, pricing, reviews, and digital presence.<br>
+            3. Refine revenue assumptions using average ticket, expected customer volume, and service mix.<br>
+            4. Use ZIP-code or neighborhood-level analysis before making a final site-selection decision.
+            <br><br>
+            <b>Leadership takeaway:</b> {selected_city} should be evaluated as <b>{opportunity_recommendation}</b>.
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+    
+with tab9:
     st.markdown('<div class="section-title">AI-Assisted Recommendation Engine</div>', unsafe_allow_html=True)
     st.markdown('<div class="section-note">Rules-based recommendation logic based on profit, ROI, and premium fit.</div>', unsafe_allow_html=True)
 
@@ -958,7 +1061,7 @@ with tab8:
     - **High Risk:** weak financial viability under current assumptions.
     """)
 
-with tab9:
+with tab10:
     st.markdown('<div class="section-title">Data Quality & Assumptions</div>', unsafe_allow_html=True)
 
     c1, c2, c3 = st.columns(3)
