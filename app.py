@@ -1182,17 +1182,17 @@ with tab8:
         </div>
     </div>
     """, unsafe_allow_html=True)
+    st.markdown("<br>", unsafe_allow_html=True)
 
-st.markdown("<br>", unsafe_allow_html=True)
+    pdf_file = generate_executive_pdf()
 
-pdf_file = generate_executive_pdf()
+    st.download_button(
+        label="Download Executive PDF Report",
+        data=pdf_file,
+        file_name=f"{selected_city.lower().replace(' ', '_')}_executive_report.pdf",
+        mime="application/pdf"
+    )
 
-st.download_button(
-    label="Download Executive PDF Report",
-    data=pdf_file,
-    file_name=f"{selected_city.lower().replace(' ', '_')}_executive_report.pdf",
-    mime="application/pdf"
-)
     
 with tab9:
     st.markdown('<div class="section-title">AI-Assisted Recommendation Engine</div>', unsafe_allow_html=True)
