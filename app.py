@@ -414,6 +414,97 @@ elif final_opportunity_score >= 50:
 else:
     opportunity_recommendation = "Lower Priority Under Current Assumptions"
 
+# -----------------------------
+# ALL MARKETS COMPARISON ENGINE
+# -----------------------------
+competitor_summary = competitors_df.copy()
+competitor_summary["city_key"] = competitor_summary["city"].str.lower()
+
+market_competitors = competitor_summary.groupby("city_key").agg(
+    Competitor_Count=("title", "count"),
+    Avg_Rating=("totalScore", "mean"),
+    Total_Reviews=("reviewsCount", "sum")
+).reset_index()
+
+comparison_df = df.copy()
+comparison_df["city_key"] = comparison_df["City"].str.lower()
+
+comparison_df = comparison_df.merge(
+    market_competitors,
+    on="city_key",
+    how="left"
+)
+
+comparison_df["Competitor_Count"] = comparison_df["Competitor_Count"].fillna(0)
+comparison_df["Avg_Rating"] = comparison_df["Avg_Rating"].fillna(0)
+comparison_df["Total_Reviews"] = comparison_df["Total_Reviews"].fillna(0)
+
+comparison_df["Scenario_Rent"] = comparison_df["Estimated_Monthly_Rent"] * (1 + rent_change / 100)
+
+comparison_df["Scenario_Revenue"] = (
+    comparison_df["Estimated_Monthly_Revenue"]
+    * (1 + ticket_change / 100)
+    * (1 + customer_change / 100)
+)
+
+comparison_df["Non_Rent_Cost"] = (
+    comparison_df["Estimated_Monthly_Cost"] - comparison_df["Estimated_Monthly_Rent"]
+)
+
+comparison_df["Scenario_Cost"] = comparison_df["Non_Rent_Cost"] + comparison_df["Scenario_Rent"]
+comparison_df["Scenario_Profit"] = comparison_df["Scenario_Revenue"] - comparison_df["Scenario_Cost"]
+comparison_df["Scenario_ROI"] = comparison_df["Scenario_Profit"] / comparison_df["Scenario_Cost"]
+
+def safe_normalize(series):
+    min_value = series.min()
+    max_value = series.max()
+    if pd.isna(min_value) or pd.isna(max_value) or max_value == min_value:
+        return pd.Series([0] * len(series), index=series.index)
+    return ((series - min_value) / (max_value - min_value) * 100).clip(0, 100)
+
+comparison_df["Population_Score"] = safe_normalize(comparison_df["Population"])
+comparison_df["Income_Score"] = safe_normalize(comparison_df["Median_Income"])
+comparison_df["Review_Score"] = safe_normalize(comparison_df["Total_Reviews"])
+comparison_df["Saturation_Score"] = safe_normalize(comparison_df["Competitor_Count"])
+comparison_df["ROI_Score"] = (comparison_df["Scenario_ROI"] * 100).clip(0, 100)
+
+comparison_df["Market_Attractiveness_Score"] = (
+    comparison_df["Population_Score"] * 0.35
+    + comparison_df["Income_Score"] * 0.35
+    + comparison_df["Beauty_Demand_Signal"] * 0.30
+)
+
+comparison_df["Financial_Viability_Score"] = (
+    comparison_df["ROI_Score"] * 0.60
+    + comparison_df["Premium_Fit_Score"] * 0.40
+)
+
+comparison_df["Competitive_Market_Signal"] = (
+    comparison_df["Review_Score"] * 0.60
+    + comparison_df["Avg_Rating"].fillna(0) * 20 * 0.40
+)
+
+comparison_df["Final_Opportunity_Score"] = (
+    comparison_df["Market_Attractiveness_Score"] * 0.35
+    + comparison_df["Financial_Viability_Score"] * 0.35
+    + comparison_df["Competitive_Market_Signal"] * 0.20
+    - comparison_df["Saturation_Score"] * 0.10
+).clip(0, 100)
+
+def opportunity_label(score):
+    if score >= 80:
+        return "High Priority"
+    elif score >= 65:
+        return "Strong Opportunity"
+    elif score >= 50:
+        return "Validate Further"
+    else:
+        return "Lower Priority"
+
+comparison_df["Opportunity_Label"] = comparison_df["Final_Opportunity_Score"].apply(opportunity_label)
+
+comparison_df = comparison_df.sort_values("Final_Opportunity_Score", ascending=False)
+
 def chart_layout(fig, height=500):
     fig.update_layout(
         paper_bgcolor="rgba(255,255,255,0.92)",
@@ -469,13 +560,14 @@ k8.metric("Opportunity Score", f"{final_opportunity_score:.1f}")
 
 st.markdown("<br>", unsafe_allow_html=True)
 
-tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8 = st.tabs([
+tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9 = st.tabs([
     "Overview",
     "Market Ranking",
     "Financial Scenario",
     "Market Positioning",
     "Competitive Intelligence",
     "Opportunity Scoring",
+    "All Markets Comparison",
     "Recommendation Engine",
     "Data Quality & Assumptions"
 ])
@@ -750,6 +842,97 @@ with tab6:
     """, unsafe_allow_html=True)
     
 with tab7:
+    st.markdown('<div class="section-title">All Markets Comparison</div>', unsafe_allow_html=True)
+    st.markdown(
+        '<div class="section-note">Compares all markets using the same opportunity scoring logic under the selected scenario assumptions.</div>',
+        unsafe_allow_html=True
+    )
+
+    best_market = comparison_df.iloc[0]
+
+    c1, c2, c3 = st.columns(3)
+
+    with c1:
+        st.markdown(f"""
+        <div class="insight-card">
+            <div class="insight-title">Best Ranked Market</div>
+            <div class="insight-body">
+                <b>{best_market["City"]}</b>
+                <br><br>
+                Opportunity Score: <b>{best_market["Final_Opportunity_Score"]:.1f}/100</b>
+                <br>
+                Recommendation: <b>{best_market["Opportunity_Label"]}</b>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+
+    with c2:
+        top_3 = ", ".join(comparison_df.head(3)["City"].tolist())
+        st.markdown(f"""
+        <div class="insight-card">
+            <div class="insight-title">Top 3 Markets</div>
+            <div class="insight-body">
+                {top_3}
+                <br><br>
+                These markets currently show the strongest combined demographic, financial, and competitive signals.
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+
+    with c3:
+        st.markdown(f"""
+        <div class="insight-card">
+            <div class="insight-title">Scenario Applied</div>
+            <div class="insight-body">
+                Rent change: <b>{rent_change}%</b>
+                <br>
+                Revenue / ticket change: <b>{ticket_change}%</b>
+                <br>
+                Customer volume change: <b>{customer_change}%</b>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+
+    st.markdown("<br>", unsafe_allow_html=True)
+
+    fig_all = px.bar(
+        comparison_df,
+        x="City",
+        y="Final_Opportunity_Score",
+        color="Opportunity_Label",
+        text="Final_Opportunity_Score",
+        color_discrete_sequence=[GOLD_LIGHT, GOLD, "#A9843C", "#D8C28A"]
+    )
+    fig_all.update_traces(texttemplate="%{text:.1f}", textposition="outside")
+
+    st.plotly_chart(chart_layout(fig_all, 560), use_container_width=True)
+
+    st.markdown('<div class="section-title">Market Comparison Table</div>', unsafe_allow_html=True)
+
+    comparison_cols = [
+        "City",
+        "Population",
+        "Median_Income",
+        "Competitor_Count",
+        "Avg_Rating",
+        "Total_Reviews",
+        "Scenario_ROI",
+        "Scenario_Profit",
+        "Market_Attractiveness_Score",
+        "Financial_Viability_Score",
+        "Competitive_Market_Signal",
+        "Saturation_Score",
+        "Final_Opportunity_Score",
+        "Opportunity_Label"
+    ]
+
+    st.dataframe(
+        comparison_df[comparison_cols],
+        use_container_width=True,
+        height=480
+    )
+    
+with tab8:
     st.markdown('<div class="section-title">AI-Assisted Recommendation Engine</div>', unsafe_allow_html=True)
     st.markdown('<div class="section-note">Rules-based recommendation logic based on profit, ROI, and premium fit.</div>', unsafe_allow_html=True)
 
@@ -775,7 +958,7 @@ with tab7:
     - **High Risk:** weak financial viability under current assumptions.
     """)
 
-with tab8:
+with tab9:
     st.markdown('<div class="section-title">Data Quality & Assumptions</div>', unsafe_allow_html=True)
 
     c1, c2, c3 = st.columns(3)
