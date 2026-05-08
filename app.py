@@ -668,7 +668,7 @@ def generate_executive_pdf():
 # CHARTS
 # --------------------------
 
-elements.append(Paragraph("Opportunity Score Breakdown", section_style))
+    elements.append(Paragraph("Opportunity Score Breakdown", section_style))
 
     score_chart = px.bar(
         score_data,
