@@ -238,6 +238,24 @@ STATE_FIPS = {
     "IL": "17"
 }
 
+# -----------------------------
+# CITY COORDINATES
+# -----------------------------
+CITY_COORDS = {
+    "Miami": (25.7617, -80.1918),
+    "Orlando": (28.5383, -81.3792),
+    "Tampa": (27.9506, -82.4572),
+    "Dallas": (32.7767, -96.7970),
+    "Houston": (29.7604, -95.3698),
+    "Atlanta": (33.7490, -84.3880),
+    "Charlotte": (35.2271, -80.8431),
+    "Nashville": (36.1627, -86.7816),
+    "Phoenix": (33.4484, -112.0740),
+    "Los Angeles": (34.0522, -118.2437),
+    "New York": (40.7128, -74.0060),
+    "Chicago": (41.8781, -87.6298)
+}
+
 @st.cache_data(ttl=86400)
 def get_census_place_data(year=2023):
     url = f"https://api.census.gov/data/{year}/acs/acs5"
@@ -553,6 +571,16 @@ comparison_df["Opportunity_Label"] = comparison_df["Final_Opportunity_Score"].ap
 
 comparison_df = comparison_df.sort_values("Final_Opportunity_Score", ascending=False)
 
+comparison_df["Latitude"] = comparison_df["City"].map(
+    lambda x: CITY_COORDS.get(x, (None, None))[0]
+)
+
+comparison_df["Longitude"] = comparison_df["City"].map(
+    lambda x: CITY_COORDS.get(x, (None, None))[1]
+)
+
+map_df = comparison_df.dropna(subset=["Latitude", "Longitude"]).copy()
+
 def chart_layout(fig, height=500):
     fig.update_layout(
         paper_bgcolor="rgba(255,255,255,0.92)",
@@ -833,7 +861,7 @@ k9.metric("Decision Status", decision_readiness)
 
 st.markdown("<br>", unsafe_allow_html=True)
 
-tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9, tab10 = st.tabs([
+tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9, tab10, tab11 = st.tabs([
     "Overview",
     "Market Ranking",
     "Financial Scenario",
@@ -843,6 +871,7 @@ tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9, tab10 = st.tabs([
     "All Markets Comparison",
     "Executive Narrative",
     "Recommendation Engine",
+    "Geo Intelligence",
     "Data Quality & Assumptions"
 ])
 
@@ -1367,6 +1396,71 @@ with tab9:
     """)
 
 with tab10:
+
+    st.markdown(
+        '<div class="section-title">Geo Intelligence Layer</div>',
+        unsafe_allow_html=True
+    )
+
+    st.markdown(
+        '<div class="section-note">Interactive geographic visualization of expansion opportunities, competitive intensity, and market prioritization.</div>',
+        unsafe_allow_html=True
+    )
+
+    geo_fig = px.scatter_mapbox(
+        map_df,
+        lat="Latitude",
+        lon="Longitude",
+        size="Final_Opportunity_Score",
+        color="Opportunity_Label",
+        hover_name="City",
+        hover_data={
+            "Population": ":,.0f",
+            "Median_Income": ":,.0f",
+            "Scenario_ROI": ":.1%",
+            "Competitor_Count": True,
+            "Final_Opportunity_Score": ":.1f"
+        },
+        zoom=3.2,
+        height=650,
+        size_max=35,
+        color_discrete_sequence=[
+            "#C6A052",
+            "#E8D28A",
+            "#A9843C",
+            "#7D6838"
+        ]
+    )
+
+    geo_fig.update_layout(
+        mapbox_style="carto-positron",
+        paper_bgcolor="rgba(255,255,255,0.92)",
+        plot_bgcolor="rgba(255,255,255,0.92)",
+        margin=dict(l=0, r=0, t=0, b=0),
+        legend=dict(
+            bgcolor="rgba(255,255,255,0.75)"
+        )
+    )
+
+    st.plotly_chart(geo_fig, use_container_width=True)
+
+    st.markdown("<br>", unsafe_allow_html=True)
+
+    top_geo = comparison_df.iloc[0]
+
+    st.markdown(f"""
+    <div class="insight-card">
+        <div class="insight-title">Geographic Expansion Insight</div>
+        <div class="insight-body">
+            <b>{top_geo["City"]}</b> currently represents the strongest geographic expansion opportunity
+            based on combined demographic attractiveness, financial viability, and competitive market signals.
+            <br><br>
+            Markets with larger bubbles indicate higher overall expansion attractiveness under the selected scenario assumptions.
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+with tab11:
     st.markdown('<div class="section-title">Data Quality & Assumptions</div>', unsafe_allow_html=True)
 
     c1, c2, c3 = st.columns(3)
