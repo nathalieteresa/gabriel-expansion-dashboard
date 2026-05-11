@@ -1011,33 +1011,78 @@ with tab3:
         st.plotly_chart(chart_layout(fig3, 500), use_container_width=True)
 
 with tab4:
+
     colA, colB = st.columns(2)
 
     with colA:
-        st.markdown('<div class="section-title">Demand vs Premium Fit</div>', unsafe_allow_html=True)
+
+        st.markdown(
+            '<div class="section-title">Market Attractiveness Matrix</div>',
+            unsafe_allow_html=True
+        )
 
         fig4 = px.scatter(
-            filtered,
-            x="Beauty_Demand_Signal",
-            y="Premium_Fit_Score",
-            size="Population",
-            color="Recommendation",
+            comparison_df,
+            x="Median_Income",
+            y="Population",
+            size="Final_Opportunity_Score",
+            color="Opportunity_Label",
             hover_name="City",
-            color_discrete_sequence=[GOLD_LIGHT, GOLD, "#7D6838", "#3E3E3E"]
+            hover_data={
+                "Scenario_ROI": ":.1%",
+                "Competitor_Count": True,
+                "Total_Reviews": True
+            },
+            color_discrete_sequence=[
+                GOLD_LIGHT,
+                GOLD,
+                "#A9843C",
+                "#7D6838"
+            ]
         )
-        st.plotly_chart(chart_layout(fig4, 520), use_container_width=True)
+
+        fig4.update_layout(
+            xaxis_title="Median Household Income",
+            yaxis_title="Population"
+        )
+
+        st.plotly_chart(
+            chart_layout(fig4, 520),
+            use_container_width=True
+        )
 
     with colB:
-        st.markdown('<div class="section-title">Competitive Pressure</div>', unsafe_allow_html=True)
+
+        st.markdown(
+            '<div class="section-title">Competitive Saturation</div>',
+            unsafe_allow_html=True
+        )
 
         fig5 = px.bar(
-            filtered,
+            comparison_df.sort_values(
+                "Competitor_Count",
+                ascending=False
+            ),
             x="City",
-            y="Competitive_Pressure",
-            color="Recommendation",
-            color_discrete_sequence=[GOLD_LIGHT, GOLD, "#7D6838", "#3E3E3E"]
+            y="Competitor_Count",
+            color="Opportunity_Label",
+            text="Competitor_Count",
+            color_discrete_sequence=[
+                GOLD_LIGHT,
+                GOLD,
+                "#A9843C",
+                "#7D6838"
+            ]
         )
-        st.plotly_chart(chart_layout(fig5, 520), use_container_width=True)
+
+        fig5.update_traces(
+            textposition="outside"
+        )
+
+        st.plotly_chart(
+            chart_layout(fig5, 520),
+            use_container_width=True
+        )
 
 with tab5:
     st.markdown('<div class="section-title">Competitive Intelligence</div>', unsafe_allow_html=True)
