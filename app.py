@@ -341,6 +341,55 @@ filtered["Scenario_Cost"] = filtered["Non_Rent_Cost"] + filtered["Scenario_Rent"
 filtered["Scenario_Profit"] = filtered["Scenario_Revenue"] - filtered["Scenario_Cost"]
 filtered["Scenario_ROI"] = filtered["Scenario_Profit"] / filtered["Scenario_Cost"]
 
+# -----------------------------
+# AUTO SCORES FOR SELECTED MARKET
+# -----------------------------
+def normalize_selected(value, series):
+    min_value = series.min()
+    max_value = series.max()
+    if pd.isna(value) or pd.isna(min_value) or pd.isna(max_value) or max_value == min_value:
+        return 0
+    return max(0, min(100, ((value - min_value) / (max_value - min_value)) * 100))
+
+selected_population_score = normalize_selected(
+    filtered.iloc[0]["Population"],
+    df["Population"]
+)
+
+selected_income_score = normalize_selected(
+    filtered.iloc[0]["Median_Income"],
+    df["Median_Income"]
+)
+
+selected_roi_score = max(0, min(100, filtered.iloc[0]["Scenario_ROI"] * 100))
+
+selected_review_score = normalize_selected(
+    total_reviews,
+    competitors_df.groupby(competitors_df["city"].str.lower())["reviewsCount"].sum()
+)
+
+selected_saturation_score = normalize_selected(
+    competitor_count,
+    competitors_df.groupby(competitors_df["city"].str.lower()).size()
+)
+
+filtered["Premium_Fit_Score"] = (
+    selected_income_score * 0.70
+    + selected_population_score * 0.30
+)
+
+filtered["Beauty_Demand_Signal"] = (
+    selected_review_score * 0.60
+    + (avg_rating * 20 if pd.notna(avg_rating) else 0) * 0.40
+)
+
+filtered["Competitive_Pressure"] = selected_saturation_score
+
+filtered["Beauty_Expansion_Score"] = (
+    filtered["Premium_Fit_Score"] * 0.35
+    + filtered["Beauty_Demand_Signal"] * 0.35
+    + selected_roi_score * 0.30
+)
 def recommendation(row):
     if row["Scenario_Profit"] > 0 and row["Scenario_ROI"] >= 0.15:
         return "Priority Expansion"
