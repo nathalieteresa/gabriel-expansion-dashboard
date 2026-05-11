@@ -534,6 +534,42 @@ comparison_df["Review_Score"] = safe_normalize(comparison_df["Total_Reviews"])
 comparison_df["Saturation_Score"] = safe_normalize(comparison_df["Competitor_Count"])
 comparison_df["ROI_Score"] = (comparison_df["Scenario_ROI"] * 100).clip(0, 100)
 
+# -----------------------------
+# AUTO-GENERATED STRATEGIC SCORES
+# -----------------------------
+
+# Population & income normalization
+comparison_df["Population_Score"] = safe_normalize(comparison_df["Population"])
+comparison_df["Income_Score"] = safe_normalize(comparison_df["Median_Income"])
+
+# Competitive signals
+comparison_df["Review_Score"] = safe_normalize(comparison_df["Total_Reviews"])
+comparison_df["Saturation_Score"] = safe_normalize(comparison_df["Competitor_Count"])
+
+# Premium fit
+comparison_df["Premium_Fit_Score"] = (
+    comparison_df["Income_Score"] * 0.70
+    + comparison_df["Population_Score"] * 0.30
+).clip(0, 100)
+
+# Beauty demand signal
+comparison_df["Beauty_Demand_Signal"] = (
+    comparison_df["Review_Score"] * 0.60
+    + (comparison_df["Avg_Rating"] * 20) * 0.40
+).clip(0, 100)
+
+# Competitive pressure
+comparison_df["Competitive_Pressure"] = (
+    comparison_df["Saturation_Score"]
+).clip(0, 100)
+
+# Strategic expansion score
+comparison_df["Beauty_Expansion_Score"] = (
+    comparison_df["Premium_Fit_Score"] * 0.35
+    + comparison_df["Beauty_Demand_Signal"] * 0.35
+    + comparison_df["ROI_Score"] * 0.30
+).clip(0, 100)
+
 comparison_df["Market_Attractiveness_Score"] = (
     comparison_df["Population_Score"] * 0.35
     + comparison_df["Income_Score"] * 0.35
