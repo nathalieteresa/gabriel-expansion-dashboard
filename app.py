@@ -1309,7 +1309,7 @@ with tab8:
     """, unsafe_allow_html=True)
     st.markdown("<br>", unsafe_allow_html=True)
 
-        st.markdown("<br>", unsafe_allow_html=True)
+    st.markdown("<br>", unsafe_allow_html=True)
 
     risk_list_html = "<br>".join([f"• {risk}" for risk in risk_flags]) if risk_flags else "No major risk flags detected."
 
