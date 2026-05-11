@@ -423,6 +423,46 @@ else:
     opportunity_recommendation = "Lower Priority Under Current Assumptions"
 
 # -----------------------------
+# DECISION READINESS ENGINE
+# -----------------------------
+data_completeness_score = 0
+
+if pd.notna(population_value):
+    data_completeness_score += 20
+if pd.notna(income_value):
+    data_completeness_score += 20
+if competitor_count > 0:
+    data_completeness_score += 20
+if total_reviews > 0:
+    data_completeness_score += 20
+if pd.notna(roi_value):
+    data_completeness_score += 20
+
+risk_flags = []
+
+if competitor_count >= 100:
+    risk_flags.append("High competitive saturation")
+
+if avg_roi < 0.15:
+    risk_flags.append("ROI below priority threshold")
+
+if pd.isna(population_value) or pd.isna(income_value):
+    risk_flags.append("Incomplete Census match")
+
+if total_reviews < 3000:
+    risk_flags.append("Limited review volume")
+
+if final_opportunity_score < 65:
+    risk_flags.append("Opportunity score requires validation")
+
+if data_completeness_score >= 80 and len(risk_flags) <= 1:
+    decision_readiness = "Leadership Ready"
+elif data_completeness_score >= 60:
+    decision_readiness = "Requires Validation"
+else:
+    decision_readiness = "Not Ready for Decision"
+    
+# -----------------------------
 # ALL MARKETS COMPARISON ENGINE
 # -----------------------------
 competitor_summary = competitors_df.copy()
@@ -780,7 +820,7 @@ median_income = filtered.iloc[0]["Median_Income"]
 avg_roi = filtered["Scenario_ROI"].mean()
 total_profit = filtered["Scenario_Profit"].sum()
 
-k1, k2, k3, k4, k5, k6, k7, k8 = st.columns(8)
+k1, k2, k3, k4, k5, k6, k7, k8, k9 = st.columns(9)
 k1.metric("Selected Market", top_market)
 k2.metric("Population", f"{population:,.0f}" if pd.notna(population) else "Not found")
 k3.metric("Median Income", f"${median_income:,.0f}" if pd.notna(median_income) else "Not found")
@@ -789,6 +829,7 @@ k5.metric("Avg Rating", f"{avg_rating:.2f}")
 k6.metric("Competitors", f"{competitor_count:,}")
 k7.metric("Total Reviews", f"{int(total_reviews):,}")
 k8.metric("Opportunity Score", f"{final_opportunity_score:.1f}")
+k9.metric("Decision Status", decision_readiness)
 
 st.markdown("<br>", unsafe_allow_html=True)
 
@@ -1267,6 +1308,27 @@ with tab8:
     </div>
     """, unsafe_allow_html=True)
     st.markdown("<br>", unsafe_allow_html=True)
+
+        st.markdown("<br>", unsafe_allow_html=True)
+
+    risk_list_html = "<br>".join([f"• {risk}" for risk in risk_flags]) if risk_flags else "No major risk flags detected."
+
+    st.markdown(f"""
+    <div class="insight-card">
+        <div class="insight-title">Decision Readiness Assessment</div>
+        <div class="insight-body">
+            <b>Status:</b> {decision_readiness}
+            <br><br>
+            <b>Data Completeness Score:</b> {data_completeness_score}/100
+            <br><br>
+            <b>Risk Flags:</b><br>
+            {risk_list_html}
+            <br><br>
+            <b>Interpretation:</b> This assessment indicates whether the current market analysis is ready for leadership discussion
+            or still requires further validation before making an expansion decision.
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
 
     pdf_file = generate_executive_pdf()
 
