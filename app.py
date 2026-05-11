@@ -214,11 +214,7 @@ required_cols = [
     "State",
     "Estimated_Monthly_Rent",
     "Estimated_Monthly_Revenue",
-    "Estimated_Monthly_Cost",
-    "Premium_Fit_Score",
-    "Beauty_Expansion_Score",
-    "Beauty_Demand_Signal",
-    "Competitive_Pressure"
+    "Estimated_Monthly_Cost"
 ]
 
 missing_cols = [col for col in required_cols if col not in df.columns]
