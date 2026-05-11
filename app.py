@@ -443,7 +443,7 @@ risk_flags = []
 if competitor_count >= 100:
     risk_flags.append("High competitive saturation")
 
-if avg_roi < 0.15:
+if roi_value < 0.15:
     risk_flags.append("ROI below priority threshold")
 
 if pd.isna(population_value) or pd.isna(income_value):
