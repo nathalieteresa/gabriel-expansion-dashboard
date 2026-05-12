@@ -301,12 +301,33 @@ def get_census_place_data(year=2022):
 
 
 def normalize_city_name(city):
-    city = str(city).strip()
-    return city.lower()
+    city = str(city).lower().strip()
+
+    city = city.replace(".", "")
+    city = city.replace("-", " ")
+    city = " ".join(city.split())
+
+    return city
 
 
 def extract_city_from_census_name(name):
-    return str(name).split(",")[0].lower().replace(" city", "").replace(" town", "").replace(" village", "").strip()
+    city = str(name).split(",")[0].lower()
+
+    replacements = [
+        " city",
+        " town",
+        " village",
+        " municipality",
+        " borough",
+        " census designated place"
+    ]
+
+    for r in replacements:
+        city = city.replace(r, "")
+
+    city = city.strip()
+
+    return city
 
 
 census_df = get_census_place_data()
@@ -320,6 +341,7 @@ df = df.merge(
     on=["City_Key", "State_FIPS"],
     how="left"
 )
+st.write(df[["City", "Population", "Median_Income"]].head(20))
 
 df = df.drop(columns=["City_Key", "State_FIPS"])
 
