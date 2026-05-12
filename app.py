@@ -265,28 +265,31 @@ def get_census_place_data(year=2022, state_fips_list=None):
     all_rows = []
 
     for state_fips in state_fips_list:
-        url = f"https://api.census.gov/data/{year}/acs/acs5"
+        url = (
+            f"https://api.census.gov/data/{year}/acs/acs5"
+            f"?get=NAME,B01003_001E,B19013_001E"
+            f"&for=place:*"
+            f"&in=state:{state_fips}"
+        )
 
-        params = {
-            "get": "NAME,B01003_001E,B19013_001E",
-            "for": "place:*",
-            "in": f"state:{state_fips}"
-        }
+        response = requests.get(url, timeout=30)
+
+        if response.status_code != 200:
+            st.error(f"Census API error {response.status_code}: {response.text[:300]}")
+            st.stop()
 
         try:
-            response = requests.get(url, params=params, timeout=30)
-            response.raise_for_status()
             data = response.json()
-
-            cols = data[0]
-            rows = data[1:]
-
-            temp_df = pd.DataFrame(rows, columns=cols)
-            all_rows.append(temp_df)
-
-        except Exception as e:
-            st.error(f"Census API failed: {e}")
+        except Exception:
+            st.error("Census API did not return JSON. Response preview:")
+            st.code(response.text[:500])
             st.stop()
+
+        cols = data[0]
+        rows = data[1:]
+
+        temp_df = pd.DataFrame(rows, columns=cols)
+        all_rows.append(temp_df)
 
     census_df = pd.concat(all_rows, ignore_index=True)
 
