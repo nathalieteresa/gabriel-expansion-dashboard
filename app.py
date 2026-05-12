@@ -361,6 +361,78 @@ def normalize_selected(value, series):
         return 0
     return max(0, min(100, ((value - min_value) / (max_value - min_value)) * 100))
 
+# -----------------------------
+# USER INPUTS
+# -----------------------------
+selected_city = st.selectbox(
+    "Select Market",
+    sorted(df["City"].unique())
+)
+
+rent_change = st.slider(
+    "Rent Change %",
+    -50,
+    100,
+    0
+)
+
+ticket_change = st.slider(
+    "Revenue / Ticket Change %",
+    -50,
+    100,
+    0
+)
+
+customer_change = st.slider(
+    "Customer Volume Change %",
+    -50,
+    100,
+    0
+)
+
+# -----------------------------
+# FILTERED DATA
+# -----------------------------
+filtered = df[df["City"] == selected_city].copy()
+
+city_competitors = competitors_df[
+    competitors_df["city"].str.lower() == selected_city.lower()
+].copy()
+
+competitor_count = len(city_competitors)
+avg_rating = city_competitors["totalScore"].mean()
+total_reviews = city_competitors["reviewsCount"].sum()
+
+filtered["Scenario_Rent"] = (
+    filtered["Estimated_Monthly_Rent"]
+    * (1 + rent_change / 100)
+)
+
+filtered["Scenario_Revenue"] = (
+    filtered["Estimated_Monthly_Revenue"]
+    * (1 + ticket_change / 100)
+    * (1 + customer_change / 100)
+)
+
+filtered["Non_Rent_Cost"] = (
+    filtered["Estimated_Monthly_Cost"]
+    - filtered["Estimated_Monthly_Rent"]
+)
+
+filtered["Scenario_Cost"] = (
+    filtered["Non_Rent_Cost"]
+    + filtered["Scenario_Rent"]
+)
+
+filtered["Scenario_Profit"] = (
+    filtered["Scenario_Revenue"]
+    - filtered["Scenario_Cost"]
+)
+
+filtered["Scenario_ROI"] = (
+    filtered["Scenario_Profit"]
+    / filtered["Scenario_Cost"]
+)
 selected_population_score = normalize_selected(
     filtered.iloc[0]["Population"],
     df["Population"]
