@@ -259,10 +259,10 @@ CITY_COORDS = {
 
 @st.cache_data(ttl=3600)
 def get_census_place_data(year=2022, state_fips_list=None):
-    all_rows = []
-
     if state_fips_list is None:
         state_fips_list = ["12"]
+
+    all_rows = []
 
     for state_fips in state_fips_list:
         url = f"https://api.census.gov/data/{year}/acs/acs5"
@@ -273,28 +273,26 @@ def get_census_place_data(year=2022, state_fips_list=None):
             "in": f"state:{state_fips}"
         }
 
-        response = requests.get(
-            url,
-            params=params,
-            timeout=30,
-            headers={"User-Agent": "Mozilla/5.0"}
-        )
-
-        if response.status_code != 200:
-            st.error(f"Census API error for state {state_fips}: {response.status_code}")
-            st.stop()
-
         try:
+            response = requests.get(
+                url,
+                params=params,
+                timeout=30,
+                headers={"User-Agent": "Mozilla/5.0"}
+            )
+
+            response.raise_for_status()
             data = response.json()
-        except Exception:
-            st.error("Census API did not return valid JSON. Try clearing Streamlit cache and rerunning.")
+
+            cols = data[0]
+            rows = data[1:]
+
+            temp_df = pd.DataFrame(rows, columns=cols)
+            all_rows.append(temp_df)
+
+        except Exception as e:
+            st.error(f"Census API failed for state {state_fips}. Error: {e}")
             st.stop()
-
-        cols = data[0]
-        rows = data[1:]
-
-        temp_df = pd.DataFrame(rows, columns=cols)
-        all_rows.append(temp_df)
 
     census_df = pd.concat(all_rows, ignore_index=True)
 
