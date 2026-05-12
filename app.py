@@ -263,21 +263,21 @@ def get_census_place_data(year=2022):
 
     params = {
         "get": "NAME,B01003_001E,B19013_001E",
-        "for": "place:*"
+        "for": "place:*",
+        "in": "state:*"
     }
+
+    empty_census = pd.DataFrame(
+        columns=["Census_Name", "Population", "Median_Income", "State_FIPS"]
+    )
 
     try:
         response = requests.get(url, params=params, timeout=30)
 
         if response.status_code != 200:
-            st.warning(f"Census API returned status {response.status_code}. Census data will show as unavailable.")
-            return pd.DataFrame(columns=["Census_Name", "Population", "Median_Income", "State_FIPS"])
+            return empty_census
 
-        try:
-            data = response.json()
-        except Exception:
-            st.warning("Census API did not return valid JSON. Census data will show as unavailable.")
-            return pd.DataFrame(columns=["Census_Name", "Population", "Median_Income", "State_FIPS"])
+        data = response.json()
 
         cols = data[0]
         rows = data[1:]
@@ -296,9 +296,8 @@ def get_census_place_data(year=2022):
 
         return census_df
 
-    except Exception as e:
-        st.warning("Census data could not be loaded. The dashboard will continue without Census data.")
-        return pd.DataFrame(columns=["Census_Name", "Population", "Median_Income", "State_FIPS"])
+    except Exception:
+        return empty_census
 
 
 def normalize_city_name(city):
