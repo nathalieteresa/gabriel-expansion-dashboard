@@ -15,7 +15,7 @@ from reportlab.lib.enums import TA_CENTER
 st.set_page_config(
     page_title="Strategic Expansion Intelligence",
     layout="wide",
-    initial_sidebar_state="collapsed"
+    initial_sidebar_state="expanded"
 )
 
 GOLD = "#C6A052"
@@ -364,26 +364,29 @@ def normalize_selected(value, series):
 # -----------------------------
 # USER INPUTS
 # -----------------------------
-selected_city = st.selectbox(
+st.sidebar.markdown("## Scenario Controls")
+st.sidebar.markdown("Adjust assumptions to test expansion scenarios.")
+
+selected_city = st.sidebar.selectbox(
     "Select Market",
     sorted(df["City"].unique())
 )
 
-rent_change = st.slider(
+rent_change = st.sidebar.slider(
     "Rent Change %",
     -50,
     100,
     0
 )
 
-ticket_change = st.slider(
+ticket_change = st.sidebar.slider(
     "Revenue / Ticket Change %",
     -50,
     100,
     0
 )
 
-customer_change = st.slider(
+customer_change = st.sidebar.slider(
     "Customer Volume Change %",
     -50,
     100,
