@@ -1014,7 +1014,8 @@ median_income = filtered.iloc[0]["Median_Income"]
 avg_roi = filtered["Scenario_ROI"].mean()
 total_profit = filtered["Scenario_Profit"].sum()
 
-k1, k2, k3, k4, k5, k6, k7, k8, k9 = st.columns(9)
+k1, k2, k3, k4, k5 = st.columns(5)
+k6, k7, k8, k9 = st.columns(4)
 k1.metric("Selected Market", top_market)
 k2.metric("Population", f"{population:,.0f}" if pd.notna(population) else "Not found")
 k3.metric("Median Income", f"${median_income:,.0f}" if pd.notna(median_income) else "Not found")
