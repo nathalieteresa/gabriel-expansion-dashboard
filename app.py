@@ -265,12 +265,15 @@ def get_census_place_data(year=2022, state_fips_list=None):
     all_rows = []
 
     for state_fips in state_fips_list:
-        url = (
-            f"https://api.census.gov/data/{year}/acs/acs5"
-            f"?get=NAME,B01003_001E,B19013_001E"
-            f"&for=place:*"
-            f"&in=state:{state_fips}"
-        )
+    census_key = st.secrets["CENSUS_API_KEY"]
+
+    url = (
+    f"https://api.census.gov/data/{year}/acs/acs5"
+    f"?get=NAME,B01003_001E,B19013_001E"
+    f"&for=place:*"
+    f"&in=state:{state_fips}"
+    f"&key={census_key}"
+    )
 
         response = requests.get(url, timeout=30)
 
