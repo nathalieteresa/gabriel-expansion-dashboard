@@ -265,7 +265,7 @@ def get_census_place_data(year=2022, state_fips_list=None):
     all_rows = []
 
     for state_fips in state_fips_list:
-    census_key = st.secrets["CENSUS_API_KEY"]
+    census_key = st.secrets["48baf5c5dbf934c44587273c3a731903b6b984ac"]
 
     url = (
     f"https://api.census.gov/data/{year}/acs/acs5"
