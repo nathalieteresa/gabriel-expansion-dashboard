@@ -257,45 +257,59 @@ CITY_COORDS = {
     "Chicago": (41.8781, -87.6298)
 }
 
-@st.cache_data(ttl=86400)
-def get_census_place_data(year=2022):
-    url = f"https://api.census.gov/data/{year}/acs/acs5"
+@st.cache_data(ttl=3600)
+def get_census_place_data(year=2022, state_fips_list=None):
+    all_rows = []
 
-    params = {
-        "get": "NAME,B01003_001E,B19013_001E",
-        "for": "place:*",
-        "in": "state:*"
-    }
+    if state_fips_list is None:
+        state_fips_list = ["12"]
 
-    empty_census = pd.DataFrame(
-        columns=["Census_Name", "Population", "Median_Income", "State_FIPS"]
-    )
+    for state_fips in state_fips_list:
+        url = f"https://api.census.gov/data/{year}/acs/acs5"
 
-    try:
-        response = requests.get(url, params=params, timeout=30)
+        params = {
+            "get": "NAME,B01003_001E,B19013_001E",
+            "for": "place:*",
+            "in": f"state:{state_fips}"
+        }
+
+        response = requests.get(
+            url,
+            params=params,
+            timeout=30,
+            headers={"User-Agent": "Mozilla/5.0"}
+        )
 
         if response.status_code != 200:
-            return empty_census
+            st.error(f"Census API error for state {state_fips}: {response.status_code}")
+            st.stop()
 
-        data = response.json()
+        try:
+            data = response.json()
+        except Exception:
+            st.error("Census API did not return valid JSON. Try clearing Streamlit cache and rerunning.")
+            st.stop()
 
         cols = data[0]
         rows = data[1:]
 
-        census_df = pd.DataFrame(rows, columns=cols)
+        temp_df = pd.DataFrame(rows, columns=cols)
+        all_rows.append(temp_df)
 
-        census_df = census_df.rename(columns={
-            "NAME": "Census_Name",
-            "B01003_001E": "Population",
-            "B19013_001E": "Median_Income",
-            "state": "State_FIPS"
-        })
+    census_df = pd.concat(all_rows, ignore_index=True)
 
-        census_df["Population"] = pd.to_numeric(census_df["Population"], errors="coerce")
-        census_df["Median_Income"] = pd.to_numeric(census_df["Median_Income"], errors="coerce")
+    census_df = census_df.rename(columns={
+        "NAME": "Census_Name",
+        "B01003_001E": "Population",
+        "B19013_001E": "Median_Income",
+        "state": "State_FIPS"
+    })
 
-        return census_df
+    census_df["Population"] = pd.to_numeric(census_df["Population"], errors="coerce")
+    census_df["Median_Income"] = pd.to_numeric(census_df["Median_Income"], errors="coerce")
 
+    return census_df
+    
     except Exception:
         return empty_census
 
@@ -341,65 +355,6 @@ df = df.merge(
     on=["City_Key", "State_FIPS"],
     how="left"
 )
-
-# -----------------------------
-# FALLBACK DEMOGRAPHIC DATA
-# Used only when Census API does not return data
-# -----------------------------
-FALLBACK_DEMOGRAPHICS = {
-    "Miami": {"Population": 455924, "Median_Income": 60524},
-    "Tampa": {"Population": 398173, "Median_Income": 71670},
-    "Orlando": {"Population": 320742, "Median_Income": 65354},
-    "Coral Gables": {"Population": 48568, "Median_Income": 118203},
-    "Doral": {"Population": 76490, "Median_Income": 88928},
-    "Aventura": {"Population": 39237, "Median_Income": 80689},
-    "Sunny Isles Beach": {"Population": 22038, "Median_Income": 63188},
-    "Fort Lauderdale": {"Population": 184255, "Median_Income": 69633}
-}
-
-for city, values in FALLBACK_DEMOGRAPHICS.items():
-    mask = df["City"] == city
-
-    df.loc[mask & df["Population"].isna(), "Population"] = values["Population"]
-    df.loc[mask & df["Median_Income"].isna(), "Median_Income"] = values["Median_Income"]
-
-df = df.drop(columns=["City_Key", "State_FIPS"])
-
-st.sidebar.markdown("## Scenario Controls")
-st.sidebar.markdown("Adjust assumptions to test expansion scenarios.")
-
-selected_city = st.sidebar.selectbox(
-    "Select Market",
-    options=sorted(df["City"].unique())
-)
-
-rent_change = st.sidebar.slider("Rent Change (%)", -30, 50, 0, 5)
-ticket_change = st.sidebar.slider("Revenue / Average Ticket Change (%)", -30, 50, 0, 5)
-customer_change = st.sidebar.slider("Customer Volume Change (%)", -30, 50, 0, 5)
-
-filtered = df[df["City"] == selected_city].copy()
-city_competitors = competitors_df[
-    competitors_df["city"].str.lower() == selected_city.lower()
-].copy()
-
-competitor_count = len(city_competitors)
-
-avg_rating = city_competitors["totalScore"].mean()
-
-total_reviews = city_competitors["reviewsCount"].sum()
-
-filtered["Scenario_Rent"] = filtered["Estimated_Monthly_Rent"] * (1 + rent_change / 100)
-
-filtered["Scenario_Revenue"] = (
-    filtered["Estimated_Monthly_Revenue"]
-    * (1 + ticket_change / 100)
-    * (1 + customer_change / 100)
-)
-
-filtered["Non_Rent_Cost"] = filtered["Estimated_Monthly_Cost"] - filtered["Estimated_Monthly_Rent"]
-filtered["Scenario_Cost"] = filtered["Non_Rent_Cost"] + filtered["Scenario_Rent"]
-filtered["Scenario_Profit"] = filtered["Scenario_Revenue"] - filtered["Scenario_Cost"]
-filtered["Scenario_ROI"] = filtered["Scenario_Profit"] / filtered["Scenario_Cost"]
 
 # -----------------------------
 # AUTO SCORES FOR SELECTED MARKET
