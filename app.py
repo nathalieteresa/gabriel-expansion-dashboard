@@ -274,13 +274,7 @@ def get_census_place_data(year=2022, state_fips_list=None):
         }
 
         try:
-            response = requests.get(
-                url,
-                params=params,
-                timeout=30,
-                headers={"User-Agent": "Mozilla/5.0"}
-            )
-
+            response = requests.get(url, params=params, timeout=30)
             response.raise_for_status()
             data = response.json()
 
@@ -291,7 +285,7 @@ def get_census_place_data(year=2022, state_fips_list=None):
             all_rows.append(temp_df)
 
         except Exception as e:
-            st.error(f"Census API failed for state {state_fips}. Error: {e}")
+            st.error(f"Census API failed: {e}")
             st.stop()
 
     census_df = pd.concat(all_rows, ignore_index=True)
@@ -307,9 +301,6 @@ def get_census_place_data(year=2022, state_fips_list=None):
     census_df["Median_Income"] = pd.to_numeric(census_df["Median_Income"], errors="coerce")
 
     return census_df
-    
-    except Exception:
-        return empty_census
 
 
 def normalize_city_name(city):
