@@ -344,7 +344,8 @@ def extract_city_from_census_name(name):
     return city
 
 
-census_df = get_census_place_data()
+state_fips_needed = df["State"].map(STATE_FIPS).dropna().unique().tolist()
+census_df = get_census_place_data(year=2022, state_fips_list=state_fips_needed)
 
 census_df["City_Key"] = census_df["Census_Name"].apply(extract_city_from_census_name)
 df["City_Key"] = df["City"].apply(normalize_city_name)
