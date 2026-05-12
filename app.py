@@ -258,33 +258,47 @@ CITY_COORDS = {
 }
 
 @st.cache_data(ttl=86400)
-def get_census_place_data(year=2023):
+def get_census_place_data(year=2022):
     url = f"https://api.census.gov/data/{year}/acs/acs5"
+
     params = {
         "get": "NAME,B01003_001E,B19013_001E",
         "for": "place:*"
     }
 
-    response = requests.get(url, params=params, timeout=20)
-    response.raise_for_status()
+    try:
+        response = requests.get(url, params=params, timeout=30)
 
-    data = response.json()
-    cols = data[0]
-    rows = data[1:]
+        if response.status_code != 200:
+            st.warning(f"Census API returned status {response.status_code}. Census data will show as unavailable.")
+            return pd.DataFrame(columns=["Census_Name", "Population", "Median_Income", "State_FIPS"])
 
-    census_df = pd.DataFrame(rows, columns=cols)
+        try:
+            data = response.json()
+        except Exception:
+            st.warning("Census API did not return valid JSON. Census data will show as unavailable.")
+            return pd.DataFrame(columns=["Census_Name", "Population", "Median_Income", "State_FIPS"])
 
-    census_df = census_df.rename(columns={
-        "NAME": "Census_Name",
-        "B01003_001E": "Population",
-        "B19013_001E": "Median_Income",
-        "state": "State_FIPS"
-    })
+        cols = data[0]
+        rows = data[1:]
 
-    census_df["Population"] = pd.to_numeric(census_df["Population"], errors="coerce")
-    census_df["Median_Income"] = pd.to_numeric(census_df["Median_Income"], errors="coerce")
+        census_df = pd.DataFrame(rows, columns=cols)
 
-    return census_df
+        census_df = census_df.rename(columns={
+            "NAME": "Census_Name",
+            "B01003_001E": "Population",
+            "B19013_001E": "Median_Income",
+            "state": "State_FIPS"
+        })
+
+        census_df["Population"] = pd.to_numeric(census_df["Population"], errors="coerce")
+        census_df["Median_Income"] = pd.to_numeric(census_df["Median_Income"], errors="coerce")
+
+        return census_df
+
+    except Exception as e:
+        st.warning("Census data could not be loaded. The dashboard will continue without Census data.")
+        return pd.DataFrame(columns=["Census_Name", "Population", "Median_Income", "State_FIPS"])
 
 
 def normalize_city_name(city):
