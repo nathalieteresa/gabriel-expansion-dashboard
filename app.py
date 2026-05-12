@@ -262,21 +262,20 @@ def get_census_place_data(year=2022, state_fips_list=None):
     if state_fips_list is None:
         state_fips_list = ["12"]
 
+    census_key = st.secrets["CENSUS_API_KEY"]
     all_rows = []
 
     for state_fips in state_fips_list:
-    census_key = st.secrets["48baf5c5dbf934c44587273c3a731903b6b984ac"]
-
-    url = (
-    f"https://api.census.gov/data/{year}/acs/acs5"
-    f"?get=NAME,B01003_001E,B19013_001E"
-    f"&for=place:*"
-    f"&in=state:{state_fips}"
-    f"&key={census_key}"
-    )
+        url = (
+            f"https://api.census.gov/data/{year}/acs/acs5"
+            f"?get=NAME,B01003_001E,B19013_001E"
+            f"&for=place:*"
+            f"&in=state:{state_fips}"
+            f"&key={census_key}"
+        )
 
         response = requests.get(url, timeout=30)
-
+        
         if response.status_code != 200:
             st.error(f"Census API error {response.status_code}: {response.text[:300]}")
             st.stop()
