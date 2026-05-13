@@ -1708,7 +1708,7 @@ with tab11:
         </div>
         """, unsafe_allow_html=True)
 
-    with tab12:
+with tab12:
 
     st.markdown(
         '<div class="section-title">Market Diagnostics</div>',
