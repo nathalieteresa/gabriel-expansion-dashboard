@@ -463,7 +463,8 @@ customer_change = st.sidebar.slider(
     0
 )
 
-trade_area_options = TRADE_AREAS.get(selected_city.strip(), {})
+selected_city_clean = selected_city.strip()
+trade_area_options = TRADE_AREAS.get(selected_city_clean, {})
 
 if trade_area_options:
     selected_trade_area = st.sidebar.selectbox(
@@ -539,7 +540,7 @@ trade_area_density = 0
 trade_area_zip = None
 
 if selected_trade_area:
-    trade_area_data = TRADE_AREAS[selected_city][selected_trade_area]
+    trade_area_data = TRADE_AREAS[selected_city_clean][selected_trade_area]
 
     trade_area_zip = trade_area_data["zip"]
     trade_area_lat = trade_area_data["lat"]
@@ -2092,6 +2093,10 @@ with tab12:
 
     **Model recommendation:** **{top["Recommendation"]}**
     """)
+
+st.sidebar.write("DEBUG city:", selected_city)
+st.sidebar.write("DEBUG trade area:", selected_trade_area)
+
 with tab13:
 
     st.markdown(
@@ -2104,7 +2109,7 @@ with tab13:
         unsafe_allow_html=True
     )
 
-    if not selected_trade_area:
+    if selected_trade_area is None:
         st.warning("No trade area configuration available for this selected market yet.")
 
     else:
