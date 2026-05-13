@@ -1028,7 +1028,7 @@ k9.metric("Decision Status", decision_readiness)
 
 st.markdown("<br>", unsafe_allow_html=True)
 
-tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9, tab10, tab11 = st.tabs([
+tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9, tab10, tab11, tab12 = st.tabs([
     "Overview",
     "Market Ranking",
     "Financial Scenario",
@@ -1039,7 +1039,8 @@ tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9, tab10, tab11 = st.tabs([
     "Executive Narrative",
     "Recommendation Engine",
     "Geo Intelligence",
-    "Data Quality & Assumptions"
+    "Data Quality & Assumptions",
+    "Market Diagnostics"
 ])
 
 with tab1:
@@ -1706,6 +1707,198 @@ with tab11:
             </div>
         </div>
         """, unsafe_allow_html=True)
+
+    with tab12:
+
+    st.markdown(
+        '<div class="section-title">Market Diagnostics</div>',
+        unsafe_allow_html=True
+    )
+
+    st.markdown(
+        '<div class="section-note">Executive diagnostic layer explaining market strengths, risks, confidence level, and strategic readiness.</div>',
+        unsafe_allow_html=True
+    )
+
+    # -----------------------------
+    # STRENGTHS
+    # -----------------------------
+    strengths = []
+
+    if income_score >= 70:
+        strengths.append("High-income demographic profile")
+
+    if population_score >= 70:
+        strengths.append("Large population base")
+
+    if avg_roi >= 0.15:
+        strengths.append("Strong financial viability")
+
+    if total_reviews >= 10000:
+        strengths.append("Very high customer activity")
+
+    if avg_rating >= 4.3:
+        strengths.append("Strong customer satisfaction signal")
+
+    # -----------------------------
+    # RISKS
+    # -----------------------------
+    risks = []
+
+    if competitor_count >= 100:
+        risks.append("High competitive saturation")
+
+    if avg_roi < 0.15:
+        risks.append("ROI below priority threshold")
+
+    if total_reviews < 3000:
+        risks.append("Limited review volume")
+
+    if pd.isna(population):
+        risks.append("Population data unavailable")
+
+    if pd.isna(median_income):
+        risks.append("Income data unavailable")
+
+    # -----------------------------
+    # CONFIDENCE LEVEL
+    # -----------------------------
+    if data_completeness_score >= 80:
+        confidence_level = "High Confidence"
+    elif data_completeness_score >= 60:
+        confidence_level = "Moderate Confidence"
+    else:
+        confidence_level = "Low Confidence"
+
+    # -----------------------------
+    # EXECUTIVE VERDICT
+    # -----------------------------
+    if final_opportunity_score >= 80:
+        executive_verdict = "Aggressive Expansion Candidate"
+
+    elif final_opportunity_score >= 65:
+        executive_verdict = "Expansion Recommended With Validation"
+
+    elif final_opportunity_score >= 50:
+        executive_verdict = "Requires Additional Due Diligence"
+
+    else:
+        executive_verdict = "Lower Priority Under Current Assumptions"
+
+    # -----------------------------
+    # LAYOUT
+    # -----------------------------
+    d1, d2 = st.columns(2)
+
+    with d1:
+
+        strengths_html = "<br>".join([f"• {s}" for s in strengths]) if strengths else "No major strengths detected."
+
+        st.markdown(f"""
+        <div class="insight-card">
+            <div class="insight-title">Market Strengths</div>
+            <div class="insight-body">
+                {strengths_html}
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+
+        st.markdown("<br>", unsafe_allow_html=True)
+
+        st.markdown(f"""
+        <div class="insight-card">
+            <div class="insight-title">Confidence Assessment</div>
+            <div class="insight-body">
+                <b>{confidence_level}</b>
+                <br><br>
+                Data completeness score:
+                <b>{data_completeness_score}/100</b>
+                <br><br>
+                The confidence assessment reflects whether the current market intelligence is sufficient for leadership-level decision making.
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+
+    with d2:
+
+        risks_html = "<br>".join([f"• {r}" for r in risks]) if risks else "No major risks detected."
+
+        st.markdown(f"""
+        <div class="insight-card">
+            <div class="insight-title">Market Risks</div>
+            <div class="insight-body">
+                {risks_html}
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+
+        st.markdown("<br>", unsafe_allow_html=True)
+
+        st.markdown(f"""
+        <div class="insight-card">
+            <div class="insight-title">Executive Verdict</div>
+            <div class="insight-body">
+                <b>{executive_verdict}</b>
+                <br><br>
+                Final opportunity score:
+                <b>{final_opportunity_score:.1f}/100</b>
+                <br><br>
+                Recommendation:
+                <b>{opportunity_recommendation}</b>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+
+    st.markdown("<br>", unsafe_allow_html=True)
+
+    # -----------------------------
+    # DIAGNOSTIC SCORE BREAKDOWN
+    # -----------------------------
+    diagnostic_df = pd.DataFrame({
+        "Diagnostic Component": [
+            "Population Strength",
+            "Income Strength",
+            "Demand Signal",
+            "Financial Viability",
+            "Competitive Pressure"
+        ],
+        "Score": [
+            population_score,
+            income_score,
+            manual_demand_value,
+            financial_viability_score,
+            saturation_score
+        ]
+    })
+
+    fig_diag = px.bar(
+        diagnostic_df,
+        x="Diagnostic Component",
+        y="Score",
+        text="Score",
+        color="Diagnostic Component",
+        color_discrete_sequence=[
+            GOLD_LIGHT,
+            GOLD,
+            "#A9843C",
+            "#D8C28A",
+            "#7D6838"
+        ]
+    )
+
+    fig_diag.update_traces(
+        texttemplate="%{text:.1f}",
+        textposition="outside"
+    )
+
+    fig_diag.update_layout(
+        showlegend=False
+    )
+
+    st.plotly_chart(
+        chart_layout(fig_diag, 520),
+        use_container_width=True
+    )
 
     top = filtered.iloc[0]
 
