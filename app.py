@@ -464,6 +464,7 @@ customer_change = st.sidebar.slider(
 )
 
 selected_city_clean = selected_city.strip()
+
 trade_area_options = TRADE_AREAS.get(selected_city_clean, {})
 
 if trade_area_options:
@@ -478,7 +479,11 @@ if trade_area_options:
         10,
         3
     )
-    use_google_places = st.sidebar.checkbox(
+else:
+    selected_trade_area = None
+    radius_miles = 3
+
+use_google_places = st.sidebar.checkbox(
     "Use Google Places API for competitors",
     value=True
 )
@@ -491,9 +496,6 @@ competitor_keyword = st.sidebar.text_input(
 if st.sidebar.button("Refresh Google Places Data"):
     st.cache_data.clear()
     st.rerun()
-else:
-    selected_trade_area = None
-    radius_miles = 3
 
 # -----------------------------
 # FILTERED DATA
