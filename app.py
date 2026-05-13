@@ -433,10 +433,14 @@ def normalize_selected(value, series):
 st.sidebar.markdown("## Scenario Controls")
 st.sidebar.markdown("Adjust assumptions to test expansion scenarios.")
 
+df["City"] = df["City"].astype(str).str.strip()
+
 selected_city = st.sidebar.selectbox(
     "Select Market",
     sorted(df["City"].unique())
 )
+
+selected_city = selected_city.strip()
 
 rent_change = st.sidebar.slider(
     "Rent Change %",
@@ -459,7 +463,7 @@ customer_change = st.sidebar.slider(
     0
 )
 
-trade_area_options = TRADE_AREAS.get(selected_city, {})
+trade_area_options = TRADE_AREAS.get(selected_city.strip(), {})
 
 if trade_area_options:
     selected_trade_area = st.sidebar.selectbox(
@@ -496,7 +500,7 @@ else:
 filtered = df[df["City"] == selected_city].copy()
 
 if selected_trade_area and use_google_places:
-    trade_area_data = TRADE_AREAS[selected_city][selected_trade_area]
+    trade_area_data = TRADE_AREAS[selected_city.strip()][selected_trade_area]
 
     city_competitors = get_google_places_competitors(
         lat=trade_area_data["lat"],
