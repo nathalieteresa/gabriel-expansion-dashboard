@@ -312,7 +312,7 @@ def get_google_places_competitors(lat, lon, radius_miles, keyword="hair salon be
             "reviewsCount": place.get("user_ratings_total", 0),
             "street": place.get("vicinity"),
             "city": selected_city,
-            "state": filtered.iloc[0]["State"] if "State" in filtered.columns and not filtered.empty else "",
+            "state": "",
             "categoryName": ", ".join(place.get("types", [])),
             "website": "",
             "url": f"https://www.google.com/maps/place/?q=place_id:{place.get('place_id')}",
@@ -502,6 +502,12 @@ if "google_places_market" not in st.session_state:
 if "google_places_trade_area" not in st.session_state:
     st.session_state.google_places_trade_area = None
 
+if "google_places_radius" not in st.session_state:
+    st.session_state.google_places_radius = None
+
+if "google_places_keyword" not in st.session_state:
+    st.session_state.google_places_keyword = None
+
 if st.sidebar.button("Refresh Google Places Data"):
     if selected_trade_area:
         trade_area_data = TRADE_AREAS[selected_city_clean][selected_trade_area]
@@ -515,6 +521,8 @@ if st.sidebar.button("Refresh Google Places Data"):
 
         st.session_state.google_places_market = selected_city_clean
         st.session_state.google_places_trade_area = selected_trade_area
+        st.session_state.google_places_radius = radius_miles
+        st.session_state.google_places_keyword = competitor_keyword
 
         st.success("Google Places data refreshed successfully.")
     else:
@@ -530,6 +538,8 @@ if (
     and not st.session_state.google_places_data.empty
     and st.session_state.google_places_market == selected_city_clean
     and st.session_state.google_places_trade_area == selected_trade_area
+    and st.session_state.google_places_radius == radius_miles
+    and st.session_state.google_places_keyword == competitor_keyword
 ):
     city_competitors = st.session_state.google_places_data.copy()
 else:
