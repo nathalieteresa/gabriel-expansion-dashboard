@@ -11,6 +11,7 @@ from reportlab.lib import colors
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.pagesizes import letter
 from reportlab.lib.enums import TA_CENTER
+from math import radians, sin, cos, sqrt, atan2
 
 st.set_page_config(
     page_title="Strategic Expansion Intelligence",
@@ -257,6 +258,30 @@ CITY_COORDS = {
     "Chicago": (41.8781, -87.6298)
 }
 
+TRADE_AREAS = {
+    "Miami": {
+        "Brickell": {"zip": "33131", "lat": 25.7602, "lon": -80.1959},
+        "Wynwood": {"zip": "33127", "lat": 25.8043, "lon": -80.1995},
+        "Design District": {"zip": "33137", "lat": 25.8130, "lon": -80.1920},
+        "Coconut Grove": {"zip": "33133", "lat": 25.7280, "lon": -80.2418},
+    },
+    "Coral Gables": {
+        "Coral Gables Core": {"zip": "33134", "lat": 25.7215, "lon": -80.2684},
+    },
+    "Doral": {
+        "Doral Core": {"zip": "33166", "lat": 25.8195, "lon": -80.3553},
+    },
+    "Aventura": {
+        "Aventura Core": {"zip": "33180", "lat": 25.9565, "lon": -80.1392},
+    },
+    "Sunny Isles Beach": {
+        "Sunny Isles Core": {"zip": "33160", "lat": 25.9429, "lon": -80.1234},
+    },
+    "Fort Lauderdale": {
+        "Fort Lauderdale Core": {"zip": "33301", "lat": 26.1224, "lon": -80.1373},
+    }
+}
+
 @st.cache_data(ttl=3600)
 def get_census_place_data(year=2022, state_fips_list=None):
     if state_fips_list is None:
@@ -393,6 +418,24 @@ customer_change = st.sidebar.slider(
     0
 )
 
+trade_area_options = TRADE_AREAS.get(selected_city, {})
+
+if trade_area_options:
+    selected_trade_area = st.sidebar.selectbox(
+        "Select Trade Area / Neighborhood",
+        list(trade_area_options.keys())
+    )
+
+    radius_miles = st.sidebar.slider(
+        "Radius Around Trade Area (Miles)",
+        1,
+        10,
+        3
+    )
+else:
+    selected_trade_area = None
+    radius_miles = 3
+
 # -----------------------------
 # FILTERED DATA
 # -----------------------------
@@ -405,6 +448,70 @@ city_competitors = competitors_df[
 competitor_count = len(city_competitors)
 avg_rating = city_competitors["totalScore"].mean()
 total_reviews = city_competitors["reviewsCount"].sum()
+
+def haversine_miles(lat1, lon1, lat2, lon2):
+    R = 3958.8
+    lat1, lon1, lat2, lon2 = map(radians, [lat1, lon1, lat2, lon2])
+
+    dlat = lat2 - lat1
+    dlon = lon2 - lon1
+
+    a = sin(dlat / 2) ** 2 + cos(lat1) * cos(lat2) * sin(dlon / 2) ** 2
+    c = 2 * atan2(sqrt(a), sqrt(1 - a))
+
+    return R * c
+
+
+trade_area_competitors = pd.DataFrame()
+trade_area_competitor_count = 0
+trade_area_avg_rating = 0
+trade_area_total_reviews = 0
+trade_area_density = 0
+trade_area_zip = None
+
+if selected_trade_area:
+    trade_area_data = TRADE_AREAS[selected_city][selected_trade_area]
+
+    trade_area_zip = trade_area_data["zip"]
+    trade_area_lat = trade_area_data["lat"]
+    trade_area_lon = trade_area_data["lon"]
+
+    possible_lat_cols = ["lat", "latitude", "location.lat"]
+    possible_lon_cols = ["lng", "lon", "longitude", "location.lng"]
+
+    lat_col = next((col for col in possible_lat_cols if col in competitors_df.columns), None)
+    lon_col = next((col for col in possible_lon_cols if col in competitors_df.columns), None)
+
+    if lat_col and lon_col:
+        competitors_df[lat_col] = pd.to_numeric(competitors_df[lat_col], errors="coerce")
+        competitors_df[lon_col] = pd.to_numeric(competitors_df[lon_col], errors="coerce")
+
+        competitors_with_location = competitors_df.dropna(subset=[lat_col, lon_col]).copy()
+
+        competitors_with_location["Distance_Miles"] = competitors_with_location.apply(
+            lambda row: haversine_miles(
+                trade_area_lat,
+                trade_area_lon,
+                row[lat_col],
+                row[lon_col]
+            ),
+            axis=1
+        )
+
+        trade_area_competitors = competitors_with_location[
+            competitors_with_location["Distance_Miles"] <= radius_miles
+        ].copy()
+
+    else:
+        trade_area_competitors = city_competitors.copy()
+
+    trade_area_competitor_count = len(trade_area_competitors)
+    trade_area_avg_rating = trade_area_competitors["totalScore"].mean()
+    trade_area_total_reviews = trade_area_competitors["reviewsCount"].sum()
+
+    radius_area = 3.1416 * (radius_miles ** 2)
+    trade_area_density = trade_area_competitor_count / radius_area if radius_area > 0 else 0
+
 
 filtered["Scenario_Rent"] = (
     filtered["Estimated_Monthly_Rent"]
@@ -1028,7 +1135,7 @@ k9.metric("Decision Status", decision_readiness)
 
 st.markdown("<br>", unsafe_allow_html=True)
 
-tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9, tab10, tab11, tab12 = st.tabs([
+tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9, tab10, tab11, tab12, tab13 = st.tabs([
     "Overview",
     "Market Ranking",
     "Financial Scenario",
@@ -1040,7 +1147,8 @@ tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9, tab10, tab11, tab12 = st.t
     "Recommendation Engine",
     "Geo Intelligence",
     "Data Quality & Assumptions",
-    "Market Diagnostics"
+    "Market Diagnostics",
+    "Trade Area Intelligence"
 ])
 
 with tab1:
@@ -1915,3 +2023,132 @@ with tab12:
 
     **Model recommendation:** **{top["Recommendation"]}**
     """)
+with tab13:
+
+    st.markdown(
+        '<div class="section-title">Trade Area Intelligence</div>',
+        unsafe_allow_html=True
+    )
+
+    st.markdown(
+        '<div class="section-note">Neighborhood-level expansion view using ZIP, radius, competitor concentration, and local demand signals.</div>',
+        unsafe_allow_html=True
+    )
+
+    if not selected_trade_area:
+        st.warning("No trade area configuration available for this selected market yet.")
+
+    else:
+        t1, t2, t3, t4, t5 = st.columns(5)
+
+        t1.metric("Trade Area", selected_trade_area)
+        t2.metric("ZIP Code", trade_area_zip)
+        t3.metric("Radius", f"{radius_miles} mi")
+        t4.metric("Competitors in Radius", f"{trade_area_competitor_count:,}")
+        t5.metric("Competitor Density", f"{trade_area_density:.1f} / sq mi")
+
+        st.markdown("<br>", unsafe_allow_html=True)
+
+        c1, c2 = st.columns(2)
+
+        with c1:
+            st.markdown(f"""
+            <div class="insight-card">
+                <div class="insight-title">Trade Area Signal</div>
+                <div class="insight-body">
+                    <b>{selected_trade_area}</b> is being evaluated as a local expansion trade area within
+                    <b>{selected_city}</b>.
+                    <br><br>
+                    The current radius analysis identifies <b>{trade_area_competitor_count:,}</b> competitors
+                    within approximately <b>{radius_miles} miles</b>.
+                    <br><br>
+                    Average rating in this trade area:
+                    <b>{trade_area_avg_rating:.2f}</b>
+                    <br>
+                    Total review volume:
+                    <b>{int(trade_area_total_reviews):,}</b>
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
+
+        with c2:
+            if trade_area_density >= 10:
+                density_interpretation = "High saturation. This area may require strong differentiation, premium positioning, or a very selective real estate strategy."
+            elif trade_area_density >= 4:
+                density_interpretation = "Moderate saturation. This area may still be attractive if the concept has a clear positioning advantage."
+            else:
+                density_interpretation = "Lower visible saturation. This may indicate whitespace opportunity, but demand should be validated further."
+
+            st.markdown(f"""
+            <div class="insight-card">
+                <div class="insight-title">Strategic Interpretation</div>
+                <div class="insight-body">
+                    <b>{density_interpretation}</b>
+                    <br><br>
+                    This trade-area layer helps move the analysis beyond city-level expansion and closer to
+                    real site-selection decision making.
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
+
+        st.markdown("<br>", unsafe_allow_html=True)
+
+        if not trade_area_competitors.empty:
+            top_trade_competitors = trade_area_competitors.sort_values(
+                "reviewsCount",
+                ascending=False
+            ).head(10)
+
+            fig_trade = px.bar(
+                top_trade_competitors,
+                x="reviewsCount",
+                y="title",
+                orientation="h",
+                color="totalScore",
+                color_continuous_scale=["#EFE2BD", "#C6A052", "#7D6838"],
+                text="reviewsCount"
+            )
+
+            fig_trade.update_layout(
+                yaxis=dict(autorange="reversed"),
+                coloraxis_showscale=False
+            )
+
+            st.plotly_chart(
+                chart_layout(fig_trade, 540),
+                use_container_width=True
+            )
+
+            trade_cols = [
+                "title",
+                "totalScore",
+                "reviewsCount",
+                "street",
+                "city",
+                "state",
+                "categoryName",
+                "website",
+                "url"
+            ]
+
+            if "Distance_Miles" in trade_area_competitors.columns:
+                trade_cols.insert(1, "Distance_Miles")
+
+            available_trade_cols = [
+                col for col in trade_cols
+                if col in trade_area_competitors.columns
+            ]
+
+            st.markdown("### Trade Area Competitor Detail")
+
+            st.dataframe(
+                trade_area_competitors[available_trade_cols].sort_values(
+                    "reviewsCount",
+                    ascending=False
+                ),
+                use_container_width=True,
+                height=420
+            )
+
+        else:
+            st.warning("No competitor records were found for this trade area under the selected radius.")
