@@ -493,33 +493,61 @@ competitor_keyword = st.sidebar.text_input(
     value="hair salon beauty salon"
 )
 
+if "google_places_data" not in st.session_state:
+    st.session_state.google_places_data = pd.DataFrame()
+
+if "google_places_market" not in st.session_state:
+    st.session_state.google_places_market = None
+
+if "google_places_trade_area" not in st.session_state:
+    st.session_state.google_places_trade_area = None
+
 if st.sidebar.button("Refresh Google Places Data"):
-    st.cache_data.clear()
-    st.rerun()
+    if selected_trade_area:
+        trade_area_data = TRADE_AREAS[selected_city_clean][selected_trade_area]
+
+        st.session_state.google_places_data = get_google_places_competitors(
+            lat=trade_area_data["lat"],
+            lon=trade_area_data["lon"],
+            radius_miles=radius_miles,
+            keyword=competitor_keyword
+        )
+
+        st.session_state.google_places_market = selected_city_clean
+        st.session_state.google_places_trade_area = selected_trade_area
+
+        st.success("Google Places data refreshed successfully.")
+    else:
+        st.warning("Select a trade area first.")
 
 # -----------------------------
 # FILTERED DATA
 # -----------------------------
 filtered = df[df["City"] == selected_city].copy()
 
-if selected_trade_area and use_google_places:
-    trade_area_data = TRADE_AREAS[selected_city.strip()][selected_trade_area]
-
-    city_competitors = get_google_places_competitors(
-        lat=trade_area_data["lat"],
-        lon=trade_area_data["lon"],
-        radius_miles=radius_miles,
-        keyword=competitor_keyword
-    )
-
+if (
+    use_google_places
+    and not st.session_state.google_places_data.empty
+    and st.session_state.google_places_market == selected_city_clean
+    and st.session_state.google_places_trade_area == selected_trade_area
+):
+    city_competitors = st.session_state.google_places_data.copy()
 else:
     city_competitors = competitors_df[
         competitors_df["city"].str.lower() == selected_city.lower()
     ].copy()
 
 competitor_count = len(city_competitors)
-avg_rating = city_competitors["totalScore"].mean()
-total_reviews = city_competitors["reviewsCount"].sum()
+
+if not city_competitors.empty and "totalScore" in city_competitors.columns:
+    avg_rating = city_competitors["totalScore"].mean()
+else:
+    avg_rating = 0
+
+if not city_competitors.empty and "reviewsCount" in city_competitors.columns:
+    total_reviews = city_competitors["reviewsCount"].sum()
+else:
+    total_reviews = 0
 
 def haversine_miles(lat1, lon1, lat2, lon2):
     R = 3958.8
