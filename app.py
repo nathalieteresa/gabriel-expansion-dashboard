@@ -282,6 +282,47 @@ TRADE_AREAS = {
     }
 }
 
+@st.cache_data(ttl=2592000)
+def get_google_places_competitors(lat, lon, radius_miles, keyword="hair salon beauty salon"):
+    api_key = st.secrets["GOOGLE_PLACES_API_KEY"]
+    radius_meters = int(radius_miles * 1609.34)
+
+    url = "https://maps.googleapis.com/maps/api/place/nearbysearch/json"
+
+    params = {
+        "location": f"{lat},{lon}",
+        "radius": radius_meters,
+        "keyword": keyword,
+        "key": api_key
+    }
+
+    response = requests.get(url, params=params, timeout=30)
+    data = response.json()
+
+    if data.get("status") not in ["OK", "ZERO_RESULTS"]:
+        st.error(f"Google Places API error: {data.get('status')} - {data.get('error_message', '')}")
+        return pd.DataFrame()
+
+    rows = []
+
+    for place in data.get("results", []):
+        rows.append({
+            "title": place.get("name"),
+            "totalScore": place.get("rating"),
+            "reviewsCount": place.get("user_ratings_total", 0),
+            "street": place.get("vicinity"),
+            "city": selected_city,
+            "state": filtered.iloc[0]["State"] if "State" in filtered.columns and not filtered.empty else "",
+            "categoryName": ", ".join(place.get("types", [])),
+            "website": "",
+            "url": f"https://www.google.com/maps/place/?q=place_id:{place.get('place_id')}",
+            "lat": place.get("geometry", {}).get("location", {}).get("lat"),
+            "lng": place.get("geometry", {}).get("location", {}).get("lng"),
+            "source": "Google Places API"
+        })
+
+    return pd.DataFrame(rows)
+
 @st.cache_data(ttl=3600)
 def get_census_place_data(year=2022, state_fips_list=None):
     if state_fips_list is None:
@@ -432,6 +473,19 @@ if trade_area_options:
         10,
         3
     )
+    use_google_places = st.sidebar.checkbox(
+    "Use Google Places API for competitors",
+    value=True
+)
+
+competitor_keyword = st.sidebar.text_input(
+    "Competitor Search Keyword",
+    value="hair salon beauty salon"
+)
+
+if st.sidebar.button("Refresh Google Places Data"):
+    st.cache_data.clear()
+    st.rerun()
 else:
     selected_trade_area = None
     radius_miles = 3
@@ -441,9 +495,20 @@ else:
 # -----------------------------
 filtered = df[df["City"] == selected_city].copy()
 
-city_competitors = competitors_df[
-    competitors_df["city"].str.lower() == selected_city.lower()
-].copy()
+if selected_trade_area and use_google_places:
+    trade_area_data = TRADE_AREAS[selected_city][selected_trade_area]
+
+    city_competitors = get_google_places_competitors(
+        lat=trade_area_data["lat"],
+        lon=trade_area_data["lon"],
+        radius_miles=radius_miles,
+        keyword=competitor_keyword
+    )
+
+else:
+    city_competitors = competitors_df[
+        competitors_df["city"].str.lower() == selected_city.lower()
+    ].copy()
 
 competitor_count = len(city_competitors)
 avg_rating = city_competitors["totalScore"].mean()
