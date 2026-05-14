@@ -676,9 +676,10 @@ filtered["Scenario_Profit"] = (
     - filtered["Scenario_Cost"]
 )
 
-filtered["Scenario_ROI"] = (
-    filtered["Scenario_Profit"]
-    / filtered["Scenario_Cost"]
+filtered["Scenario_ROI"] = filtered.apply(
+    lambda row: row["Scenario_Profit"] / row["Scenario_Cost"]
+    if row["Scenario_Cost"] != 0 else 0,
+    axis=1
 )
 selected_population_score = normalize_selected(
     filtered.iloc[0]["Population"],
@@ -903,7 +904,11 @@ comparison_df["Non_Rent_Cost"] = (
 
 comparison_df["Scenario_Cost"] = comparison_df["Non_Rent_Cost"] + comparison_df["Scenario_Rent"]
 comparison_df["Scenario_Profit"] = comparison_df["Scenario_Revenue"] - comparison_df["Scenario_Cost"]
-comparison_df["Scenario_ROI"] = comparison_df["Scenario_Profit"] / comparison_df["Scenario_Cost"]
+comparison_df["Scenario_ROI"] = comparison_df.apply(
+    lambda row: row["Scenario_Profit"] / row["Scenario_Cost"]
+    if row["Scenario_Cost"] != 0 else 0,
+    axis=1
+)
 
 def safe_normalize(series):
     min_value = series.min()
@@ -1405,42 +1410,72 @@ with tab4:
 
     colA, colB = st.columns(2)
 
-    with colA:
+        with colA:
 
         st.markdown(
             '<div class="section-title">Market Attractiveness Matrix</div>',
             unsafe_allow_html=True
         )
 
-        fig4 = px.scatter(
-            comparison_df,
-            x="Median_Income",
-            y="Population",
-            size="Final_Opportunity_Score",
-            color="Opportunity_Label",
-            hover_name="City",
-            hover_data={
-                "Scenario_ROI": ":.1%",
-                "Competitor_Count": True,
-                "Total_Reviews": True
-            },
-            color_discrete_sequence=[
-                GOLD_LIGHT,
-                GOLD,
-                "#A9843C",
-                "#7D6838"
+        # CLEAN DATA FOR SCATTER PLOT
+        scatter_df = comparison_df.copy()
+
+        numeric_cols = [
+            "Median_Income",
+            "Population",
+            "Final_Opportunity_Score",
+            "Scenario_ROI",
+            "Competitor_Count",
+            "Total_Reviews"
+        ]
+
+        for col in numeric_cols:
+            scatter_df[col] = pd.to_numeric(scatter_df[col], errors="coerce")
+
+        scatter_df = scatter_df.replace([float("inf"), float("-inf")], pd.NA)
+
+        scatter_df = scatter_df.dropna(
+            subset=[
+                "Median_Income",
+                "Population",
+                "Final_Opportunity_Score"
             ]
         )
 
-        fig4.update_layout(
-            xaxis_title="Median Household Income",
-            yaxis_title="Population"
-        )
+        scatter_df["Opportunity_Label"] = scatter_df["Opportunity_Label"].fillna("Unknown")
 
-        st.plotly_chart(
-            chart_layout(fig4, 520),
-            use_container_width=True
-        )
+        if scatter_df.empty:
+            st.warning("Not enough valid data to display the Market Attractiveness Matrix.")
+        else:
+            fig4 = px.scatter(
+                scatter_df,
+                x="Median_Income",
+                y="Population",
+                size="Final_Opportunity_Score",
+                color="Opportunity_Label",
+                hover_name="City",
+                hover_data={
+                    "Scenario_ROI": ":.1%",
+                    "Competitor_Count": True,
+                    "Total_Reviews": True
+                },
+                color_discrete_sequence=[
+                    GOLD_LIGHT,
+                    GOLD,
+                    "#A9843C",
+                    "#7D6838"
+                ]
+            )
+
+            fig4.update_layout(
+                xaxis_title="Median Household Income",
+                yaxis_title="Population"
+            )
+
+            st.plotly_chart(
+                chart_layout(fig4, 520),
+                use_container_width=True
+            )
 
     with colB:
 
