@@ -529,42 +529,47 @@ if st.sidebar.button("Refresh Google Places Data"):
 
             existing_cache = load_google_cache()
 
-if not existing_cache.empty:
-    existing_cache.columns = existing_cache.columns.str.strip()
+            if not existing_cache.empty:
 
-    existing_cache["selected_radius"] = pd.to_numeric(
-        existing_cache["selected_radius"],
-        errors="coerce"
-    )
+                existing_cache.columns = existing_cache.columns.str.strip()
 
-    existing_cache = existing_cache[
-        ~(
-            (existing_cache["selected_market"] == selected_city_clean)
-            &
-            (existing_cache["selected_trade_area"] == selected_trade_area)
-            &
-            (existing_cache["selected_radius"] == radius_miles)
-            &
-            (existing_cache["selected_keyword"] == competitor_keyword)
-        )
-    ]
+                existing_cache["selected_radius"] = pd.to_numeric(
+                    existing_cache["selected_radius"],
+                    errors="coerce"
+                )
 
-    updated_cache = pd.concat(
-        [existing_cache, fresh_google_data],
-        ignore_index=True
-    )
-else:
-    updated_cache = fresh_google_data.copy()
+                existing_cache = existing_cache[
+                    ~(
+                        (existing_cache["selected_market"] == selected_city_clean)
+                        &
+                        (existing_cache["selected_trade_area"] == selected_trade_area)
+                        &
+                        (existing_cache["selected_radius"] == radius_miles)
+                        &
+                        (existing_cache["selected_keyword"] == competitor_keyword)
+                    )
+                ]
 
-updated_cache.to_csv(GOOGLE_CACHE_FILE, index=False)
+                updated_cache = pd.concat(
+                    [existing_cache, fresh_google_data],
+                    ignore_index=True
+                )
 
-st.success("Google Places data refreshed and cached successfully.")
+            else:
+                updated_cache = fresh_google_data.copy()
 
-else:
-    st.warning("No Google Places results returned.")
+            updated_cache.to_csv(
+                GOOGLE_CACHE_FILE,
+                index=False
+            )
 
-else:
-    st.warning("Select a trade area first.")
+            st.success("Google Places data refreshed and cached successfully.")
+
+        else:
+            st.warning("No Google Places results returned.")
+
+    else:
+        st.warning("Select a trade area first.")
 # -----------------------------
 # FILTERED DATA
 # -----------------------------
