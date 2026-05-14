@@ -1410,7 +1410,7 @@ with tab4:
 
     colA, colB = st.columns(2)
 
-        with colA:
+    with colA:
 
         st.markdown(
             '<div class="section-title">Market Attractiveness Matrix</div>',
