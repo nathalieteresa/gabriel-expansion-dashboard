@@ -12,6 +12,7 @@ from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.pagesizes import letter
 from reportlab.lib.enums import TA_CENTER
 from math import radians, sin, cos, sqrt, atan2
+import os
 
 st.set_page_config(
     page_title="Strategic Expansion Intelligence",
@@ -185,6 +186,7 @@ st.markdown(f"""
 
 GOOGLE_SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRlzu0foii8Px9Kajtdoa84Cy3rYy9VdCG3tBa-Hwt7rmisBrXF_x8dYdrn2RgHIhimS0YJNQFAoZVD/pub?gid=0&single=true&output=csv"
 COMPETITORS_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRlzu0foii8Px9Kajtdoa84Cy3rYy9VdCG3tBa-Hwt7rmisBrXF_x8dYdrn2RgHIhimS0YJNQFAoZVD/pub?gid=324687326&single=true&output=csv"
+GOOGLE_CACHE_FILE = "google_places_cache.csv"
 
 @st.cache_data(ttl=60)
 def load_data(url):
@@ -323,6 +325,15 @@ def get_google_places_competitors(lat, lon, radius_miles, keyword="hair salon be
 
     return pd.DataFrame(rows)
 
+
+def load_google_cache():
+    if os.path.exists(GOOGLE_CACHE_FILE):
+        try:
+            return pd.read_csv(GOOGLE_CACHE_FILE)
+        except:
+            return pd.DataFrame()
+    return pd.DataFrame()
+    
 @st.cache_data(ttl=3600)
 def get_census_place_data(year=2022, state_fips_list=None):
     if state_fips_list is None:
@@ -493,56 +504,79 @@ competitor_keyword = st.sidebar.text_input(
     value="hair salon beauty salon"
 )
 
-if "google_places_data" not in st.session_state:
-    st.session_state.google_places_data = pd.DataFrame()
+if os.path.exists(GOOGLE_CACHE_FILE):
+    st.sidebar.success("Using cached Google Places data")
+else:
+    st.sidebar.warning("No Google cache found")
 
-if "google_places_market" not in st.session_state:
-    st.session_state.google_places_market = None
-
-if "google_places_trade_area" not in st.session_state:
-    st.session_state.google_places_trade_area = None
-
-if "google_places_radius" not in st.session_state:
-    st.session_state.google_places_radius = None
-
-if "google_places_keyword" not in st.session_state:
-    st.session_state.google_places_keyword = None
+# ---------------------------------
+# GOOGLE PLACES CACHE SYSTEM
+# ---------------------------------
 
 if st.sidebar.button("Refresh Google Places Data"):
+
     if selected_trade_area:
+
         trade_area_data = TRADE_AREAS[selected_city_clean][selected_trade_area]
 
-        st.session_state.google_places_data = get_google_places_competitors(
+        fresh_google_data = get_google_places_competitors(
             lat=trade_area_data["lat"],
             lon=trade_area_data["lon"],
             radius_miles=radius_miles,
             keyword=competitor_keyword
         )
 
-        st.session_state.google_places_market = selected_city_clean
-        st.session_state.google_places_trade_area = selected_trade_area
-        st.session_state.google_places_radius = radius_miles
-        st.session_state.google_places_keyword = competitor_keyword
+        if not fresh_google_data.empty:
 
-        st.success("Google Places data refreshed successfully.")
+            fresh_google_data["selected_market"] = selected_city_clean
+            fresh_google_data["selected_trade_area"] = selected_trade_area
+            fresh_google_data["selected_radius"] = radius_miles
+            fresh_google_data["selected_keyword"] = competitor_keyword
+
+            fresh_google_data.to_csv(
+                GOOGLE_CACHE_FILE,
+                index=False
+            )
+
+            st.success("Google Places data refreshed and cached successfully.")
+
+        else:
+            st.warning("No Google Places results returned.")
+
     else:
         st.warning("Select a trade area first.")
-
 # -----------------------------
 # FILTERED DATA
 # -----------------------------
 filtered = df[df["City"] == selected_city].copy()
 
+google_cache_df = load_google_cache()
+
 if (
     use_google_places
-    and not st.session_state.google_places_data.empty
-    and st.session_state.google_places_market == selected_city_clean
-    and st.session_state.google_places_trade_area == selected_trade_area
-    and st.session_state.google_places_radius == radius_miles
-    and st.session_state.google_places_keyword == competitor_keyword
+    and not google_cache_df.empty
 ):
-    city_competitors = st.session_state.google_places_data.copy()
+
+    filtered_cache = google_cache_df[
+        (google_cache_df["selected_market"] == selected_city_clean)
+        &
+        (google_cache_df["selected_trade_area"] == selected_trade_area)
+        &
+        (google_cache_df["selected_radius"] == radius_miles)
+        &
+        (google_cache_df["selected_keyword"] == competitor_keyword)
+    ]
+
+    if not filtered_cache.empty:
+        city_competitors = filtered_cache.copy()
+
+    else:
+        city_competitors = competitors_df[
+            competitors_df["city"].str.lower() == selected_city.lower()
+        ].copy()
+
 else:
+
     city_competitors = competitors_df[
         competitors_df["city"].str.lower() == selected_city.lower()
     ].copy()
