@@ -185,7 +185,6 @@ st.markdown(f"""
 """, unsafe_allow_html=True)
 
 GOOGLE_SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRlzu0foii8Px9Kajtdoa84Cy3rYy9VdCG3tBa-Hwt7rmisBrXF_x8dYdrn2RgHIhimS0YJNQFAoZVD/pub?gid=0&single=true&output=csv"
-COMPETITORS_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRlzu0foii8Px9Kajtdoa84Cy3rYy9VdCG3tBa-Hwt7rmisBrXF_x8dYdrn2RgHIhimS0YJNQFAoZVD/pub?gid=324687326&single=true&output=csv"
 GOOGLE_CACHE_FILE = "google_places_cache.csv"
 
 @st.cache_data(ttl=60)
@@ -199,11 +198,6 @@ def load_data(url):
         st.stop()
 
 df = load_data(GOOGLE_SHEET_CSV_URL)
-competitors_df = load_data(COMPETITORS_CSV_URL)
-competitors_df.columns = competitors_df.columns.str.strip()
-competitors_df["city"] = competitors_df["city"].astype(str).str.strip()
-competitors_df["totalScore"] = pd.to_numeric(competitors_df["totalScore"], errors="coerce")
-competitors_df["reviewsCount"] = pd.to_numeric(competitors_df["reviewsCount"], errors="coerce").fillna(0)
 df.columns = df.columns.str.strip()
 
 if "City" not in df.columns:
@@ -552,11 +546,14 @@ filtered = df[df["City"] == selected_city].copy()
 
 google_cache_df = load_google_cache()
 
-if (
-    use_google_places
-    and not google_cache_df.empty
-):
+if not google_cache_df.empty:
+    google_cache_df.columns = google_cache_df.columns.str.strip()
+    google_cache_df["city"] = google_cache_df["city"].astype(str).str.strip()
+    google_cache_df["totalScore"] = pd.to_numeric(google_cache_df["totalScore"], errors="coerce")
+    google_cache_df["reviewsCount"] = pd.to_numeric(google_cache_df["reviewsCount"], errors="coerce").fillna(0)
+    google_cache_df["selected_radius"] = pd.to_numeric(google_cache_df["selected_radius"], errors="coerce")
 
+if use_google_places and not google_cache_df.empty:
     filtered_cache = google_cache_df[
         (google_cache_df["selected_market"] == selected_city_clean)
         &
@@ -567,13 +564,9 @@ if (
         (google_cache_df["selected_keyword"] == competitor_keyword)
     ]
 
-    if not filtered_cache.empty:
-        city_competitors = filtered_cache.copy()
-
-    else:
-        city_competitors = competitors_df[
-            competitors_df["city"].str.lower() == selected_city.lower()
-        ].copy()
+    city_competitors = filtered_cache.copy()
+else:
+    city_competitors = pd.DataFrame()
 
 else:
 
@@ -623,32 +616,30 @@ if selected_trade_area:
     possible_lat_cols = ["lat", "latitude", "location.lat"]
     possible_lon_cols = ["lng", "lon", "longitude", "location.lng"]
 
-    lat_col = next((col for col in possible_lat_cols if col in competitors_df.columns), None)
-    lon_col = next((col for col in possible_lon_cols if col in competitors_df.columns), None)
+   lat_col = next((col for col in possible_lat_cols if col in city_competitors.columns), None)
+lon_col = next((col for col in possible_lon_cols if col in city_competitors.columns), None)
 
-    if lat_col and lon_col:
-        competitors_df[lat_col] = pd.to_numeric(competitors_df[lat_col], errors="coerce")
-        competitors_df[lon_col] = pd.to_numeric(competitors_df[lon_col], errors="coerce")
+if lat_col and lon_col:
+    city_competitors[lat_col] = pd.to_numeric(city_competitors[lat_col], errors="coerce")
+    city_competitors[lon_col] = pd.to_numeric(city_competitors[lon_col], errors="coerce")
 
-        competitors_with_location = competitors_df.dropna(subset=[lat_col, lon_col]).copy()
+    competitors_with_location = city_competitors.dropna(subset=[lat_col, lon_col]).copy()
 
-        competitors_with_location["Distance_Miles"] = competitors_with_location.apply(
-            lambda row: haversine_miles(
-                trade_area_lat,
-                trade_area_lon,
-                row[lat_col],
-                row[lon_col]
-            ),
-            axis=1
-        )
+    competitors_with_location["Distance_Miles"] = competitors_with_location.apply(
+        lambda row: haversine_miles(
+            trade_area_lat,
+            trade_area_lon,
+            row[lat_col],
+            row[lon_col]
+        ),
+        axis=1
+    )
 
-        trade_area_competitors = competitors_with_location[
-            competitors_with_location["Distance_Miles"] <= radius_miles
-        ].copy()
-
-    else:
-        trade_area_competitors = city_competitors.copy()
-
+    trade_area_competitors = competitors_with_location[
+        competitors_with_location["Distance_Miles"] <= radius_miles
+    ].copy()
+else:
+    trade_area_competitors = city_competitors.copy()
     trade_area_competitor_count = len(trade_area_competitors)
     trade_area_avg_rating = trade_area_competitors["totalScore"].mean()
     trade_area_total_reviews = trade_area_competitors["reviewsCount"].sum()
@@ -699,15 +690,15 @@ selected_income_score = normalize_selected(
 
 selected_roi_score = max(0, min(100, filtered.iloc[0]["Scenario_ROI"] * 100))
 
-selected_review_score = normalize_selected(
-    total_reviews,
-    competitors_df.groupby(competitors_df["city"].str.lower())["reviewsCount"].sum()
-)
+if not google_cache_df.empty:
+    review_baseline = google_cache_df.groupby("selected_market")["reviewsCount"].sum()
+    saturation_baseline = google_cache_df.groupby("selected_market").size()
+else:
+    review_baseline = pd.Series([total_reviews])
+    saturation_baseline = pd.Series([competitor_count])
 
-selected_saturation_score = normalize_selected(
-    competitor_count,
-    competitors_df.groupby(competitors_df["city"].str.lower()).size()
-)
+selected_review_score = normalize_selected(total_reviews, review_baseline)
+selected_saturation_score = normalize_selected(competitor_count, saturation_baseline)
 
 filtered["Premium_Fit_Score"] = (
     selected_income_score * 0.70
@@ -864,8 +855,11 @@ else:
 # -----------------------------
 # ALL MARKETS COMPARISON ENGINE
 # -----------------------------
-competitor_summary = competitors_df.copy()
-competitor_summary["city_key"] = competitor_summary["city"].str.lower()
+competitor_summary = google_cache_df.copy()
+if not competitor_summary.empty:
+    competitor_summary["city_key"] = competitor_summary["selected_market"].str.lower()
+else:
+    competitor_summary = pd.DataFrame(columns=["city_key", "title", "totalScore", "reviewsCount"])
 
 market_competitors = competitor_summary.groupby("city_key").agg(
     Competitor_Count=("title", "count"),
