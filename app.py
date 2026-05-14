@@ -560,7 +560,7 @@ updated_cache.to_csv(GOOGLE_CACHE_FILE, index=False)
 
 st.success("Google Places data refreshed and cached successfully.")
 
-        else:
+    else:
             st.warning("No Google Places results returned.")
 
     else:
