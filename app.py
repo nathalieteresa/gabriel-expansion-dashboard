@@ -554,6 +554,7 @@ if not google_cache_df.empty:
     google_cache_df["selected_radius"] = pd.to_numeric(google_cache_df["selected_radius"], errors="coerce")
 
 if use_google_places and not google_cache_df.empty:
+
     filtered_cache = google_cache_df[
         (google_cache_df["selected_market"] == selected_city_clean)
         &
@@ -565,14 +566,9 @@ if use_google_places and not google_cache_df.empty:
     ]
 
     city_competitors = filtered_cache.copy()
+
 else:
     city_competitors = pd.DataFrame()
-
-else:
-
-    city_competitors = competitors_df[
-        competitors_df["city"].str.lower() == selected_city.lower()
-    ].copy()
 
 competitor_count = len(city_competitors)
 
@@ -616,33 +612,39 @@ if selected_trade_area:
     possible_lat_cols = ["lat", "latitude", "location.lat"]
     possible_lon_cols = ["lng", "lon", "longitude", "location.lng"]
 
-   lat_col = next((col for col in possible_lat_cols if col in city_competitors.columns), None)
-lon_col = next((col for col in possible_lon_cols if col in city_competitors.columns), None)
+    lat_col = next((col for col in possible_lat_cols if col in city_competitors.columns), None)
+    lon_col = next((col for col in possible_lon_cols if col in city_competitors.columns), None)
 
-if lat_col and lon_col:
-    city_competitors[lat_col] = pd.to_numeric(city_competitors[lat_col], errors="coerce")
-    city_competitors[lon_col] = pd.to_numeric(city_competitors[lon_col], errors="coerce")
+    if lat_col and lon_col:
+        city_competitors[lat_col] = pd.to_numeric(city_competitors[lat_col], errors="coerce")
+        city_competitors[lon_col] = pd.to_numeric(city_competitors[lon_col], errors="coerce")
 
-    competitors_with_location = city_competitors.dropna(subset=[lat_col, lon_col]).copy()
+        competitors_with_location = city_competitors.dropna(subset=[lat_col, lon_col]).copy()
 
-    competitors_with_location["Distance_Miles"] = competitors_with_location.apply(
-        lambda row: haversine_miles(
-            trade_area_lat,
-            trade_area_lon,
-            row[lat_col],
-            row[lon_col]
-        ),
-        axis=1
-    )
+        competitors_with_location["Distance_Miles"] = competitors_with_location.apply(
+            lambda row: haversine_miles(
+                trade_area_lat,
+                trade_area_lon,
+                row[lat_col],
+                row[lon_col]
+            ),
+            axis=1
+        )
 
-    trade_area_competitors = competitors_with_location[
-        competitors_with_location["Distance_Miles"] <= radius_miles
-    ].copy()
-else:
-    trade_area_competitors = city_competitors.copy()
+        trade_area_competitors = competitors_with_location[
+            competitors_with_location["Distance_Miles"] <= radius_miles
+        ].copy()
+    else:
+        trade_area_competitors = city_competitors.copy()
+
     trade_area_competitor_count = len(trade_area_competitors)
-    trade_area_avg_rating = trade_area_competitors["totalScore"].mean()
-    trade_area_total_reviews = trade_area_competitors["reviewsCount"].sum()
+
+    if not trade_area_competitors.empty:
+        trade_area_avg_rating = trade_area_competitors["totalScore"].mean()
+        trade_area_total_reviews = trade_area_competitors["reviewsCount"].sum()
+    else:
+        trade_area_avg_rating = 0
+        trade_area_total_reviews = 0
 
     radius_area = 3.1416 * (radius_miles ** 2)
     trade_area_density = trade_area_competitor_count / radius_area if radius_area > 0 else 0
@@ -766,16 +768,23 @@ income_score = normalize_score(
 
 roi_score = max(0, min(100, roi_value * 100))
 
+if not google_cache_df.empty:
+    review_max = google_cache_df.groupby("selected_market")["reviewsCount"].sum().max()
+    saturation_max = google_cache_df.groupby("selected_market").size().max()
+else:
+    review_max = total_reviews
+    saturation_max = competitor_count
+
 review_score = normalize_score(
     total_reviews,
     0,
-    competitors_df.groupby(competitors_df["city"].str.lower())["reviewsCount"].sum().max()
+    review_max
 )
 
 saturation_score = normalize_score(
     competitor_count,
     0,
-    competitors_df.groupby(competitors_df["city"].str.lower()).size().max()
+    saturation_max
 )
 
 market_attractiveness_score = (
