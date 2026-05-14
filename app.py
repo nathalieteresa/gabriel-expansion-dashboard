@@ -1910,93 +1910,93 @@ with tab10:
         unsafe_allow_html=True
     )
 
-# CLEAN DATA FOR GEO MAP
-geo_map_df = map_df.copy()
+    # CLEAN DATA FOR GEO MAP
+    geo_map_df = map_df.copy()
 
-geo_numeric_cols = [
-    "Latitude",
-    "Longitude",
-    "Final_Opportunity_Score",
-    "Population",
-    "Median_Income",
-    "Scenario_ROI",
-    "Competitor_Count"
-]
+    geo_numeric_cols = [
+        "Latitude",
+        "Longitude",
+        "Final_Opportunity_Score",
+        "Population",
+        "Median_Income",
+        "Scenario_ROI",
+        "Competitor_Count"
+    ]
 
-for col in geo_numeric_cols:
-    geo_map_df[col] = pd.to_numeric(geo_map_df[col], errors="coerce")
+    for col in geo_numeric_cols:
+        geo_map_df[col] = pd.to_numeric(geo_map_df[col], errors="coerce")
 
-geo_map_df = geo_map_df.replace([float("inf"), float("-inf")], pd.NA)
+    geo_map_df = geo_map_df.replace([float("inf"), float("-inf")], pd.NA)
 
-geo_map_df = geo_map_df.dropna(
-    subset=["Latitude", "Longitude", "Final_Opportunity_Score"]
-)
-
-geo_map_df = geo_map_df[
-    (geo_map_df["Latitude"].between(-90, 90))
-    &
-    (geo_map_df["Longitude"].between(-180, 180))
-    &
-    (geo_map_df["Final_Opportunity_Score"] > 0)
-].copy()
-
-geo_map_df["Opportunity_Label"] = geo_map_df["Opportunity_Label"].fillna("Unknown")
-
-if geo_map_df.empty:
-    st.warning("Not enough valid geographic data to display the Geo Intelligence map.")
-else:
-    geo_fig = px.scatter_mapbox(
-        geo_map_df,
-        lat="Latitude",
-        lon="Longitude",
-        size="Final_Opportunity_Score",
-        color="Opportunity_Label",
-        hover_name="City",
-        hover_data={
-            "Population": ":,.0f",
-            "Median_Income": ":,.0f",
-            "Scenario_ROI": ":.1%",
-            "Competitor_Count": True,
-            "Final_Opportunity_Score": ":.1f"
-        },
-        zoom=3.2,
-        height=650,
-        size_max=35,
-        color_discrete_sequence=[
-            "#C6A052",
-            "#E8D28A",
-            "#A9843C",
-            "#7D6838"
-        ]
+    geo_map_df = geo_map_df.dropna(
+        subset=["Latitude", "Longitude", "Final_Opportunity_Score"]
     )
 
-    geo_fig.update_layout(
-        mapbox_style="carto-positron",
-        paper_bgcolor="rgba(255,255,255,0.92)",
-        plot_bgcolor="rgba(255,255,255,0.92)",
-        margin=dict(l=0, r=0, t=0, b=0),
-        legend=dict(
-            bgcolor="rgba(255,255,255,0.75)"
+    geo_map_df = geo_map_df[
+        (geo_map_df["Latitude"].between(-90, 90))
+        &
+        (geo_map_df["Longitude"].between(-180, 180))
+        &
+        (geo_map_df["Final_Opportunity_Score"] > 0)
+    ].copy()
+
+    geo_map_df["Opportunity_Label"] = geo_map_df["Opportunity_Label"].fillna("Unknown")
+
+    if geo_map_df.empty:
+        st.warning("Not enough valid geographic data to display the Geo Intelligence map.")
+    else:
+        geo_fig = px.scatter_mapbox(
+            geo_map_df,
+            lat="Latitude",
+            lon="Longitude",
+            size="Final_Opportunity_Score",
+            color="Opportunity_Label",
+            hover_name="City",
+            hover_data={
+                "Population": ":,.0f",
+                "Median_Income": ":,.0f",
+                "Scenario_ROI": ":.1%",
+                "Competitor_Count": True,
+                "Final_Opportunity_Score": ":.1f"
+            },
+            zoom=3.2,
+            height=650,
+            size_max=35,
+            color_discrete_sequence=[
+                "#C6A052",
+                "#E8D28A",
+                "#A9843C",
+                "#7D6838"
+            ]
         )
-    )
 
-    st.plotly_chart(geo_fig, use_container_width=True)
+        geo_fig.update_layout(
+            mapbox_style="carto-positron",
+            paper_bgcolor="rgba(255,255,255,0.92)",
+            plot_bgcolor="rgba(255,255,255,0.92)",
+            margin=dict(l=0, r=0, t=0, b=0),
+            legend=dict(
+                bgcolor="rgba(255,255,255,0.75)"
+            )
+        )
 
-    st.markdown("<br>", unsafe_allow_html=True)
+        st.plotly_chart(geo_fig, use_container_width=True)
 
-    top_geo = comparison_df.iloc[0]
+        st.markdown("<br>", unsafe_allow_html=True)
 
-    st.markdown(f"""
-    <div class="insight-card">
-        <div class="insight-title">Geographic Expansion Insight</div>
-        <div class="insight-body">
-            <b>{top_geo["City"]}</b> currently represents the strongest geographic expansion opportunity
-            based on combined demographic attractiveness, financial viability, and competitive market signals.
-            <br><br>
-            Markets with larger bubbles indicate higher overall expansion attractiveness under the selected scenario assumptions.
+        top_geo = geo_map_df.iloc[0]
+
+        st.markdown(f"""
+        <div class="insight-card">
+            <div class="insight-title">Geographic Expansion Insight</div>
+            <div class="insight-body">
+                <b>{top_geo["City"]}</b> currently represents the strongest geographic expansion opportunity
+                based on combined demographic attractiveness, financial viability, and competitive market signals.
+                <br><br>
+                Markets with larger bubbles indicate higher overall expansion attractiveness under the selected scenario assumptions.
+            </div>
         </div>
-    </div>
-    """, unsafe_allow_html=True)
+        """, unsafe_allow_html=True)
 
 with tab11:
     st.markdown('<div class="section-title">Data Quality & Assumptions</div>', unsafe_allow_html=True)
