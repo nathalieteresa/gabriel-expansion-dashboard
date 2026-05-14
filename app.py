@@ -1910,8 +1910,43 @@ with tab10:
         unsafe_allow_html=True
     )
 
+# CLEAN DATA FOR GEO MAP
+geo_map_df = map_df.copy()
+
+geo_numeric_cols = [
+    "Latitude",
+    "Longitude",
+    "Final_Opportunity_Score",
+    "Population",
+    "Median_Income",
+    "Scenario_ROI",
+    "Competitor_Count"
+]
+
+for col in geo_numeric_cols:
+    geo_map_df[col] = pd.to_numeric(geo_map_df[col], errors="coerce")
+
+geo_map_df = geo_map_df.replace([float("inf"), float("-inf")], pd.NA)
+
+geo_map_df = geo_map_df.dropna(
+    subset=["Latitude", "Longitude", "Final_Opportunity_Score"]
+)
+
+geo_map_df = geo_map_df[
+    (geo_map_df["Latitude"].between(-90, 90))
+    &
+    (geo_map_df["Longitude"].between(-180, 180))
+    &
+    (geo_map_df["Final_Opportunity_Score"] > 0)
+].copy()
+
+geo_map_df["Opportunity_Label"] = geo_map_df["Opportunity_Label"].fillna("Unknown")
+
+if geo_map_df.empty:
+    st.warning("Not enough valid geographic data to display the Geo Intelligence map.")
+else:
     geo_fig = px.scatter_mapbox(
-        map_df,
+        geo_map_df,
         lat="Latitude",
         lon="Longitude",
         size="Final_Opportunity_Score",
