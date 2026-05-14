@@ -527,10 +527,36 @@ if st.sidebar.button("Refresh Google Places Data"):
             fresh_google_data["selected_radius"] = radius_miles
             fresh_google_data["selected_keyword"] = competitor_keyword
 
-            fresh_google_data.to_csv(
-                GOOGLE_CACHE_FILE,
-                index=False
-            )
+            existing_cache = load_google_cache()
+
+if not existing_cache.empty:
+    existing_cache.columns = existing_cache.columns.str.strip()
+
+    existing_cache["selected_radius"] = pd.to_numeric(
+        existing_cache["selected_radius"],
+        errors="coerce"
+    )
+
+    existing_cache = existing_cache[
+        ~(
+            (existing_cache["selected_market"] == selected_city_clean)
+            &
+            (existing_cache["selected_trade_area"] == selected_trade_area)
+            &
+            (existing_cache["selected_radius"] == radius_miles)
+            &
+            (existing_cache["selected_keyword"] == competitor_keyword)
+        )
+    ]
+
+    updated_cache = pd.concat(
+        [existing_cache, fresh_google_data],
+        ignore_index=True
+    )
+else:
+    updated_cache = fresh_google_data.copy()
+
+updated_cache.to_csv(GOOGLE_CACHE_FILE, index=False)
 
             st.success("Google Places data refreshed and cached successfully.")
 
