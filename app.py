@@ -184,8 +184,8 @@ st.markdown(f"""
 </style>
 """, unsafe_allow_html=True)
 
-GOOGLE_SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRlzu0foii8Px9Kajtdoa84Cy3rYy9VdCG3tBa-Hwt7rmisBrXF_x8dYdrn2RgHIhimS0YJNQFAoZVD/pub?gid=0&single=true&output=csv"
 GOOGLE_CACHE_FILE = "google_places_cache.csv"
+GOOGLE_CACHE_SHEET_CSV_URL = st.secrets.get("GOOGLE_CACHE_SHEET_CSV_URL", "")
 
 @st.cache_data(ttl=60)
 def load_data(url):
@@ -319,13 +319,16 @@ def get_google_places_competitors(lat, lon, radius_miles, keyword="hair salon be
 
     return pd.DataFrame(rows)
 
-
+@st.cache_data(ttl=300)
 def load_google_cache():
-    if os.path.exists(GOOGLE_CACHE_FILE):
+    if GOOGLE_CACHE_SHEET_CSV_URL:
         try:
-            return pd.read_csv(GOOGLE_CACHE_FILE)
-        except:
+            return pd.read_csv(GOOGLE_CACHE_SHEET_CSV_URL)
+        except Exception as e:
+            st.warning("Could not load Google Places cache from Google Sheet.")
+            st.write(e)
             return pd.DataFrame()
+
     return pd.DataFrame()
     
 @st.cache_data(ttl=3600)
