@@ -217,7 +217,7 @@ def save_cache_to_google_sheet(df_to_save):
 
     client = connect_google_sheets()
 
-    spreadsheet = client.open_by_key("2PACX-1vRlzu0foii8Px9Kajtdoa84Cy3rYy9VdCG3tBa-Hwt7rmisBrXF_x8dYdrn2RgHIhimS0YJNQFAoZVD")
+    spreadsheet = client.open_by_key("1TDEk0iVLmS4506y5W1m5OSZynvbGEpF_NhkQXqMwspM")
 
     worksheet = spreadsheet.worksheet("google_places_cache")
 
