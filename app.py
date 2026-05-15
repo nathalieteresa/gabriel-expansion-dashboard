@@ -613,8 +613,8 @@ save_cache_to_google_sheet(updated_cache)
 
 st.success("Google Places data refreshed and synced to Google Sheets.")
 
-        else:
-            st.warning("No Google Places results returned.")
+    else:
+        st.warning("No Google Places results returned.")
 
     else:
         st.warning("Select a trade area first.")
