@@ -187,7 +187,7 @@ st.markdown(f"""
 </style>
 """, unsafe_allow_html=True)
 
-GOOGLE_SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRlzu0foii8Px9Kajtdoa84Cy3rYy9VdCG3tBa-Hwt7rmisBrXF_x8dYdrn2RgHIhimS0YJNQFAoZVD/pub?gid=0&single=true&output=csv"
+GOOGLE_SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRlzu0foii8Px9Kajtdoa84Cy3rYy9VdCG3tBa-Hwt7rmisBrXF_x8dYdrn2RgHIhimS0YJNQFAoZVD/pub?gid=625175676&single=true&output=csv"
 
 GOOGLE_CACHE_FILE = "google_places_cache.csv"
 GOOGLE_CACHE_SHEET_CSV_URL = st.secrets.get("GOOGLE_CACHE_SHEET_CSV_URL", "")
@@ -224,8 +224,6 @@ def connect_google_sheets():
 
 def save_cache_to_google_sheet(df_to_save):
     client = connect_google_sheets()
-
-    st.sidebar.write("Trying to open Sheet ID:", "1TDEk0iVLmS4506y5W1m5OSZynvbGEpF_NhkQXqMwspM")
 
     spreadsheet = client.open_by_key("1TDEk0iVLmS4506y5W1m5OSZynvbGEpF_NhkQXqMwspM")
     worksheet = spreadsheet.worksheet("google_places_cache")
