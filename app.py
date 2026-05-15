@@ -503,10 +503,10 @@ competitor_keyword = st.sidebar.text_input(
     value="hair salon beauty salon"
 )
 
-if os.path.exists(GOOGLE_CACHE_FILE):
-    st.sidebar.success("Using cached Google Places data")
+if GOOGLE_CACHE_SHEET_CSV_URL:
+    st.sidebar.success("Using Google Sheet competitor cache")
 else:
-    st.sidebar.warning("No Google cache found")
+    st.sidebar.warning("No Google Sheet competitor cache configured")
 
 # ---------------------------------
 # GOOGLE PLACES CACHE SYSTEM
