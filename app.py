@@ -211,6 +211,11 @@ def connect_google_sheets():
 
     client = gspread.authorize(creds)
 
+    st.sidebar.write(
+        "Service account:",
+        st.secrets["gcp_service_account"]["client_email"]
+    )
+
     return client
 
 def save_cache_to_google_sheet(df_to_save):
