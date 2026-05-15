@@ -6,3 +6,4 @@ reportlab
 matplotlib
 gspread
 google-auth
+gspread-dataframe
