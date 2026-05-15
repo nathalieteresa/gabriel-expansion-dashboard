@@ -4,3 +4,5 @@ plotly
 requests
 reportlab
 matplotlib
+gspread
+google-auth
