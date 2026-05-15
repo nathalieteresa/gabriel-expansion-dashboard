@@ -566,58 +566,56 @@ if st.sidebar.button("Refresh Google Places Data"):
             keyword=competitor_keyword
         )
 
-        if not fresh_google_data.empty:
+if not fresh_google_data.empty:
 
-            fresh_google_data["selected_market"] = selected_city_clean
-            fresh_google_data["selected_trade_area"] = selected_trade_area
-            fresh_google_data["selected_radius"] = radius_miles
-            fresh_google_data["selected_keyword"] = competitor_keyword
+    fresh_google_data["selected_market"] = selected_city_clean
+    fresh_google_data["selected_trade_area"] = selected_trade_area
+    fresh_google_data["selected_radius"] = radius_miles
+    fresh_google_data["selected_keyword"] = competitor_keyword
 
-            existing_cache = load_google_cache()
+    existing_cache = load_google_cache()
 
-            if not existing_cache.empty:
+    if not existing_cache.empty:
 
-                existing_cache.columns = existing_cache.columns.str.strip()
+        existing_cache.columns = existing_cache.columns.str.strip()
 
-                existing_cache["selected_radius"] = pd.to_numeric(
-                    existing_cache["selected_radius"],
-                    errors="coerce"
-                )
+        existing_cache["selected_radius"] = pd.to_numeric(
+            existing_cache["selected_radius"],
+            errors="coerce"
+        )
 
-                existing_cache = existing_cache[
-                    ~(
-                        (existing_cache["selected_market"] == selected_city_clean)
-                        &
-                        (existing_cache["selected_trade_area"] == selected_trade_area)
-                        &
-                        (existing_cache["selected_radius"] == radius_miles)
-                        &
-                        (existing_cache["selected_keyword"] == competitor_keyword)
-                    )
-                ]
+        existing_cache = existing_cache[
+            ~(
+                (existing_cache["selected_market"] == selected_city_clean)
+                &
+                (existing_cache["selected_trade_area"] == selected_trade_area)
+                &
+                (existing_cache["selected_radius"] == radius_miles)
+                &
+                (existing_cache["selected_keyword"] == competitor_keyword)
+            )
+        ]
 
-                updated_cache = pd.concat(
-                    [existing_cache, fresh_google_data],
-                    ignore_index=True
-                )
-
-            else:
-                updated_cache = fresh_google_data.copy()
-
-            updated_cache.to_csv(
-    GOOGLE_CACHE_FILE,
-    index=False
-)
-
-save_cache_to_google_sheet(updated_cache)
-
-st.success("Google Places data refreshed and synced to Google Sheets.")
+        updated_cache = pd.concat(
+            [existing_cache, fresh_google_data],
+            ignore_index=True
+        )
 
     else:
-        st.warning("No Google Places results returned.")
+        updated_cache = fresh_google_data.copy()
 
-    else:
-        st.warning("Select a trade area first.")
+    updated_cache.to_csv(
+        GOOGLE_CACHE_FILE,
+        index=False
+    )
+
+    save_cache_to_google_sheet(updated_cache)
+
+    st.success("Google Places data refreshed and synced to Google Sheets.")
+
+else:
+    st.warning("No Google Places results returned.")
+    
 # -----------------------------
 # FILTERED DATA
 # -----------------------------
