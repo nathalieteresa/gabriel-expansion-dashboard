@@ -4,7 +4,10 @@ import plotly.express as px
 from pathlib import Path
 import requests
 import matplotlib.pyplot as plt
+import gspread
 
+from google.oauth2.service_account import Credentials
+from gspread_dataframe import set_with_dataframe
 from io import BytesIO
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, HRFlowable, Image
 from reportlab.lib import colors
@@ -188,6 +191,44 @@ GOOGLE_SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRlzu0fo
 
 GOOGLE_CACHE_FILE = "google_places_cache.csv"
 GOOGLE_CACHE_SHEET_CSV_URL = st.secrets.get("GOOGLE_CACHE_SHEET_CSV_URL", "")
+
+# ---------------------------------
+# GOOGLE SHEETS CONNECTION
+# ---------------------------------
+
+SCOPES = [
+    "https://www.googleapis.com/auth/spreadsheets",
+    "https://www.googleapis.com/auth/drive"
+]
+
+@st.cache_resource
+def connect_google_sheets():
+
+    creds = Credentials.from_service_account_info(
+        st.secrets["gcp_service_account"],
+        scopes=SCOPES
+    )
+
+    client = gspread.authorize(creds)
+
+    return client
+
+def save_cache_to_google_sheet(df_to_save):
+
+    client = connect_google_sheets()
+
+    spreadsheet = client.open("beauty_expansion_data")
+
+    worksheet = spreadsheet.worksheet("google_places_cache")
+
+    worksheet.clear()
+
+    set_with_dataframe(
+        worksheet,
+        df_to_save,
+        include_index=False,
+        resize=True
+    )
 
 @st.cache_data(ttl=60)
 def load_data(url):
@@ -564,11 +605,13 @@ if st.sidebar.button("Refresh Google Places Data"):
                 updated_cache = fresh_google_data.copy()
 
             updated_cache.to_csv(
-                GOOGLE_CACHE_FILE,
-                index=False
-            )
+    GOOGLE_CACHE_FILE,
+    index=False
+)
 
-            st.success("Google Places data refreshed and cached successfully.")
+save_cache_to_google_sheet(updated_cache)
+
+st.success("Google Places data refreshed and synced to Google Sheets.")
 
         else:
             st.warning("No Google Places results returned.")
