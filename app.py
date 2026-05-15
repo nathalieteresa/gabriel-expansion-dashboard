@@ -223,11 +223,11 @@ def connect_google_sheets():
     return client
 
 def save_cache_to_google_sheet(df_to_save):
-
     client = connect_google_sheets()
 
-    spreadsheet = client.open_by_url("https://docs.google.com/spreadsheets/d/1TDEk0iVLmS4506y5W1m5OSZynvbGEpF_NhkQXqMwspM/edit?gid=625175676#gid=625175676")
+    st.sidebar.write("Trying to open Sheet ID:", "1TDEk0iVLmS4506y5W1m5OSZynvbGEpF_NhkQXqMwspM")
 
+    spreadsheet = client.open_by_key("1TDEk0iVLmS4506y5W1m5OSZynvbGEpF_NhkQXqMwspM")
     worksheet = spreadsheet.worksheet("google_places_cache")
 
     worksheet.clear()
