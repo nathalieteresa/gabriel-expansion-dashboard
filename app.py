@@ -211,10 +211,14 @@ def connect_google_sheets():
 
     client = gspread.authorize(creds)
 
-    st.sidebar.write(
-        "Service account:",
-        st.secrets["gcp_service_account"]["client_email"]
-    )
+    st.sidebar.write("Connected as:", st.secrets["gcp_service_account"]["client_email"])
+
+    try:
+        files = client.list_spreadsheet_files()
+        st.sidebar.write("Sheets visible:", [f["name"] for f in files])
+    except Exception as e:
+        st.sidebar.error("Cannot list Google Sheets")
+        st.sidebar.write(e)
 
     return client
 
