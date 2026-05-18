@@ -74,7 +74,7 @@ st.markdown(f"""
         min-height: 115px;
         box-shadow: 0 12px 30px rgba(0,0,0,0.08);
         overflow: visible !important;
-    }
+    }}
 
     div[data-testid="stMetricLabel"] {{
         color: #6F5725 !important;
