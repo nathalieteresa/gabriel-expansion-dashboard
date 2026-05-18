@@ -1084,8 +1084,15 @@ comparison_df["Inventory_Risk_Score"] = (
     + (100 - comparison_df["ROI_Score"]) * 0.20
 ).clip(0, 100)
 
+max_competitors = comparison_df["Competitor_Count"].max()
+
+if max_competitors == 0:
+    competitor_complexity = 0
+else:
+    competitor_complexity = comparison_df["Competitor_Count"] / max_competitors * 40
+
 comparison_df["Supply_Chain_Complexity_Score"] = (
-    comparison_df["Competitor_Count"] / comparison_df["Competitor_Count"].max() * 40
+    competitor_complexity
     + comparison_df["Population_Score"] * 0.30
     + comparison_df["Forecasted_Demand_Index"] * 0.30
 ).clip(0, 100)
@@ -1390,10 +1397,10 @@ with header_col1:
 with header_col2:
     st.markdown("""
     <div class="hero-title">
-        STRATEGIC EXPANSION INTELLIGENCE PLATFORM
+        AI-DRIVEN SUPPLY CHAIN & RETAIL TECHNOLOGY STRATEGY PLATFORM
     </div>
     <div class="hero-subtitle">
-        Market prioritization, ROI scenarios, and expansion recommendations.
+        AI analytics, data governance, supply chain optimization, market expansion, and change readiness intelligence
     </div>
     """, unsafe_allow_html=True)
 
@@ -1419,7 +1426,7 @@ k9.metric("Decision Status", decision_readiness)
 
 st.markdown("<br>", unsafe_allow_html=True)
 
-tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9, tab10, tab11, tab12, tab13, tab14, tab15, tab16, tab17 = st.tabs([
+tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9, tab10, tab11, tab12, tab13, tab14, tab15, tab16, tab17, tab18 = st.tabs([
     "Overview",
     "Market Ranking",
     "Financial Scenario",
@@ -1436,7 +1443,8 @@ tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9, tab10, tab11, tab12, tab13
     "AI Demand Forecasting",
     "Supply Chain Optimization",
     "Data Governance",
-    "Change Management Readiness"
+    "Change Management Readiness",
+    "Role Alignment Evidence"
     ])
 
 with tab1:
@@ -2628,3 +2636,37 @@ with tab17:
         use_container_width=True,
         height=420
     )
+
+with tab18:
+    st.markdown('<div class="section-title">Role Alignment Evidence</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-note">How this platform supports the Management Analyst role in supply chain and retail technology strategy.</div>', unsafe_allow_html=True)
+
+    st.markdown("""
+    <div class="insight-card">
+        <div class="insight-title">AI-Driven Analytics</div>
+        <div class="insight-body">
+            The platform uses structured scoring logic, demand signals, competitor intelligence, and scenario modeling to support data-driven decision-making.
+        </div>
+    </div>
+    <br>
+    <div class="insight-card">
+        <div class="insight-title">Supply Chain Optimization</div>
+        <div class="insight-body">
+            The platform evaluates inventory risk, demand intensity, market complexity, and operational readiness across expansion markets.
+        </div>
+    </div>
+    <br>
+    <div class="insight-card">
+        <div class="insight-title">Data Governance</div>
+        <div class="insight-body">
+            The platform measures data completeness and highlights whether demographic, financial, and operational data is reliable enough for executive decisions.
+        </div>
+    </div>
+    <br>
+    <div class="insight-card">
+        <div class="insight-title">Change Management & Technology Adoption</div>
+        <div class="insight-body">
+            The platform estimates implementation readiness by combining data quality, financial viability, and operational complexity.
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
