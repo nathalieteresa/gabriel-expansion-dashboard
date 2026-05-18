@@ -66,7 +66,7 @@ st.markdown(f"""
         font-weight: 500;
     }}
 
-    div[data-testid="stMetric"] {
+    div[data-testid="stMetric"] {{
         background: rgba(255,255,255,0.92);
         border: 1px solid #E5D6AF;
         border-radius: 22px;
@@ -151,46 +151,46 @@ st.markdown(f"""
         line-height: 1.55;
     }}
 
-    .metric-caption {
+    .metric-caption {{
         font-size: 0.72rem;
         color: #6F6A60;
         margin-top: -0.45rem;
         margin-bottom: 0.8rem;
         line-height: 1.25;
-    }
+    }}
 
-    .score-caption {
+    .score-caption {{
         font-size: 0.76rem;
         font-weight: 700;
         padding: 0.35rem 0.55rem;
         border-radius: 10px;
         margin-top: -0.45rem;
         display: inline-block;
-    }
+    }}
 
-    .score-low {
+    .score-low {{
         background: #FDECEC;
         color: #A30000;
         border: 1px solid #E4A2A2;
-    }
+    }}
 
-    .score-moderate {
+    .score-moderate {{
         background: #FFF7D6;
         color: #8A6A00;
         border: 1px solid #E3C85C;
-    }
+    }}
 
-    .score-strong {
+    .score-strong {{
         background: #EAF7EA;
         color: #1D6B2A;
         border: 1px solid #8ACB8A;
-    }
+    }}
 
-    .score-high {
+    .score-high {{
         background: #FFF1C2;
         color: #8A5A00;
         border: 1px solid #D8A800;
-    }
+    }}
 
     /* MULTISELECT TAGS */
     span[data-baseweb="tag"] {{
