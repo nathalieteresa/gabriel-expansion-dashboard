@@ -1214,8 +1214,8 @@ def generate_executive_pdf():
 
     elements = []
 
-    elements.append(Paragraph("Strategic Expansion Intelligence Report", title_style))
-    elements.append(Paragraph(f"{selected_city} Market Analysis & Expansion Recommendation", subtitle_style))
+    elements.append(Paragraph("AI-Driven Supply Chain & Retail Technology Strategy Report", title_style))
+    elements.append(Paragraph(f"{selected_city} Market Expansion, Demand Forecasting, Supply Chain, and Data Governance Analysis"))
 
     elements.append(HRFlowable(
         width="100%",
@@ -1236,7 +1236,13 @@ def generate_executive_pdf():
         ["Total Reviews", f"{int(total_reviews):,}"],
         ["Opportunity Score", f"{final_opportunity_score:.1f}/100"],
         ["Recommendation", opportunity_recommendation],
-    ]
+        ["Forecasted Demand Index", f"{comparison_df.iloc[0]['Forecasted_Demand_Index']:.1f}/100"],
+        ["Inventory Risk Score", f"{comparison_df.iloc[0]['Inventory_Risk_Score']:.1f}/100"],
+        ["Supply Chain Complexity", f"{comparison_df.iloc[0]['Supply_Chain_Complexity_Score']:.1f}/100"],
+        ["Data Governance Score", f"{comparison_df.iloc[0]['Data_Governance_Score']:.1f}/100"],
+        ["Change Readiness Score", f"{comparison_df.iloc[0]['Change_Readiness_Score']:.1f}/100"],
+        ["Implementation Priority", comparison_df.iloc[0]["Implementation_Priority"]],
+        ]
 
     table = Table(kpi_data, colWidths=[210, 300])
 
