@@ -1068,6 +1068,52 @@ comparison_df["Final_Opportunity_Score"] = (
     - comparison_df["Saturation_Score"] * 0.10
 ).clip(0, 100)
 
+# -----------------------------
+# AI / SUPPLY CHAIN / DATA GOVERNANCE LAYERS
+# -----------------------------
+
+comparison_df["Forecasted_Demand_Index"] = (
+    comparison_df["Beauty_Demand_Signal"] * 0.50
+    + comparison_df["Population_Score"] * 0.25
+    + comparison_df["Income_Score"] * 0.25
+).clip(0, 100)
+
+comparison_df["Inventory_Risk_Score"] = (
+    comparison_df["Forecasted_Demand_Index"] * 0.45
+    + comparison_df["Saturation_Score"] * 0.35
+    + (100 - comparison_df["ROI_Score"]) * 0.20
+).clip(0, 100)
+
+comparison_df["Supply_Chain_Complexity_Score"] = (
+    comparison_df["Competitor_Count"] / comparison_df["Competitor_Count"].max() * 40
+    + comparison_df["Population_Score"] * 0.30
+    + comparison_df["Forecasted_Demand_Index"] * 0.30
+).clip(0, 100)
+
+comparison_df["Data_Governance_Score"] = (
+    comparison_df[["Population", "Median_Income", "Estimated_Monthly_Rent", "Estimated_Monthly_Revenue", "Estimated_Monthly_Cost"]]
+    .notna()
+    .mean(axis=1) * 100
+)
+
+comparison_df["Change_Readiness_Score"] = (
+    comparison_df["Financial_Viability_Score"] * 0.35
+    + comparison_df["Data_Governance_Score"] * 0.35
+    + (100 - comparison_df["Supply_Chain_Complexity_Score"]) * 0.30
+).clip(0, 100)
+
+def implementation_priority(row):
+    if row["Final_Opportunity_Score"] >= 70 and row["Change_Readiness_Score"] >= 70:
+        return "Ready for Implementation"
+    elif row["Final_Opportunity_Score"] >= 60:
+        return "Requires Data and Operations Validation"
+    elif row["Inventory_Risk_Score"] >= 70:
+        return "High Inventory and Supply Chain Risk"
+    else:
+        return "Monitor / Lower Priority"
+
+comparison_df["Implementation_Priority"] = comparison_df.apply(implementation_priority, axis=1)
+
 def opportunity_label(score):
     if score >= 80:
         return "High Priority"
@@ -1373,7 +1419,7 @@ k9.metric("Decision Status", decision_readiness)
 
 st.markdown("<br>", unsafe_allow_html=True)
 
-tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9, tab10, tab11, tab12, tab13 = st.tabs([
+tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9, tab10, tab11, tab12, tab13, tab14, tab15, tab16, tab17 = st.tabs([
     "Overview",
     "Market Ranking",
     "Financial Scenario",
@@ -1386,8 +1432,12 @@ tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9, tab10, tab11, tab12, tab13
     "Geo Intelligence",
     "Data Quality & Assumptions",
     "Market Diagnostics",
-    "Trade Area Intelligence"
-])
+    "Trade Area Intelligence", 
+    "AI Demand Forecasting",
+    "Supply Chain Optimization",
+    "Data Governance",
+    "Change Management Readiness"
+    ])
 
 with tab1:
     left, right = st.columns([1, 2])
@@ -2459,3 +2509,122 @@ with tab13:
 
         else:
             st.warning("No competitor records were found for this trade area under the selected radius.")
+
+with tab14:
+    st.markdown('<div class="section-title">AI Demand Forecasting & Inventory Intelligence</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-note">Predictive layer estimating demand strength and inventory risk by market.</div>', unsafe_allow_html=True)
+
+    fig_ai = px.bar(
+        comparison_df.sort_values("Forecasted_Demand_Index", ascending=False),
+        x="City",
+        y="Forecasted_Demand_Index",
+        color="Implementation_Priority",
+        text="Forecasted_Demand_Index",
+        color_discrete_sequence=[GOLD_LIGHT, GOLD, "#A9843C", "#7D6838"]
+    )
+    fig_ai.update_traces(texttemplate="%{text:.1f}", textposition="outside")
+    st.plotly_chart(chart_layout(fig_ai, 540), use_container_width=True)
+
+    st.dataframe(
+        comparison_df[[
+            "City",
+            "Forecasted_Demand_Index",
+            "Inventory_Risk_Score",
+            "Beauty_Demand_Signal",
+            "Total_Reviews",
+            "Implementation_Priority"
+        ]],
+        use_container_width=True,
+        height=420
+    )
+
+with tab15:
+    st.markdown('<div class="section-title">Supply Chain Optimization Intelligence</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-note">Evaluates expansion markets through logistics, inventory, and operational complexity signals.</div>', unsafe_allow_html=True)
+
+    fig_supply = px.scatter(
+        comparison_df,
+        x="Forecasted_Demand_Index",
+        y="Supply_Chain_Complexity_Score",
+        size="Final_Opportunity_Score",
+        color="Implementation_Priority",
+        hover_name="City",
+        color_discrete_sequence=[GOLD_LIGHT, GOLD, "#A9843C", "#7D6838"]
+    )
+
+    st.plotly_chart(chart_layout(fig_supply, 540), use_container_width=True)
+
+    st.dataframe(
+        comparison_df[[
+            "City",
+            "Forecasted_Demand_Index",
+            "Inventory_Risk_Score",
+            "Supply_Chain_Complexity_Score",
+            "Scenario_ROI",
+            "Implementation_Priority"
+        ]],
+        use_container_width=True,
+        height=420
+    )
+
+with tab16:
+    st.markdown('<div class="section-title">Data Governance & Master Data Quality</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-note">Assesses whether market data is complete and reliable enough for executive decision-making.</div>', unsafe_allow_html=True)
+
+    governance_cols = [
+        "City",
+        "Population",
+        "Median_Income",
+        "Estimated_Monthly_Rent",
+        "Estimated_Monthly_Revenue",
+        "Estimated_Monthly_Cost",
+        "Data_Governance_Score"
+    ]
+
+    st.dataframe(
+        comparison_df[governance_cols],
+        use_container_width=True,
+        height=450
+    )
+
+    avg_governance = comparison_df["Data_Governance_Score"].mean()
+
+    st.markdown(f"""
+    <div class="insight-card">
+        <div class="insight-title">Governance Interpretation</div>
+        <div class="insight-body">
+            Average data governance score across all markets is <b>{avg_governance:.1f}/100</b>.
+            This score reflects completeness of demographic, financial, and operational planning data.
+            Higher data quality improves confidence in AI-assisted expansion recommendations.
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+with tab17:
+    st.markdown('<div class="section-title">Change Management & Technology Adoption Readiness</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-note">Evaluates implementation readiness based on data quality, financial viability, and operational complexity.</div>', unsafe_allow_html=True)
+
+    fig_change = px.bar(
+        comparison_df.sort_values("Change_Readiness_Score", ascending=False),
+        x="City",
+        y="Change_Readiness_Score",
+        color="Implementation_Priority",
+        text="Change_Readiness_Score",
+        color_discrete_sequence=[GOLD_LIGHT, GOLD, "#A9843C", "#7D6838"]
+    )
+    fig_change.update_traces(texttemplate="%{text:.1f}", textposition="outside")
+
+    st.plotly_chart(chart_layout(fig_change, 540), use_container_width=True)
+
+    st.dataframe(
+        comparison_df[[
+            "City",
+            "Change_Readiness_Score",
+            "Data_Governance_Score",
+            "Supply_Chain_Complexity_Score",
+            "Financial_Viability_Score",
+            "Implementation_Priority"
+        ]],
+        use_container_width=True,
+        height=420
+    )
