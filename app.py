@@ -66,13 +66,15 @@ st.markdown(f"""
         font-weight: 500;
     }}
 
-    div[data-testid="stMetric"] {{
+    div[data-testid="stMetric"] {
         background: rgba(255,255,255,0.92);
         border: 1px solid #E5D6AF;
         border-radius: 22px;
-        padding: 0.8rem;
+        padding: 0.9rem;
+        min-height: 115px;
         box-shadow: 0 12px 30px rgba(0,0,0,0.08);
-    }}
+        overflow: visible !important;
+    }
 
     div[data-testid="stMetricLabel"] {{
         color: #6F5725 !important;
@@ -148,6 +150,47 @@ st.markdown(f"""
         font-size: 0.95rem;
         line-height: 1.55;
     }}
+
+    .metric-caption {
+        font-size: 0.72rem;
+        color: #6F6A60;
+        margin-top: -0.45rem;
+        margin-bottom: 0.8rem;
+        line-height: 1.25;
+    }
+
+    .score-caption {
+        font-size: 0.76rem;
+        font-weight: 700;
+        padding: 0.35rem 0.55rem;
+        border-radius: 10px;
+        margin-top: -0.45rem;
+        display: inline-block;
+    }
+
+    .score-low {
+        background: #FDECEC;
+        color: #A30000;
+        border: 1px solid #E4A2A2;
+    }
+
+    .score-moderate {
+        background: #FFF7D6;
+        color: #8A6A00;
+        border: 1px solid #E3C85C;
+    }
+
+    .score-strong {
+        background: #EAF7EA;
+        color: #1D6B2A;
+        border: 1px solid #8ACB8A;
+    }
+
+    .score-high {
+        background: #FFF1C2;
+        color: #8A5A00;
+        border: 1px solid #D8A800;
+    }
 
     /* MULTISELECT TAGS */
     span[data-baseweb="tag"] {{
@@ -907,6 +950,17 @@ elif final_opportunity_score >= 50:
     opportunity_recommendation = "Moderate Opportunity — Requires Further Validation"
 else:
     opportunity_recommendation = "Lower Priority Under Current Assumptions"
+def opportunity_score_class(score):
+    if score < 50:
+        return "score-low", "🔴 Lower Priority"
+    elif score < 65:
+        return "score-moderate", "🟡 Moderate Opportunity"
+    elif score < 80:
+        return "score-strong", "🟢 Strong Opportunity"
+    else:
+        return "score-high", "🌟 High-Priority Expansion Candidate"
+
+score_css_class, score_label = opportunity_score_class(final_opportunity_score)
 
 # -----------------------------
 # DECISION READINESS ENGINE
@@ -1418,17 +1472,52 @@ median_income = filtered.iloc[0]["Median_Income"]
 avg_roi = filtered["Scenario_ROI"].mean()
 total_profit = filtered["Scenario_Profit"].sum()
 
-k1, k2, k3, k4, k5 = st.columns(5)
-k6, k7, k8, k9 = st.columns(4)
-k1.metric("Selected Market", top_market)
-k2.metric("Population", f"{population:,.0f}" if pd.notna(population) else "Not found")
-k3.metric("Median Income", f"${median_income:,.0f}" if pd.notna(median_income) else "Not found")
-k4.metric("Scenario ROI", f"{avg_roi:.1%}")
-k5.metric("Avg Rating", f"{avg_rating:.2f}")
-k6.metric("Competitors", f"{competitor_count:,}")
-k7.metric("Total Reviews", f"{int(total_reviews):,}")
-k8.metric("Opportunity Score", f"{final_opportunity_score:.1f}")
-k9.metric("Decision Status", decision_readiness)
+k1, k2, k3 = st.columns([1.4, 1, 1])
+k4, k5, k6 = st.columns([1.2, 1.2, 1.2])
+k7, k8, k9 = st.columns([1, 1.3, 1.6])
+
+with k1:
+    st.metric("Selected Market", top_market)
+
+with k2:
+    st.metric("Population", f"{population:,.0f}" if pd.notna(population) else "Not found")
+
+with k3:
+    st.metric("Median Income", f"${median_income:,.0f}" if pd.notna(median_income) else "Not found")
+
+with k4:
+    st.metric("Scenario ROI", f"{avg_roi:.1%}")
+    st.markdown(
+        '<div class="metric-caption">Estimated monthly ROI under current scenario assumptions</div>',
+        unsafe_allow_html=True
+    )
+
+with k5:
+    st.metric("Avg Rating", f"{avg_rating:.1f} / 5.0")
+    st.markdown(
+        f'<div class="metric-caption">Based on {int(total_reviews):,} total reviews</div>',
+        unsafe_allow_html=True
+    )
+
+with k6:
+    st.metric("Competitors", f"{competitor_count:,}")
+    st.markdown(
+        '<div class="metric-caption">Active competitors identified within the trade area</div>',
+        unsafe_allow_html=True
+    )
+
+with k7:
+    st.metric("Total Reviews", f"{int(total_reviews):,}")
+
+with k8:
+    st.metric("Opportunity Score", f"{final_opportunity_score:.1f} / 100")
+    st.markdown(
+        f'<div class="score-caption {score_css_class}">{score_label}</div>',
+        unsafe_allow_html=True
+    )
+
+with k9:
+    st.metric("Decision Status", decision_readiness)
 
 st.markdown("<br>", unsafe_allow_html=True)
 
@@ -1456,20 +1545,27 @@ tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9, tab10, tab11, tab12, tab13
 with tab1:
     left, right = st.columns([1, 2])
 
+    general_ranking = comparison_df.sort_values(
+        "Final_Opportunity_Score",
+        ascending=False
+    ).reset_index(drop=True)
+
+    top = general_ranking.iloc[0]
+    second = general_ranking.iloc[1] if len(general_ranking) > 1 else top
+
     with left:
         st.markdown('<div class="section-title">Executive Snapshot</div>', unsafe_allow_html=True)
         st.markdown('<div class="section-note">High-level view of the strongest expansion opportunities.</div>', unsafe_allow_html=True)
-
-        top = filtered.iloc[0]
-        second = filtered.iloc[1] if len(filtered) > 1 else top
 
         st.markdown(f"""
         <div class="insight-card">
             <div class="insight-title">Top Recommended Market</div>
             <div class="insight-body">
-                <b>{top["City"]}</b> currently ranks highest under the selected scenario.
+                <b>{top["City"]}</b> currently ranks highest across all markets.
                 <br><br>
-                Recommendation: <b>{top["Recommendation"]}</b>
+                Score: <b>{top["Final_Opportunity_Score"]:.1f}/100</b>
+                <br>
+                Recommendation: <b>{top["Opportunity_Label"]}</b>
             </div>
         </div>
         """, unsafe_allow_html=True)
@@ -1480,24 +1576,71 @@ with tab1:
         <div class="insight-card">
             <div class="insight-title">Second Strongest Market</div>
             <div class="insight-body">
-                <b>{second["City"]}</b> is the next strongest market based on scenario-adjusted score.
+                <b>{second["City"]}</b> is the second strongest market in the full ranking.
+                <br><br>
+                Score: <b>{second["Final_Opportunity_Score"]:.1f}/100</b>
+                <br>
+                Recommendation: <b>{second["Opportunity_Label"]}</b>
             </div>
         </div>
         """, unsafe_allow_html=True)
 
     with right:
         st.markdown('<div class="section-title">Expansion Score by Market</div>', unsafe_allow_html=True)
+        st.markdown(
+            '<div class="section-note">Scores range from 0 to 100. A score of 50 is the minimum validation threshold.</div>',
+            unsafe_allow_html=True
+        )
+
+        expansion_chart_df = general_ranking.copy()
+
+        expansion_chart_df["Score_Range"] = expansion_chart_df["Final_Opportunity_Score"].apply(
+            lambda score: (
+                "Lower Priority" if score < 50
+                else "Moderate Opportunity" if score < 65
+                else "Strong Opportunity"
+            )
+        )
+
+        color_map = {
+            "Lower Priority": "#C94C4C",
+            "Moderate Opportunity": "#D8B84E",
+            "Strong Opportunity": "#4F9D69"
+        }
 
         fig = px.bar(
-            filtered,
+            expansion_chart_df,
             x="City",
-            y="Final_Scenario_Score",
-            color="Recommendation",
-            text="Final_Scenario_Score",
-            color_discrete_sequence=[GOLD_LIGHT, GOLD, "#7D6838", "#3E3E3E"]
+            y="Final_Opportunity_Score",
+            color="Score_Range",
+            text="Final_Opportunity_Score",
+            category_orders={
+                "City": expansion_chart_df["City"].tolist()
+            },
+            color_discrete_map=color_map
         )
-        fig.update_traces(texttemplate="%{text:.1f}", textposition="outside")
-        st.plotly_chart(chart_layout(fig, 520), use_container_width=True)
+
+        fig.update_traces(
+            texttemplate="%{text:.1f}",
+            textposition="outside"
+        )
+
+        fig.add_hline(
+            y=50,
+            line_dash="dash",
+            line_color="#7A6330",
+            annotation_text="Minimum recommended threshold: 50",
+            annotation_position="top left"
+        )
+
+        fig.update_layout(
+            yaxis=dict(range=[0, 110]),
+            xaxis_title="Market",
+            yaxis_title="Expansion Score",
+            showlegend=True
+        )
+
+        st.plotly_chart(chart_layout(fig, 560), use_container_width=True)
 
 with tab2:
     st.markdown('<div class="section-title">Executive Market Ranking Table</div>', unsafe_allow_html=True)
