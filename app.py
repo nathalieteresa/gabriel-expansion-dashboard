@@ -254,15 +254,6 @@ def connect_google_sheets():
 
     client = gspread.authorize(creds)
 
-    st.sidebar.write("Connected as:", st.secrets["gcp_service_account"]["client_email"])
-
-    try:
-        files = client.list_spreadsheet_files()
-        st.sidebar.write("Sheets visible:", [f["name"] for f in files])
-    except Exception as e:
-        st.sidebar.error("Cannot list Google Sheets")
-        st.sidebar.write(e)
-
     return client
 
 def save_cache_to_google_sheet(df_to_save):
@@ -531,25 +522,25 @@ def normalize_selected(value, series):
 # -----------------------------
 # USER INPUTS
 # -----------------------------
-st.sidebar.markdown("## Predictive Expansion Simulation Controls")
-st.sidebar.markdown(
-    "Model franchise expansion scenarios using operational, demographic, financial, and competitive intelligence assumptions."
+st.sidebar.markdown("## Expansion Scenario Engine")
+st.sidebar.caption(
+    "Adjust market, revenue, cost, and competitor assumptions to simulate expansion viability."
 )
 
 st.sidebar.markdown("""
 <div style="
-    background: rgba(255,255,255,0.55);
-    border: 1px solid #D8C28A;
-    border-radius: 16px;
-    padding: 0.85rem;
-    margin: 0.8rem 0 1.2rem 0;
+    background: rgba(255,255,255,0.68);
+    border: 1px solid #E1C982;
+    border-radius: 18px;
+    padding: 0.9rem;
+    margin: 0.9rem 0 1.1rem 0;
     font-size: 0.82rem;
     line-height: 1.45;
     color: #4A3A16;
 ">
-<b>Intelligence Engine</b><br>
-This platform evaluates expansion viability using demographic signals, financial assumptions,
-competitive density, location intelligence, ROI projections, and operational feasibility logic.
+<b>How this engine works</b><br>
+The model combines market demographics, scenario assumptions, competitor signals,
+and financial projections to support expansion decision-making.
 </div>
 """, unsafe_allow_html=True)
 
