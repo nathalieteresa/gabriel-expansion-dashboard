@@ -1518,21 +1518,20 @@ def generate_executive_pdf():
 # -----------------------------
 # CLEAN HEADER — NO RECTANGLE
 # -----------------------------
-header_col1, header_col2 = st.columns([0.45, 9.55])
-
-with header_col1:
-    if logo_path.exists():
-        st.image("logo.png", width=42)
-
-with header_col2:
-    st.markdown("""
-    <div class="hero-title">
-        AI-DRIVEN SUPPLY CHAIN & RETAIL TECHNOLOGY STRATEGY PLATFORM
+st.markdown("""
+<div class="hero-wrapper">
+    <img src="app/static/logo.png" class="hero-logo">
+    <div>
+        <div class="hero-title">
+            AI-DRIVEN SUPPLY CHAIN & RETAIL TECHNOLOGY<br>
+            STRATEGY PLATFORM
+        </div>
+        <div class="hero-subtitle">
+            AI analytics, data governance, supply chain optimization, market expansion, and change readiness intelligence
+        </div>
     </div>
-    <div class="hero-subtitle">
-        AI analytics, data governance, supply chain optimization, market expansion, and change readiness intelligence
-    </div>
-    """, unsafe_allow_html=True)
+</div>
+""", unsafe_allow_html=True)
 
 st.markdown("<br>", unsafe_allow_html=True)
 
