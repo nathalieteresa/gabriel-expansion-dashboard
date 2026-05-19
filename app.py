@@ -30,17 +30,28 @@ logo_path = Path("logo.png")
 
 st.markdown(f"""
 <style>
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+
+html, body, [class*="css"] {
+    font-family: 'Inter', sans-serif !important;
+}
+
     .stApp {{
         background: linear-gradient(135deg, #F7F3EA 0%, #FFFFFF 45%, #EFE6D1 100%);
         color: #111111;
-    }}
+        }}
 
     .block-container {{
-        padding-top: 5rem;
-        padding-left: 3rem;
-        padding-right: 3rem;
-        max-width: 1450px;
-    }}
+    padding-top: 2rem;
+    padding-left: 3rem;
+    padding-right: 3rem;
+    max-width: 1450px;
+}}
+
+section.main > div {{
+    padding-top: 1.5rem;
+}}
 
     section[data-testid="stSidebar"] {{
         background: linear-gradient(180deg, #F7F1E4 0%, #EFE2BD 100%);
@@ -52,18 +63,21 @@ st.markdown(f"""
     }}
 
     .hero-title {{
-        font-size: 2.5rem;
-        font-weight: 900;
-        color: #111111;
-        letter-spacing: -1px;
-        line-height: 1.1;
+    font-family: 'Inter', sans-serif !important;
+    font-size: 2.35rem;
+    font-weight: 900;
+    color: #111111;
+    letter-spacing: -0.04em;
+    line-height: 1.05;
     }}
 
     .hero-subtitle {{
-        margin-top: 0.4rem;
-        font-size: 1.05rem;
-        color: #7A6330;
-        font-weight: 500;
+    font-family: 'Inter', sans-serif !important;
+    margin-top: 0.55rem;
+    font-size: 1.02rem;
+    color: #7A6330;
+    font-weight: 500;
+    letter-spacing: -0.01em;
     }}
 
     div[data-testid="stMetric"] {{
@@ -227,6 +241,35 @@ st.markdown(f"""
     .stSlider div[data-baseweb="slider"] div {{
         color: #8A6A24 !important;
     }}
+
+section[data-testid="stSidebar"],
+section[data-testid="stSidebar"] * {
+    font-family: 'Inter', sans-serif !important;
+}
+
+section[data-testid="stSidebar"] h1,
+section[data-testid="stSidebar"] h2,
+section[data-testid="stSidebar"] h3 {
+    font-size: 1.15rem !important;
+    font-weight: 800 !important;
+    letter-spacing: -0.03em !important;
+}
+
+section[data-testid="stSidebar"] label {
+    font-size: 0.9rem !important;
+    font-weight: 650 !important;
+    letter-spacing: -0.01em !important;
+}
+
+section[data-testid="stSidebar"] p {
+    font-size: 0.88rem !important;
+    line-height: 1.45 !important;
+    color: #6F6A60 !important;
+}
+
+div[data-testid="stMarkdownContainer"] {
+    font-family: 'Inter', sans-serif !important;
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -559,7 +602,7 @@ rent_change = st.sidebar.slider(
     100,
     0
 )
-st.sidebar.caption("Impacts projected profitability, ROI stability, and operational sustainability scoring.")
+st.sidebar.caption("Impacts profitability and ROI.")
 
 ticket_change = st.sidebar.slider(
     "Average Ticket Growth Assumption %",
