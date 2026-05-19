@@ -33,10 +33,6 @@ st.markdown(f"""
 
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
 
-html, body, [class*="css"] {{
-    font-family: 'Inter', sans-serif !important;
-}}
-
 .stApp {{
     background: linear-gradient(135deg, #F7F3EA 0%, #FFFFFF 45%, #EFE6D1 100%);
     color: #111111;
@@ -66,14 +62,13 @@ html, body, [class*="css"] {{
 
     .hero-title {{
     font-family: 'Inter', sans-serif !important;
-    font-size: clamp(1.65rem, 2.4vw, 2.25rem);
+    font-size: 1.85rem;
     font-weight: 900;
     color: #111111;
     letter-spacing: -0.04em;
     line-height: 1.08;
-    max-width: 980px;
+    max-width: 100%;
     white-space: normal;
-    overflow-wrap: normal;
     }}
 
     .hero-subtitle {{
@@ -249,11 +244,6 @@ html, body, [class*="css"] {{
         color: #8A6A24 !important;
     }}
 
-section[data-testid="stSidebar"],
-section[data-testid="stSidebar"] * {{
-    font-family: 'Inter', sans-serif !important;
-}}
-
 section[data-testid="stSidebar"] h1,
 section[data-testid="stSidebar"] h2,
 section[data-testid="stSidebar"] h3 {{
@@ -277,18 +267,16 @@ section[data-testid="stSidebar"] p {{
 div[data-testid="stMarkdownContainer"] {{
     font-family: 'Inter', sans-serif !important;
 }}
+
 /* FIX STREAMLIT ICONS */
-span[class*="material-symbols"],
-span[class*="material-icons"] {{
-    font-family: 'Material Symbols Rounded' !important;
-    font-weight: normal !important;
-    font-style: normal !important;
-    font-size: 1.25rem !important;
-    line-height: 1 !important;
+[data-testid="stSidebarCollapseButton"] *,
+button[kind="header"] *,
+span[class*="material"],
+span[class*="icon"] {{
+    font-family: "Material Symbols Rounded", "Material Icons" !important;
     letter-spacing: normal !important;
-    text-transform: none !important;
-    white-space: nowrap !important;
 }}
+
 </style>
 """, unsafe_allow_html=True)
 
@@ -1530,11 +1518,11 @@ def generate_executive_pdf():
 # -----------------------------
 # CLEAN HEADER — NO RECTANGLE
 # -----------------------------
-header_col1, header_col2 = st.columns([0.6, 9.4])
+header_col1, header_col2 = st.columns([0.45, 9.55])
 
 with header_col1:
     if logo_path.exists():
-        st.image("logo.png", width=62)
+        st.image("logo.png", width=42)
 
 with header_col2:
     st.markdown("""
