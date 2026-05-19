@@ -60,26 +60,42 @@ st.markdown(f"""
         color: #111111 !important;
     }}
 
+    .hero-wrapper {{
+        width: 100%;
+        margin-top: 2.2rem;
+        margin-bottom: 2rem;
+    }}
+
+    .hero-logo-row {{
+        margin-bottom: 1.4rem;
+    }}
+
+    .hero-logo-large {{
+        width: 110px;
+        height: auto;
+        display: block;
+    }}
+    
     .hero-title {{
-    font-family: 'Inter', sans-serif !important;
-    font-size: 1.85rem;
-    font-weight: 900;
-    color: #111111;
-    letter-spacing: -0.04em;
-    line-height: 1.08;
-    max-width: 100%;
-    white-space: normal;
+        font-family: 'Inter', sans-serif !important;
+        font-size: 1.85rem;
+        font-weight: 900;
+        color: #111111;
+        letter-spacing: -0.04em;
+        line-height: 1.08;
+        max-width: 100%;
+        white-space: normal;
     }}
 
     .hero-subtitle {{
-    font-family: 'Inter', sans-serif !important;
-    margin-top: 0.55rem;
-    font-size: 0.98rem;
-    color: #7A6330;
-    font-weight: 600;
-    letter-spacing: -0.01em;
-    max-width: 980px;
-    line-height: 1.45;
+        font-family: 'Inter', sans-serif !important;
+        margin-top: 0.55rem;
+        font-size: 0.98rem;
+        color: #7A6330;
+        font-weight: 600;
+        letter-spacing: -0.01em;
+        max-width: 980px;
+        line-height: 1.45;
     }}
 
     div[data-testid="stMetric"] {{
@@ -1520,15 +1536,17 @@ def generate_executive_pdf():
 # -----------------------------
 st.markdown("""
 <div class="hero-wrapper">
-    <img src="app/static/logo.png" class="hero-logo">
-    <div>
-        <div class="hero-title">
-            AI-DRIVEN SUPPLY CHAIN & RETAIL TECHNOLOGY<br>
-            STRATEGY PLATFORM
-        </div>
-        <div class="hero-subtitle">
-            AI analytics, data governance, supply chain optimization, market expansion, and change readiness intelligence
-        </div>
+    <div class="hero-logo-row">
+        <img src="app/static/logo.png" class="hero-logo-large">
+    </div>
+
+    <div class="hero-title">
+        AI-DRIVEN SUPPLY CHAIN & RETAIL TECHNOLOGY<br>
+        STRATEGY PLATFORM
+    </div>
+
+    <div class="hero-subtitle">
+        AI analytics, data governance, supply chain optimization, market expansion, and change readiness intelligence
     </div>
 </div>
 """, unsafe_allow_html=True)
