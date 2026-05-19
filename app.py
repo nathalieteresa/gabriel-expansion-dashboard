@@ -66,20 +66,25 @@ html, body, [class*="css"] {{
 
     .hero-title {{
     font-family: 'Inter', sans-serif !important;
-    font-size: 2.35rem;
+    font-size: clamp(1.65rem, 2.4vw, 2.25rem);
     font-weight: 900;
     color: #111111;
     letter-spacing: -0.04em;
-    line-height: 1.05;
+    line-height: 1.08;
+    max-width: 980px;
+    white-space: normal;
+    overflow-wrap: normal;
     }}
 
     .hero-subtitle {{
     font-family: 'Inter', sans-serif !important;
     margin-top: 0.55rem;
-    font-size: 1.02rem;
+    font-size: 0.98rem;
     color: #7A6330;
-    font-weight: 500;
+    font-weight: 600;
     letter-spacing: -0.01em;
+    max-width: 980px;
+    line-height: 1.45;
     }}
 
     div[data-testid="stMetric"] {{
@@ -271,6 +276,18 @@ section[data-testid="stSidebar"] p {{
 
 div[data-testid="stMarkdownContainer"] {{
     font-family: 'Inter', sans-serif !important;
+}}
+/* FIX STREAMLIT ICONS */
+span[class*="material-symbols"],
+span[class*="material-icons"] {{
+    font-family: 'Material Symbols Rounded' !important;
+    font-weight: normal !important;
+    font-style: normal !important;
+    font-size: 1.25rem !important;
+    line-height: 1 !important;
+    letter-spacing: normal !important;
+    text-transform: none !important;
+    white-space: nowrap !important;
 }}
 </style>
 """, unsafe_allow_html=True)
@@ -1513,11 +1530,11 @@ def generate_executive_pdf():
 # -----------------------------
 # CLEAN HEADER — NO RECTANGLE
 # -----------------------------
-header_col1, header_col2 = st.columns([1, 9])
+header_col1, header_col2 = st.columns([0.6, 9.4])
 
 with header_col1:
     if logo_path.exists():
-        st.image("logo.png", width=95)
+        st.image("logo.png", width=62)
 
 with header_col2:
     st.markdown("""
