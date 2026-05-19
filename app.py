@@ -245,17 +245,17 @@ html, body, [class*="css"] {{
     }}
 
 section[data-testid="stSidebar"],
-section[data-testid="stSidebar"] * {
+section[data-testid="stSidebar"] * {{
     font-family: 'Inter', sans-serif !important;
-}
+}}
 
 section[data-testid="stSidebar"] h1,
 section[data-testid="stSidebar"] h2,
-section[data-testid="stSidebar"] h3 {
+section[data-testid="stSidebar"] h3 {{
     font-size: 1.15rem !important;
     font-weight: 800 !important;
     letter-spacing: -0.03em !important;
-}
+}}
 
 section[data-testid="stSidebar"] label {
     font-size: 0.9rem !important;
