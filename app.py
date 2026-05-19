@@ -62,7 +62,7 @@ st.markdown(f"""
 
     .hero-wrapper {{
         width: 100%;
-        margin-top: 2.2rem;
+        margin-top: 3rem;
         margin-bottom: 2rem;
     }}
 
@@ -1534,24 +1534,22 @@ def generate_executive_pdf():
 # -----------------------------
 # CLEAN HEADER — NO RECTANGLE
 # -----------------------------
+st.markdown('<div class="hero-wrapper">', unsafe_allow_html=True)
+
+if logo_path.exists():
+    st.image("logo.png", width=125)
+
 st.markdown("""
-<div class="hero-wrapper">
-    <div class="hero-logo-row">
-        <img src="app/static/logo.png" class="hero-logo-large">
-    </div>
-
-    <div class="hero-title">
-        AI-DRIVEN SUPPLY CHAIN & RETAIL TECHNOLOGY<br>
-        STRATEGY PLATFORM
-    </div>
-
-    <div class="hero-subtitle">
-        AI analytics, data governance, supply chain optimization, market expansion, and change readiness intelligence
-    </div>
+<div class="hero-title">
+AI-DRIVEN SUPPLY CHAIN & RETAIL TECHNOLOGY<br>
+STRATEGY PLATFORM
+</div>
+<div class="hero-subtitle">
+AI analytics, data governance, supply chain optimization, market expansion, and change readiness intelligence
 </div>
 """, unsafe_allow_html=True)
 
-st.markdown("<br>", unsafe_allow_html=True)
+st.markdown('</div>', unsafe_allow_html=True)
 
 top_market = filtered.iloc[0]["City"]
 population = filtered.iloc[0]["Population"]
