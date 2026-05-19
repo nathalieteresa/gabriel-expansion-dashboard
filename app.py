@@ -257,21 +257,21 @@ section[data-testid="stSidebar"] h3 {{
     letter-spacing: -0.03em !important;
 }}
 
-section[data-testid="stSidebar"] label {
+section[data-testid="stSidebar"] label {{
     font-size: 0.9rem !important;
     font-weight: 650 !important;
     letter-spacing: -0.01em !important;
-}
+}}
 
-section[data-testid="stSidebar"] p {
+section[data-testid="stSidebar"] p {{
     font-size: 0.88rem !important;
     line-height: 1.45 !important;
     color: #6F6A60 !important;
-}
+}}
 
-div[data-testid="stMarkdownContainer"] {
+div[data-testid="stMarkdownContainer"] {{
     font-family: 'Inter', sans-serif !important;
-}
+}}
 </style>
 """, unsafe_allow_html=True)
 
