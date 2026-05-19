@@ -38,9 +38,11 @@ html, body, [class*="css"] {
 }
 
     .stApp {{
-        background: linear-gradient(135deg, #F7F3EA 0%, #FFFFFF 45%, #EFE6D1 100%);
-        color: #111111;
-        }}
+    background: linear-gradient(135deg, #F7F3EA 0%, #FFFFFF 45%, #EFE6D1 100%);
+    color: #111111;
+    font-family: 'Inter', sans-serif !important;
+    letter-spacing: -0.01em;
+}}
 
     .block-container {{
     padding-top: 2rem;
