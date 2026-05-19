@@ -47,11 +47,11 @@ html, body, [class*="css"] {
     padding-left: 3rem;
     padding-right: 3rem;
     max-width: 1450px;
-}}
+    }}
 
-section.main > div {{
+    section.main > div {{
     padding-top: 1.5rem;
-}}
+    }}
 
     section[data-testid="stSidebar"] {{
         background: linear-gradient(180deg, #F7F1E4 0%, #EFE2BD 100%);
