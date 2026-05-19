@@ -531,8 +531,27 @@ def normalize_selected(value, series):
 # -----------------------------
 # USER INPUTS
 # -----------------------------
-st.sidebar.markdown("## Scenario Controls")
-st.sidebar.markdown("Adjust assumptions to test expansion scenarios.")
+st.sidebar.markdown("## Predictive Expansion Simulation Controls")
+st.sidebar.markdown(
+    "Model franchise expansion scenarios using operational, demographic, financial, and competitive intelligence assumptions."
+)
+
+st.sidebar.markdown("""
+<div style="
+    background: rgba(255,255,255,0.55);
+    border: 1px solid #D8C28A;
+    border-radius: 16px;
+    padding: 0.85rem;
+    margin: 0.8rem 0 1.2rem 0;
+    font-size: 0.82rem;
+    line-height: 1.45;
+    color: #4A3A16;
+">
+<b>Intelligence Engine</b><br>
+This platform evaluates expansion viability using demographic signals, financial assumptions,
+competitive density, location intelligence, ROI projections, and operational feasibility logic.
+</div>
+""", unsafe_allow_html=True)
 
 df["City"] = df["City"].astype(str).str.strip()
 
@@ -544,25 +563,28 @@ selected_city = st.sidebar.selectbox(
 selected_city = selected_city.strip()
 
 rent_change = st.sidebar.slider(
-    "Rent Change %",
+    "Rent Cost Scenario Change %",
     -50,
     100,
     0
 )
+st.sidebar.caption("Impacts projected profitability, ROI stability, and operational sustainability scoring.")
 
 ticket_change = st.sidebar.slider(
-    "Revenue / Ticket Change %",
+    "Average Ticket Growth Assumption %",
     -50,
     100,
     0
 )
+st.sidebar.caption("Impacts projected revenue, financial viability, and expansion opportunity scoring.")
 
 customer_change = st.sidebar.slider(
-    "Customer Volume Change %",
+    "Customer Volume Growth Assumption %",
     -50,
     100,
     0
 )
+st.sidebar.caption("Impacts demand forecasting, revenue projections, and market viability scoring.")
 
 selected_city_clean = selected_city.strip()
 
@@ -585,25 +607,32 @@ else:
     radius_miles = 3
 
 use_google_places = st.sidebar.checkbox(
-    "Use Google Places API for competitors",
+    "Activate live competitor market scanning",
     value=True
 )
 
-competitor_keyword = st.sidebar.text_input(
-    "Competitor Search Keyword",
-    value="hair salon beauty salon"
+competitor_keyword = st.sidebar.selectbox(
+    "Competitor Classification Query",
+    [
+        "hair salon beauty salon",
+        "luxury hair salon",
+        "beauty salon",
+        "blow dry bar",
+        "hair extensions salon",
+        "med spa beauty"
+    ]
 )
 
 if GOOGLE_CACHE_SHEET_CSV_URL:
-    st.sidebar.success("Using Google Sheet competitor cache")
+    st.sidebar.success("Competitor intelligence data synchronized")
 else:
-    st.sidebar.warning("No Google Sheet competitor cache configured")
+    st.sidebar.warning("Competitor intelligence source not configured")
 
 # ---------------------------------
 # GOOGLE PLACES CACHE SYSTEM
 # ---------------------------------
 
-if st.sidebar.button("Refresh Google Places Data"):
+if st.sidebar.button("Refresh Live Market Intelligence"):
 
     if selected_trade_area:
 
@@ -2533,9 +2562,6 @@ with tab12:
 
     **Model recommendation:** **{top["Recommendation"]}**
     """)
-
-st.sidebar.write("DEBUG city:", selected_city)
-st.sidebar.write("DEBUG trade area:", selected_trade_area)
 
 with tab13:
 
