@@ -350,6 +350,17 @@ def load_data(url):
 df = load_data(GOOGLE_SHEET_CSV_URL)
 df.columns = df.columns.str.strip()
 
+# ---------------------------------
+# PRODUCT SALES & INVENTORY DATA
+# ---------------------------------
+
+product_file = Path("beauty_expansion_data/gabriel_samra_sutra_truss_mock_raw_data.xlsx")
+
+sales_df = pd.read_excel(product_file, sheet_name="Sales_Transactions")
+products_df = pd.read_excel(product_file, sheet_name="Products")
+inventory_df = pd.read_excel(product_file, sheet_name="Inventory")
+stores_df = pd.read_excel(product_file, sheet_name="Stores")
+
 if "City" not in df.columns:
     st.error("Your CSV must include a column named 'City'.")
     st.stop()
