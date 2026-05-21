@@ -354,7 +354,11 @@ df.columns = df.columns.str.strip()
 # PRODUCT SALES & INVENTORY DATA
 # ---------------------------------
 
-product_file = Path("beauty_expansion_data/gabriel_samra_sutra_truss_mock_raw_data.xlsx")
+product_file = Path("gabriel_samra_sutra_truss_mock_raw_data.xlsx")
+
+if not product_file.exists():
+    st.error(f"Product file not found: {product_file.resolve()}")
+    st.stop()
 
 sales_df = pd.read_excel(product_file, sheet_name="Sales_Transactions")
 products_df = pd.read_excel(product_file, sheet_name="Products")
