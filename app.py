@@ -1715,7 +1715,7 @@ with k9:
 
 st.markdown("<br>", unsafe_allow_html=True)
 
-tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9, tab10, tab11, tab12, tab13, tab14, tab15, tab16, tab17, tab18 = st.tabs([
+tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9, tab10, tab11, tab12, tab13, tab14, tab15, tab16, tab17, tab18, tab19 = st.tabs([
     "Overview",
     "Market Ranking",
     "Financial Scenario",
@@ -1733,7 +1733,8 @@ tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9, tab10, tab11, tab12, tab13
     "Supply Chain Optimization",
     "Data Governance",
     "Change Management Readiness",
-    "Role Alignment Evidence"
+    "Role Alignment Evidence",
+    "Product & Inventory Intelligence"
     ])
 
 with tab1:
@@ -3007,6 +3008,219 @@ with tab18:
         <div class="insight-title">Change Management & Technology Adoption</div>
         <div class="insight-body">
             The platform estimates implementation readiness by combining data quality, financial viability, and operational complexity.
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+with tab19:
+
+    st.markdown(
+        '<div class="section-title">Product & Inventory Intelligence</div>',
+        unsafe_allow_html=True
+    )
+
+    st.markdown(
+        '<div class="section-note">AI-driven product analytics, inventory visibility, and retail performance intelligence.</div>',
+        unsafe_allow_html=True
+    )
+
+    # -----------------------------
+    # KPI ROW
+    # -----------------------------
+
+    total_revenue = product_summary["Revenue"].sum()
+    total_units = product_summary["Units_Sold"].sum()
+    total_profit_products = product_summary["Gross_Profit"].sum()
+
+    low_stock_count = len(
+        inventory_df[
+            inventory_df["Inventory_Status"] == "Reorder Needed"
+        ]
+    )
+
+    p1, p2, p3, p4 = st.columns(4)
+
+    p1.metric(
+        "Total Revenue",
+        f"${total_revenue:,.0f}"
+    )
+
+    p2.metric(
+        "Units Sold",
+        f"{total_units:,.0f}"
+    )
+
+    p3.metric(
+        "Gross Profit",
+        f"${total_profit_products:,.0f}"
+    )
+
+    p4.metric(
+        "Low Stock Alerts",
+        f"{low_stock_count:,}"
+    )
+
+    st.markdown("<br>", unsafe_allow_html=True)
+
+    # -----------------------------
+    # TOP PRODUCTS
+    # -----------------------------
+
+    c1, c2 = st.columns(2)
+
+    with c1:
+
+        st.markdown(
+            "### Top Selling Products"
+        )
+
+        top_products = product_summary.sort_values(
+            "Revenue",
+            ascending=False
+        ).head(10)
+
+        fig_products = px.bar(
+            top_products,
+            x="Revenue",
+            y="Product_Name",
+            orientation="h",
+            color="Brand",
+            text="Revenue",
+            color_discrete_sequence=[
+                GOLD_LIGHT,
+                GOLD,
+                "#A9843C",
+                "#7D6838"
+            ]
+        )
+
+        fig_products.update_layout(
+            yaxis=dict(autorange="reversed")
+        )
+
+        st.plotly_chart(
+            chart_layout(fig_products, 520),
+            use_container_width=True
+        )
+
+    with c2:
+
+        st.markdown(
+            "### Revenue by Brand"
+        )
+
+        fig_brand = px.pie(
+            brand_summary,
+            names="Brand",
+            values="Revenue",
+            color_discrete_sequence=[
+                GOLD_LIGHT,
+                GOLD,
+                "#A9843C",
+                "#7D6838"
+            ]
+        )
+
+        st.plotly_chart(
+            chart_layout(fig_brand, 520),
+            use_container_width=True
+        )
+
+    # -----------------------------
+    # INVENTORY RISK
+    # -----------------------------
+
+    st.markdown("### Inventory Risk Intelligence")
+
+    inventory_risk = inventory_df.copy()
+
+    fig_inventory = px.bar(
+        inventory_risk.sort_values(
+            "Current_Stock"
+        ),
+        x="Product_Name",
+        y="Current_Stock",
+        color="Inventory_Status",
+        text="Current_Stock",
+        color_discrete_map={
+            "Healthy Stock": "#C6A052",
+            "Reorder Needed": "#B22222"
+        }
+    )
+
+    st.plotly_chart(
+        chart_layout(fig_inventory, 540),
+        use_container_width=True
+    )
+
+    st.dataframe(
+        inventory_df[[
+            "Salon_Location",
+            "Brand",
+            "Product_Name",
+            "Current_Stock",
+            "Reorder_Point",
+            "Inventory_Status"
+        ]],
+        use_container_width=True,
+        height=420
+    )
+
+    # -----------------------------
+    # STORE PERFORMANCE
+    # -----------------------------
+
+    st.markdown("### Store Performance Intelligence")
+
+    fig_store = px.bar(
+        store_summary.sort_values(
+            "Revenue",
+            ascending=False
+        ),
+        x="Salon_Location",
+        y="Revenue",
+        color="Gross_Profit",
+        text="Revenue",
+        color_continuous_scale=[
+            "#EFE2BD",
+            "#C6A052",
+            "#7D6838"
+        ]
+    )
+
+    st.plotly_chart(
+        chart_layout(fig_store, 520),
+        use_container_width=True
+    )
+
+    st.dataframe(
+        store_summary,
+        use_container_width=True,
+        height=320
+    )
+
+    # -----------------------------
+    # EXECUTIVE INTERPRETATION
+    # -----------------------------
+
+    top_product = top_products.iloc[0]["Product_Name"]
+    top_brand = brand_summary.sort_values(
+        "Revenue",
+        ascending=False
+    ).iloc[0]["Brand"]
+
+    st.markdown(f"""
+    <div class="insight-card">
+        <div class="insight-title">Executive Product Intelligence Summary</div>
+        <div class="insight-body">
+            <b>{top_brand}</b> currently represents the strongest revenue-driving brand across the analyzed portfolio.
+            <br><br>
+            The top-performing product is <b>{top_product}</b>, based on total sales revenue.
+            <br><br>
+            Inventory analysis identified <b>{low_stock_count}</b> products requiring replenishment attention.
+            <br><br>
+            This intelligence layer supports retail optimization, demand forecasting, inventory planning,
+            and AI-assisted operational decision-making.
         </div>
     </div>
     """, unsafe_allow_html=True)
