@@ -354,7 +354,7 @@ df.columns = df.columns.str.strip()
 # PRODUCT SALES & INVENTORY DATA
 # ---------------------------------
 
-product_file = Path("gabriel_samra_sutra_truss_mock_raw_data.xlsx")
+product_file = Path("Gabriel_Samra_Inventory.xlsx")
 
 if not product_file.exists():
     st.error(f"Product file not found: {product_file.resolve()}")
