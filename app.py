@@ -361,6 +361,7 @@ if not product_file.exists():
     st.stop()
 
 sales_df = pd.read_excel(product_file, sheet_name="Sales_Transactions")
+st.write(sales_df.columns.tolist())
 products_df = pd.read_excel(product_file, sheet_name="Products")
 inventory_df = pd.read_excel(product_file, sheet_name="Inventory")
 stores_df = pd.read_excel(product_file, sheet_name="Stores")
