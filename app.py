@@ -361,7 +361,6 @@ if not product_file.exists():
     st.stop()
 
 sales_df = pd.read_excel(product_file, sheet_name="Sales_Transactions")
-st.write(sales_df.columns.tolist())
 products_df = pd.read_excel(product_file, sheet_name="Products")
 inventory_df = pd.read_excel(product_file, sheet_name="Inventory")
 stores_df = pd.read_excel(product_file, sheet_name="Stores")
@@ -370,48 +369,93 @@ stores_df = pd.read_excel(product_file, sheet_name="Stores")
 # PRODUCT ANALYTICS CALCULATIONS
 # ---------------------------------
 
-sales_df["Date"] = pd.to_datetime(sales_df["Date"], errors="coerce", unit="D", origin="1899-12-30")
+sales_df["Date"] = pd.to_datetime(
+    sales_df["Date"],
+    errors="coerce",
+    unit="D",
+    origin="1899-12-30"
+)
 
-sales_df["Quantity"] = pd.to_numeric(sales_df["Quantity"], errors="coerce").fillna(0)
-sales_df["Unit_Price"] = pd.to_numeric(sales_df["Unit_Price"], errors="coerce").fillna(0)
-sales_df["Unit_Cost"] = pd.to_numeric(sales_df["Unit_Cost"], errors="coerce").fillna(0)
+sales_df["Units_Sold"] = pd.to_numeric(
+    sales_df["Units_Sold"],
+    errors="coerce"
+).fillna(0)
 
-sales_df["Revenue"] = sales_df["Quantity"] * sales_df["Unit_Price"]
-sales_df["COGS"] = sales_df["Quantity"] * sales_df["Unit_Cost"]
-sales_df["Gross_Profit"] = sales_df["Revenue"] - sales_df["COGS"]
-sales_df["Gross_Margin"] = sales_df.apply(
-    lambda row: row["Gross_Profit"] / row["Revenue"] if row["Revenue"] != 0 else 0,
+sales_df["Retail_Price"] = pd.to_numeric(
+    sales_df["Retail_Price"],
+    errors="coerce"
+).fillna(0)
+
+sales_df["Unit_Cost"] = pd.to_numeric(
+    sales_df["Unit_Cost"],
+    errors="coerce"
+).fillna(0)
+
+sales_df["Revenue"] = (
+    sales_df["Units_Sold"]
+    * sales_df["Retail_Price"]
+)
+
+sales_df["COGS_Calculated"] = (
+    sales_df["Units_Sold"]
+    * sales_df["Unit_Cost"]
+)
+
+sales_df["Gross_Profit_Calculated"] = (
+    sales_df["Revenue"]
+    - sales_df["COGS_Calculated"]
+)
+
+sales_df["Gross_Margin_Calculated"] = sales_df.apply(
+    lambda row:
+    row["Gross_Profit_Calculated"] / row["Revenue"]
+    if row["Revenue"] != 0 else 0,
     axis=1
 )
 
 product_summary = sales_df.groupby(
-    ["Brand", "Product_ID", "Product_Name"], as_index=False
+    ["Brand", "Product_ID", "Product_Name"],
+    as_index=False
 ).agg(
-    Units_Sold=("Quantity", "sum"),
+    Units_Sold=("Units_Sold", "sum"),
     Revenue=("Revenue", "sum"),
-    Gross_Profit=("Gross_Profit", "sum"),
-    Avg_Margin=("Gross_Margin", "mean")
+    Gross_Profit=("Gross_Profit_Calculated", "sum"),
+    Avg_Margin=("Gross_Margin_Calculated", "mean")
 )
 
 store_summary = sales_df.groupby(
-    ["Store_ID", "Salon_Location"], as_index=False
+    ["Store_ID", "Salon_Location"],
+    as_index=False
 ).agg(
-    Units_Sold=("Quantity", "sum"),
+    Units_Sold=("Units_Sold", "sum"),
     Revenue=("Revenue", "sum"),
-    Gross_Profit=("Gross_Profit", "sum")
+    Gross_Profit=("Gross_Profit_Calculated", "sum")
 )
 
-brand_summary = sales_df.groupby("Brand", as_index=False).agg(
-    Units_Sold=("Quantity", "sum"),
+brand_summary = sales_df.groupby(
+    "Brand",
+    as_index=False
+).agg(
+    Units_Sold=("Units_Sold", "sum"),
     Revenue=("Revenue", "sum"),
-    Gross_Profit=("Gross_Profit", "sum")
+    Gross_Profit=("Gross_Profit_Calculated", "sum")
 )
 
-inventory_df["Current_Stock"] = pd.to_numeric(inventory_df["Current_Stock"], errors="coerce").fillna(0)
-inventory_df["Reorder_Point"] = pd.to_numeric(inventory_df["Reorder_Point"], errors="coerce").fillna(0)
+inventory_df["Current_Stock"] = pd.to_numeric(
+    inventory_df["Current_Stock"],
+    errors="coerce"
+).fillna(0)
+
+inventory_df["Reorder_Point"] = pd.to_numeric(
+    inventory_df["Reorder_Point"],
+    errors="coerce"
+).fillna(0)
 
 inventory_df["Inventory_Status"] = inventory_df.apply(
-    lambda row: "Reorder Needed" if row["Current_Stock"] <= row["Reorder_Point"] else "Healthy Stock",
+    lambda row:
+    "Reorder Needed"
+    if row["Current_Stock"] <= row["Reorder_Point"]
+    else "Healthy Stock",
     axis=1
 )
 
