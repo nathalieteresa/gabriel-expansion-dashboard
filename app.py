@@ -365,18 +365,6 @@ products_df = pd.read_excel(product_file, sheet_name="Products")
 inventory_df = pd.read_excel(product_file, sheet_name="Inventory")
 stores_df = pd.read_excel(product_file, sheet_name="Stores")
 
-st.write("Sales DF")
-st.dataframe(sales_df.head())
-
-st.write("Products DF")
-st.dataframe(products_df.head())
-
-st.write("Inventory DF")
-st.dataframe(inventory_df.head())
-
-st.write("Stores DF")
-st.dataframe(stores_df.head())
-
 if "City" not in df.columns:
     st.error("Your CSV must include a column named 'City'.")
     st.stop()
