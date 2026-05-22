@@ -501,6 +501,40 @@ inventory_df["Inventory_Status"] = inventory_df.apply(
     axis=1
 )
 
+# ---------------------------------
+# REORDER RECOMMENDATION ENGINE
+# ---------------------------------
+
+reorder_df = inventory_df.merge(
+    product_forecast,
+    on=["Salon_Location", "Brand", "Product_ID", "Product_Name"],
+    how="left"
+)
+
+reorder_df["Forecast_Next_Month_Units"] = reorder_df["Forecast_Next_Month_Units"].fillna(0)
+
+reorder_df["Projected_Ending_Stock"] = (
+    reorder_df["Current_Stock"] - reorder_df["Forecast_Next_Month_Units"]
+)
+
+reorder_df["Recommended_Reorder_Qty"] = reorder_df.apply(
+    lambda row: max(
+        0,
+        (row["Forecast_Next_Month_Units"] + row["Reorder_Point"]) - row["Current_Stock"]
+    ),
+    axis=1
+).round(0)
+
+reorder_df["Reorder_Recommendation"] = reorder_df.apply(
+    lambda row:
+    "Urgent Reorder"
+    if row["Projected_Ending_Stock"] <= 0
+    else "Reorder Soon"
+    if row["Projected_Ending_Stock"] <= row["Reorder_Point"]
+    else "No Reorder Needed",
+    axis=1
+)
+
 if "City" not in df.columns:
     st.error("Your CSV must include a column named 'City'.")
     st.stop()
@@ -1757,7 +1791,7 @@ with k9:
 
 st.markdown("<br>", unsafe_allow_html=True)
 
-tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9, tab10, tab11, tab12, tab13, tab14, tab15, tab16, tab17, tab18, tab19, tab20 = st.tabs([
+tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9, tab10, tab11, tab12, tab13, tab14, tab15, tab16, tab17, tab18, tab19, tab20, tab21 = st.tabs([
     "Overview",
     "Market Ranking",
     "Financial Scenario",
@@ -1777,7 +1811,8 @@ tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9, tab10, tab11, tab12, tab13
     "Change Management Readiness",
     "Role Alignment Evidence",
     "Product & Inventory Intelligence",
-    "Product Demand Forecasting"
+    "Product Demand Forecasting",
+    "Reorder Recommendation Engine"
     ])
 
 with tab1:
@@ -3384,6 +3419,86 @@ with tab20:
             <br><br>
             This forecasting layer supports demand planning, inventory optimization,
             replenishment decisions, and AI-assisted retail operations.
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+with tab21:
+
+    st.markdown(
+        '<div class="section-title">Reorder Recommendation Engine</div>',
+        unsafe_allow_html=True
+    )
+
+    st.markdown(
+        '<div class="section-note">AI-assisted replenishment recommendations based on forecasted demand, current stock, and reorder thresholds.</div>',
+        unsafe_allow_html=True
+    )
+
+    urgent_count = len(reorder_df[reorder_df["Reorder_Recommendation"] == "Urgent Reorder"])
+    reorder_soon_count = len(reorder_df[reorder_df["Reorder_Recommendation"] == "Reorder Soon"])
+    total_reorder_units = reorder_df["Recommended_Reorder_Qty"].sum()
+
+    r1, r2, r3 = st.columns(3)
+
+    r1.metric("Urgent Reorder Items", f"{urgent_count:,}")
+    r2.metric("Reorder Soon Items", f"{reorder_soon_count:,}")
+    r3.metric("Recommended Units to Order", f"{total_reorder_units:,.0f}")
+
+    st.markdown("<br>", unsafe_allow_html=True)
+
+    fig_reorder = px.bar(
+        reorder_df.sort_values("Recommended_Reorder_Qty", ascending=False),
+        x="Product_Name",
+        y="Recommended_Reorder_Qty",
+        color="Reorder_Recommendation",
+        text="Recommended_Reorder_Qty",
+        color_discrete_map={
+            "Urgent Reorder": "#B22222",
+            "Reorder Soon": "#C6A052",
+            "No Reorder Needed": "#8A8A8A"
+        }
+    )
+
+    st.plotly_chart(
+        chart_layout(fig_reorder, 540),
+        use_container_width=True
+    )
+
+    st.markdown("### Reorder Detail Table")
+
+    st.dataframe(
+        reorder_df[[
+            "Salon_Location",
+            "Brand",
+            "Product_Name",
+            "Current_Stock",
+            "Reorder_Point",
+            "Forecast_Next_Month_Units",
+            "Projected_Ending_Stock",
+            "Recommended_Reorder_Qty",
+            "Reorder_Recommendation"
+        ]].sort_values("Recommended_Reorder_Qty", ascending=False),
+        use_container_width=True,
+        height=450
+    )
+
+    top_reorder = reorder_df.sort_values(
+        "Recommended_Reorder_Qty",
+        ascending=False
+    ).iloc[0]
+
+    st.markdown(f"""
+    <div class="insight-card">
+        <div class="insight-title">Executive Replenishment Summary</div>
+        <div class="insight-body">
+            The product with the highest recommended reorder quantity is
+            <b>{top_reorder["Product_Name"]}</b> in <b>{top_reorder["Salon_Location"]}</b>.
+            <br><br>
+            Recommended reorder quantity:
+            <b>{top_reorder["Recommended_Reorder_Qty"]:,.0f}</b> units.
+            <br><br>
+            This engine connects product demand forecasting with inventory planning, helping the business reduce stockout risk and improve replenishment decisions.
         </div>
     </div>
     """, unsafe_allow_html=True)
