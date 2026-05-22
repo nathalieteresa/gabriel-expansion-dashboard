@@ -432,6 +432,48 @@ store_summary = sales_df.groupby(
     Gross_Profit=("Gross_Profit_Calculated", "sum")
 )
 
+# ---------------------------------
+# PRODUCT DEMAND FORECASTING
+# ---------------------------------
+
+monthly_product_sales = (
+    sales_df
+    .dropna(subset=["Date"])
+    .groupby([
+        pd.Grouper(key="Date", freq="MS"),
+        "Salon_Location",
+        "Brand",
+        "Product_ID",
+        "Product_Name"
+    ], as_index=False)
+    .agg(
+        Monthly_Units_Sold=("Units_Sold", "sum"),
+        Monthly_Revenue=("Revenue", "sum"),
+        Monthly_Gross_Profit=("Gross_Profit_Calculated", "sum")
+    )
+)
+
+forecast_base = (
+    monthly_product_sales
+    .sort_values("Date")
+    .groupby(["Salon_Location", "Brand", "Product_ID", "Product_Name"])
+    .tail(3)
+)
+
+product_forecast = (
+    forecast_base
+    .groupby(["Salon_Location", "Brand", "Product_ID", "Product_Name"], as_index=False)
+    .agg(
+        Forecast_Next_Month_Units=("Monthly_Units_Sold", "mean"),
+        Forecast_Next_Month_Revenue=("Monthly_Revenue", "mean"),
+        Forecast_Next_Month_Gross_Profit=("Monthly_Gross_Profit", "mean")
+    )
+)
+
+product_forecast["Forecast_Next_Month_Units"] = product_forecast["Forecast_Next_Month_Units"].round(0)
+product_forecast["Forecast_Next_Month_Revenue"] = product_forecast["Forecast_Next_Month_Revenue"].round(2)
+product_forecast["Forecast_Next_Month_Gross_Profit"] = product_forecast["Forecast_Next_Month_Gross_Profit"].round(2)
+
 brand_summary = sales_df.groupby(
     "Brand",
     as_index=False
@@ -1715,7 +1757,7 @@ with k9:
 
 st.markdown("<br>", unsafe_allow_html=True)
 
-tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9, tab10, tab11, tab12, tab13, tab14, tab15, tab16, tab17, tab18, tab19 = st.tabs([
+tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9, tab10, tab11, tab12, tab13, tab14, tab15, tab16, tab17, tab18, tab19, tab20 = st.tabs([
     "Overview",
     "Market Ranking",
     "Financial Scenario",
@@ -1734,7 +1776,8 @@ tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9, tab10, tab11, tab12, tab13
     "Data Governance",
     "Change Management Readiness",
     "Role Alignment Evidence",
-    "Product & Inventory Intelligence"
+    "Product & Inventory Intelligence",
+    "Product Demand Forecasting"
     ])
 
 with tab1:
@@ -3221,6 +3264,126 @@ with tab19:
             <br><br>
             This intelligence layer supports retail optimization, demand forecasting, inventory planning,
             and AI-assisted operational decision-making.
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+with tab20:
+
+    st.markdown(
+        '<div class="section-title">Product Demand Forecasting</div>',
+        unsafe_allow_html=True
+    )
+
+    st.markdown(
+        '<div class="section-note">Monthly demand forecast by product, brand, and salon location based on recent sales patterns.</div>',
+        unsafe_allow_html=True
+    )
+
+    f1, f2, f3 = st.columns(3)
+
+    total_forecast_units = product_forecast["Forecast_Next_Month_Units"].sum()
+    total_forecast_revenue = product_forecast["Forecast_Next_Month_Revenue"].sum()
+    total_forecast_profit = product_forecast["Forecast_Next_Month_Gross_Profit"].sum()
+
+    f1.metric("Forecasted Units Next Month", f"{total_forecast_units:,.0f}")
+    f2.metric("Forecasted Revenue Next Month", f"${total_forecast_revenue:,.0f}")
+    f3.metric("Forecasted Gross Profit Next Month", f"${total_forecast_profit:,.0f}")
+
+    st.markdown("<br>", unsafe_allow_html=True)
+
+    c1, c2 = st.columns(2)
+
+    with c1:
+        st.markdown("### Forecast by Product")
+
+        top_forecast_products = product_forecast.sort_values(
+            "Forecast_Next_Month_Revenue",
+            ascending=False
+        ).head(10)
+
+        fig_forecast_product = px.bar(
+            top_forecast_products,
+            x="Forecast_Next_Month_Revenue",
+            y="Product_Name",
+            orientation="h",
+            color="Brand",
+            text="Forecast_Next_Month_Revenue",
+            color_discrete_sequence=[
+                GOLD_LIGHT,
+                GOLD,
+                "#A9843C",
+                "#7D6838"
+            ]
+        )
+
+        fig_forecast_product.update_layout(
+            yaxis=dict(autorange="reversed")
+        )
+
+        st.plotly_chart(
+            chart_layout(fig_forecast_product, 520),
+            use_container_width=True
+        )
+
+    with c2:
+        st.markdown("### Forecast by Salon")
+
+        salon_forecast = product_forecast.groupby(
+            "Salon_Location",
+            as_index=False
+        ).agg(
+            Forecast_Next_Month_Units=("Forecast_Next_Month_Units", "sum"),
+            Forecast_Next_Month_Revenue=("Forecast_Next_Month_Revenue", "sum"),
+            Forecast_Next_Month_Gross_Profit=("Forecast_Next_Month_Gross_Profit", "sum")
+        )
+
+        fig_forecast_salon = px.bar(
+            salon_forecast,
+            x="Salon_Location",
+            y="Forecast_Next_Month_Revenue",
+            color="Forecast_Next_Month_Gross_Profit",
+            text="Forecast_Next_Month_Revenue",
+            color_continuous_scale=[
+                "#EFE2BD",
+                "#C6A052",
+                "#7D6838"
+            ]
+        )
+
+        st.plotly_chart(
+            chart_layout(fig_forecast_salon, 520),
+            use_container_width=True
+        )
+
+    st.markdown("### Forecast Detail Table")
+
+    st.dataframe(
+        product_forecast.sort_values(
+            "Forecast_Next_Month_Revenue",
+            ascending=False
+        ),
+        use_container_width=True,
+        height=450
+    )
+
+    top_forecast_product = product_forecast.sort_values(
+        "Forecast_Next_Month_Revenue",
+        ascending=False
+    ).iloc[0]["Product_Name"]
+
+    st.markdown(f"""
+    <div class="insight-card">
+        <div class="insight-title">Executive Forecasting Summary</div>
+        <div class="insight-body">
+            Based on the most recent monthly sales behavior, the next-month forecast estimates
+            <b>{total_forecast_units:,.0f}</b> units sold and approximately
+            <b>${total_forecast_revenue:,.0f}</b> in product revenue.
+            <br><br>
+            The strongest forecasted product is <b>{top_forecast_product}</b>.
+            <br><br>
+            This forecasting layer supports demand planning, inventory optimization,
+            replenishment decisions, and AI-assisted retail operations.
         </div>
     </div>
     """, unsafe_allow_html=True)
