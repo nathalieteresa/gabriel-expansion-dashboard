@@ -366,6 +366,91 @@ inventory_df = pd.read_excel(product_file, sheet_name="Inventory")
 stores_df = pd.read_excel(product_file, sheet_name="Stores")
 
 # ---------------------------------
+# ACADEMY ANALYTICS DATA
+# ---------------------------------
+
+academy_file = Path("Gabriel_Samra_Academy.xlsx")
+
+if not academy_file.exists():
+    st.error(f"Academy file not found: {academy_file.resolve()}")
+    st.stop()
+
+academy_students = pd.read_excel(
+    academy_file,
+    sheet_name="Students"
+)
+
+academy_students["Attendance_Rate"] = pd.to_numeric(
+    academy_students["Attendance_Rate"],
+    errors="coerce"
+).fillna(0)
+
+academy_students["Tuition_Paid"] = pd.to_numeric(
+    academy_students["Tuition_Paid"],
+    errors="coerce"
+).fillna(0)
+
+academy_students["Graduated"] = pd.to_numeric(
+    academy_students["Graduated"],
+    errors="coerce"
+).fillna(0)
+
+academy_students["Enrollment_Date"] = pd.to_datetime(
+    academy_students["Enrollment_Date"],
+    errors="coerce"
+)
+
+# ---------------------------------
+# ACADEMY KPI CALCULATIONS
+# ---------------------------------
+
+total_students = len(academy_students)
+
+completion_rate = (
+    len(
+        academy_students[
+            academy_students["Completion_Status"] == "Completed"
+        ]
+    ) / total_students
+) * 100
+
+avg_attendance = academy_students["Attendance_Rate"].mean()
+
+academy_revenue = academy_students["Tuition_Paid"].sum()
+
+graduation_rate = (
+    academy_students["Graduated"].mean()
+) * 100
+
+course_summary = academy_students.groupby(
+    "Course",
+    as_index=False
+).agg(
+    Students=("Student_ID", "count"),
+    Avg_Attendance=("Attendance_Rate", "mean"),
+    Revenue=("Tuition_Paid", "sum"),
+    Graduation_Rate=("Graduated", "mean")
+)
+
+course_summary["Graduation_Rate"] = (
+    course_summary["Graduation_Rate"] * 100
+)
+
+instructor_summary = academy_students.groupby(
+    "Instructor",
+    as_index=False
+).agg(
+    Students=("Student_ID", "count"),
+    Avg_Attendance=("Attendance_Rate", "mean"),
+    Revenue=("Tuition_Paid", "sum"),
+    Graduation_Rate=("Graduated", "mean")
+)
+
+instructor_summary["Graduation_Rate"] = (
+    instructor_summary["Graduation_Rate"] * 100
+)
+
+# ---------------------------------
 # PRODUCT ANALYTICS CALCULATIONS
 # ---------------------------------
 
@@ -1791,7 +1876,7 @@ with k9:
 
 st.markdown("<br>", unsafe_allow_html=True)
 
-tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9, tab10, tab11, tab12, tab13, tab14, tab15, tab16, tab17, tab18, tab19, tab20, tab21 = st.tabs([
+tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9, tab10, tab11, tab12, tab13, tab14, tab15, tab16, tab17, tab18, tab19, tab20, tab21, tab22 = st.tabs([
     "Overview",
     "Market Ranking",
     "Financial Scenario",
@@ -1812,7 +1897,8 @@ tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9, tab10, tab11, tab12, tab13
     "Role Alignment Evidence",
     "Product & Inventory Intelligence",
     "Product Demand Forecasting",
-    "Reorder Recommendation Engine"
+    "Reorder Recommendation Engine", 
+    "Academy & Training Intelligence"
     ])
 
 with tab1:
@@ -3499,6 +3585,129 @@ with tab21:
             <b>{top_reorder["Recommended_Reorder_Qty"]:,.0f}</b> units.
             <br><br>
             This engine connects product demand forecasting with inventory planning, helping the business reduce stockout risk and improve replenishment decisions.
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+with tab22:
+
+    st.markdown(
+        '<div class="section-title">Academy & Training Intelligence</div>',
+        unsafe_allow_html=True
+    )
+
+    st.markdown(
+        '<div class="section-note">Training program analytics for students, attendance, course completion, revenue, and instructor performance.</div>',
+        unsafe_allow_html=True
+    )
+
+    a1, a2, a3, a4 = st.columns(4)
+
+    a1.metric("Total Students", f"{total_students:,}")
+    a2.metric("Completion Rate", f"{completion_rate:.1f}%")
+    a3.metric("Average Attendance", f"{avg_attendance:.1f}%")
+    a4.metric("Academy Revenue", f"${academy_revenue:,.0f}")
+
+    st.markdown("<br>", unsafe_allow_html=True)
+
+    c1, c2 = st.columns(2)
+
+    with c1:
+        st.markdown("### Students by Course")
+
+        fig_course = px.bar(
+            course_summary.sort_values("Students", ascending=False),
+            x="Course",
+            y="Students",
+            color="Graduation_Rate",
+            text="Students",
+            color_continuous_scale=[
+                "#EFE2BD",
+                "#C6A052",
+                "#7D6838"
+            ]
+        )
+
+        st.plotly_chart(
+            chart_layout(fig_course, 520),
+            use_container_width=True
+        )
+
+    with c2:
+        st.markdown("### Revenue by Course")
+
+        fig_course_revenue = px.bar(
+            course_summary.sort_values("Revenue", ascending=False),
+            x="Course",
+            y="Revenue",
+            color="Avg_Attendance",
+            text="Revenue",
+            color_continuous_scale=[
+                "#EFE2BD",
+                "#C6A052",
+                "#7D6838"
+            ]
+        )
+
+        st.plotly_chart(
+            chart_layout(fig_course_revenue, 520),
+            use_container_width=True
+        )
+
+    st.markdown("### Instructor Performance")
+
+    fig_instructor = px.bar(
+        instructor_summary.sort_values("Graduation_Rate", ascending=False),
+        x="Instructor",
+        y="Graduation_Rate",
+        color="Avg_Attendance",
+        text="Graduation_Rate",
+        color_continuous_scale=[
+            "#EFE2BD",
+            "#C6A052",
+            "#7D6838"
+        ]
+    )
+
+    fig_instructor.update_traces(
+        texttemplate="%{text:.1f}%"
+    )
+
+    st.plotly_chart(
+        chart_layout(fig_instructor, 540),
+        use_container_width=True
+    )
+
+    st.markdown("### Academy Detail Table")
+
+    st.dataframe(
+        academy_students,
+        use_container_width=True,
+        height=450
+    )
+
+    top_course = course_summary.sort_values(
+        "Revenue",
+        ascending=False
+    ).iloc[0]["Course"]
+
+    top_instructor = instructor_summary.sort_values(
+        "Graduation_Rate",
+        ascending=False
+    ).iloc[0]["Instructor"]
+
+    st.markdown(f"""
+    <div class="insight-card">
+        <div class="insight-title">Executive Academy Summary</div>
+        <div class="insight-body">
+            The academy currently tracks <b>{total_students:,}</b> students across training programs.
+            <br><br>
+            The strongest revenue-generating course is <b>{top_course}</b>.
+            <br><br>
+            The strongest instructor by graduation rate is <b>{top_instructor}</b>.
+            <br><br>
+            This layer supports training program optimization, student lifecycle tracking,
+            instructor performance analysis, and Academy operational decision-making.
         </div>
     </div>
     """, unsafe_allow_html=True)
