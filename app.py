@@ -451,6 +451,103 @@ instructor_summary["Graduation_Rate"] = (
 )
 
 # ---------------------------------
+# AUTOMATED DATA VALIDATION ENGINE
+# ---------------------------------
+
+validation_results = []
+
+def add_validation_issue(dataset, field, issue_type, issue_count, severity, recommendation):
+    validation_results.append({
+        "Dataset": dataset,
+        "Field": field,
+        "Issue_Type": issue_type,
+        "Issue_Count": issue_count,
+        "Severity": severity,
+        "Recommendation": recommendation
+    })
+
+# Market data validation
+for col in ["City", "State", "Estimated_Monthly_Rent", "Estimated_Monthly_Revenue", "Estimated_Monthly_Cost"]:
+    missing_count = df[col].isna().sum()
+    if missing_count > 0:
+        add_validation_issue(
+            "Market Expansion Data",
+            col,
+            "Missing Values",
+            missing_count,
+            "High",
+            f"Review and complete missing values in {col} before executive decision-making."
+        )
+
+# Product sales validation
+for col in ["Date", "Units_Sold", "Retail_Price", "Unit_Cost"]:
+    missing_count = sales_df[col].isna().sum()
+    if missing_count > 0:
+        add_validation_issue(
+            "Sales Transactions",
+            col,
+            "Missing or Invalid Values",
+            missing_count,
+            "High",
+            f"Clean or validate {col} to improve demand forecasting accuracy."
+        )
+
+negative_sales = len(sales_df[sales_df["Units_Sold"] < 0])
+if negative_sales > 0:
+    add_validation_issue(
+        "Sales Transactions",
+        "Units_Sold",
+        "Negative Sales Quantity",
+        negative_sales,
+        "High",
+        "Review negative unit sales and confirm if they represent returns or data entry errors."
+    )
+
+# Inventory validation
+negative_stock = len(inventory_df[inventory_df["Current_Stock"] < 0])
+if negative_stock > 0:
+    add_validation_issue(
+        "Inventory",
+        "Current_Stock",
+        "Negative Inventory",
+        negative_stock,
+        "High",
+        "Correct inventory records with negative stock levels."
+    )
+
+# Academy validation
+low_attendance_records = len(academy_students[academy_students["Attendance_Rate"] < 70])
+if low_attendance_records > 0:
+    add_validation_issue(
+        "Academy",
+        "Attendance_Rate",
+        "Low Attendance",
+        low_attendance_records,
+        "Medium",
+        "Flag students or courses with attendance below 70% for follow-up."
+    )
+
+missing_payment_records = len(academy_students[academy_students["Tuition_Paid"] <= 0])
+if missing_payment_records > 0:
+    add_validation_issue(
+        "Academy",
+        "Tuition_Paid",
+        "Missing or Zero Payment",
+        missing_payment_records,
+        "Medium",
+        "Review student payment records and confirm whether tuition is pending, waived, or incorrectly entered."
+    )
+
+validation_df = pd.DataFrame(validation_results)
+
+if validation_df.empty:
+    data_validation_score = 100
+else:
+    high_issues = validation_df[validation_df["Severity"] == "High"]["Issue_Count"].sum()
+    medium_issues = validation_df[validation_df["Severity"] == "Medium"]["Issue_Count"].sum()
+    data_validation_score = max(0, 100 - high_issues * 5 - medium_issues * 2)
+
+# ---------------------------------
 # PRODUCT ANALYTICS CALCULATIONS
 # ---------------------------------
 
@@ -1876,7 +1973,7 @@ with k9:
 
 st.markdown("<br>", unsafe_allow_html=True)
 
-tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9, tab10, tab11, tab12, tab13, tab14, tab15, tab16, tab17, tab18, tab19, tab20, tab21, tab22 = st.tabs([
+tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9, tab10, tab11, tab12, tab13, tab14, tab15, tab16, tab17, tab18, tab19, tab20, tab21, tab22, tab23 = st.tabs([
     "Overview",
     "Market Ranking",
     "Financial Scenario",
@@ -1898,7 +1995,8 @@ tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9, tab10, tab11, tab12, tab13
     "Product & Inventory Intelligence",
     "Product Demand Forecasting",
     "Reorder Recommendation Engine", 
-    "Academy & Training Intelligence"
+    "Academy & Training Intelligence",
+    "Automated Data Validation"
     ])
 
 with tab1:
@@ -3708,6 +3806,76 @@ with tab22:
             <br><br>
             This layer supports training program optimization, student lifecycle tracking,
             instructor performance analysis, and Academy operational decision-making.
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+with tab23:
+
+    st.markdown(
+        '<div class="section-title">Automated Data Validation & Governance Engine</div>',
+        unsafe_allow_html=True
+    )
+
+    st.markdown(
+        '<div class="section-note">Automated validation layer designed to detect missing, inconsistent, or risky data across market, sales, inventory, and academy operations.</div>',
+        unsafe_allow_html=True
+    )
+
+    v1, v2, v3 = st.columns(3)
+
+    v1.metric("Data Validation Score", f"{data_validation_score:.0f}/100")
+
+    if validation_df.empty:
+        total_issues = 0
+        high_priority_issues = 0
+    else:
+        total_issues = validation_df["Issue_Count"].sum()
+        high_priority_issues = validation_df[validation_df["Severity"] == "High"]["Issue_Count"].sum()
+
+    v2.metric("Total Data Issues", f"{total_issues:,.0f}")
+    v3.metric("High Priority Issues", f"{high_priority_issues:,.0f}")
+
+    st.markdown("<br>", unsafe_allow_html=True)
+
+    if validation_df.empty:
+        st.success("No major data validation issues detected.")
+    else:
+        fig_validation = px.bar(
+            validation_df,
+            x="Dataset",
+            y="Issue_Count",
+            color="Severity",
+            text="Issue_Count",
+            color_discrete_map={
+                "High": "#B22222",
+                "Medium": "#C6A052",
+                "Low": "#8A8A8A"
+            }
+        )
+
+        st.plotly_chart(
+            chart_layout(fig_validation, 520),
+            use_container_width=True
+        )
+
+        st.markdown("### Data Validation Detail Table")
+
+        st.dataframe(
+            validation_df.sort_values("Issue_Count", ascending=False),
+            use_container_width=True,
+            height=420
+        )
+
+    st.markdown(f"""
+    <div class="insight-card">
+        <div class="insight-title">Executive Governance Interpretation</div>
+        <div class="insight-body">
+            This engine supports automated data validation across expansion, sales, inventory, and academy datasets.
+            <br><br>
+            Current data validation score: <b>{data_validation_score:.0f}/100</b>.
+            <br><br>
+            This directly supports data governance, master data quality, operational consistency, and scalable franchise decision-making.
         </div>
     </div>
     """, unsafe_allow_html=True)
