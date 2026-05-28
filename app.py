@@ -656,6 +656,190 @@ product_forecast["Forecast_Next_Month_Units"] = product_forecast["Forecast_Next_
 product_forecast["Forecast_Next_Month_Revenue"] = product_forecast["Forecast_Next_Month_Revenue"].round(2)
 product_forecast["Forecast_Next_Month_Gross_Profit"] = product_forecast["Forecast_Next_Month_Gross_Profit"].round(2)
 
+# ---------------------------------
+# ADVANCED AI FORECASTING ENGINE
+# ---------------------------------
+
+from sklearn.ensemble import RandomForestRegressor
+from sklearn.metrics import mean_absolute_percentage_error, mean_squared_error
+import numpy as np
+
+def create_forecast_features(data):
+    data = data.copy()
+    data["Month_Number"] = data["Date"].dt.month
+    data["Year"] = data["Date"].dt.year
+    data["Time_Index"] = np.arange(len(data))
+    data["Lag_1"] = data["Monthly_Units_Sold"].shift(1)
+    data["Lag_2"] = data["Monthly_Units_Sold"].shift(2)
+    data["Rolling_3M_Avg"] = data["Monthly_Units_Sold"].rolling(3).mean()
+    data["Rolling_3M_Std"] = data["Monthly_Units_Sold"].rolling(3).std()
+    return data
+
+forecast_results = []
+forecast_accuracy_results = []
+forecast_anomalies = []
+
+for keys, group in monthly_product_sales.groupby(
+    ["Salon_Location", "Brand", "Product_ID", "Product_Name"]
+):
+    group = group.sort_values("Date").copy()
+
+    if len(group) < 6:
+        continue
+
+    group = create_forecast_features(group)
+    model_data = group.dropna().copy()
+
+    if len(model_data) < 4:
+        continue
+
+    feature_cols = [
+        "Month_Number",
+        "Year",
+        "Time_Index",
+        "Lag_1",
+        "Lag_2",
+        "Rolling_3M_Avg",
+        "Rolling_3M_Std"
+    ]
+
+    X = model_data[feature_cols]
+    y = model_data["Monthly_Units_Sold"]
+
+    train_size = max(3, int(len(model_data) * 0.75))
+
+    X_train = X.iloc[:train_size]
+    X_test = X.iloc[train_size:]
+    y_train = y.iloc[:train_size]
+    y_test = y.iloc[train_size:]
+
+    model = RandomForestRegressor(
+        n_estimators=200,
+        random_state=42,
+        max_depth=5
+    )
+
+    model.fit(X_train, y_train)
+
+    if len(X_test) > 0:
+        y_pred = model.predict(X_test)
+
+        rmse = np.sqrt(mean_squared_error(y_test, y_pred))
+
+        try:
+            mape = mean_absolute_percentage_error(y_test, y_pred) * 100
+        except:
+            mape = np.nan
+
+        forecast_confidence = max(0, min(100, 100 - mape)) if not pd.isna(mape) else 0
+    else:
+        rmse = np.nan
+        mape = np.nan
+        forecast_confidence = 0
+
+    last_row = group.iloc[-1].copy()
+    last_date = group["Date"].max()
+
+    future_rows = []
+
+    recent_values = group["Monthly_Units_Sold"].tail(3).tolist()
+
+    for i in range(1, 7):
+        future_date = last_date + pd.DateOffset(months=i)
+
+        lag_1 = recent_values[-1] if len(recent_values) >= 1 else 0
+        lag_2 = recent_values[-2] if len(recent_values) >= 2 else lag_1
+        rolling_avg = np.mean(recent_values[-3:]) if len(recent_values) >= 3 else np.mean(recent_values)
+        rolling_std = np.std(recent_values[-3:]) if len(recent_values) >= 3 else 0
+
+        future_features = pd.DataFrame([{
+            "Month_Number": future_date.month,
+            "Year": future_date.year,
+            "Time_Index": len(group) + i,
+            "Lag_1": lag_1,
+            "Lag_2": lag_2,
+            "Rolling_3M_Avg": rolling_avg,
+            "Rolling_3M_Std": rolling_std
+        }])
+
+        forecast_units = max(0, model.predict(future_features)[0])
+
+        recent_values.append(forecast_units)
+
+        lower_bound = max(0, forecast_units - rmse) if not pd.isna(rmse) else forecast_units * 0.85
+        upper_bound = forecast_units + rmse if not pd.isna(rmse) else forecast_units * 1.15
+
+        future_rows.append({
+            "Salon_Location": keys[0],
+            "Brand": keys[1],
+            "Product_ID": keys[2],
+            "Product_Name": keys[3],
+            "Forecast_Month": future_date,
+            "AI_Forecast_Units": round(forecast_units, 0),
+            "Forecast_Lower_Bound": round(lower_bound, 0),
+            "Forecast_Upper_Bound": round(upper_bound, 0),
+            "Forecast_RMSE": round(rmse, 2) if not pd.isna(rmse) else None,
+            "Forecast_MAPE": round(mape, 2) if not pd.isna(mape) else None,
+            "Forecast_Confidence": round(forecast_confidence, 1)
+        })
+
+    forecast_results.extend(future_rows)
+
+    last_3_avg = group["Monthly_Units_Sold"].tail(3).mean()
+    previous_3_avg = group["Monthly_Units_Sold"].tail(6).head(3).mean()
+
+    if previous_3_avg == 0:
+        trend_direction = "Insufficient History"
+        trend_change = 0
+    else:
+        trend_change = ((last_3_avg - previous_3_avg) / previous_3_avg) * 100
+
+        if trend_change >= 15:
+            trend_direction = "Increasing Demand"
+        elif trend_change <= -15:
+            trend_direction = "Declining Demand"
+        else:
+            trend_direction = "Stable Demand"
+
+    forecast_accuracy_results.append({
+        "Salon_Location": keys[0],
+        "Brand": keys[1],
+        "Product_ID": keys[2],
+        "Product_Name": keys[3],
+        "Forecast_RMSE": round(rmse, 2) if not pd.isna(rmse) else None,
+        "Forecast_MAPE": round(mape, 2) if not pd.isna(mape) else None,
+        "Forecast_Confidence": round(forecast_confidence, 1),
+        "Trend_Direction": trend_direction,
+        "Trend_Change_%": round(trend_change, 1)
+    })
+
+    group["Historical_Avg"] = group["Monthly_Units_Sold"].rolling(3).mean()
+    group["Historical_Std"] = group["Monthly_Units_Sold"].rolling(3).std()
+    group["Anomaly_Threshold_High"] = group["Historical_Avg"] + 2 * group["Historical_Std"]
+    group["Anomaly_Threshold_Low"] = group["Historical_Avg"] - 2 * group["Historical_Std"]
+
+    anomaly_rows = group[
+        (group["Monthly_Units_Sold"] > group["Anomaly_Threshold_High"])
+        |
+        (group["Monthly_Units_Sold"] < group["Anomaly_Threshold_Low"])
+    ].copy()
+
+    for _, anomaly in anomaly_rows.iterrows():
+        forecast_anomalies.append({
+            "Salon_Location": keys[0],
+            "Brand": keys[1],
+            "Product_ID": keys[2],
+            "Product_Name": keys[3],
+            "Date": anomaly["Date"],
+            "Monthly_Units_Sold": anomaly["Monthly_Units_Sold"],
+            "Expected_Avg": round(anomaly["Historical_Avg"], 1),
+            "Anomaly_Type": "Demand Spike" if anomaly["Monthly_Units_Sold"] > anomaly["Anomaly_Threshold_High"] else "Demand Drop"
+        })
+
+ai_forecast_df = pd.DataFrame(forecast_results)
+forecast_accuracy_df = pd.DataFrame(forecast_accuracy_results)
+forecast_anomaly_df = pd.DataFrame(forecast_anomalies)
+    
 brand_summary = sales_df.groupby(
     "Brand",
     as_index=False
@@ -1973,7 +2157,7 @@ with k9:
 
 st.markdown("<br>", unsafe_allow_html=True)
 
-tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9, tab10, tab11, tab12, tab13, tab14, tab15, tab16, tab17, tab18, tab19, tab20, tab21, tab22, tab23 = st.tabs([
+tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9, tab10, tab11, tab12, tab13, tab14, tab15, tab16, tab17, tab18, tab19, tab20, tab21, tab22, tab23, tab24 = st.tabs([
     "Overview",
     "Market Ranking",
     "Financial Scenario",
@@ -1996,7 +2180,8 @@ tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9, tab10, tab11, tab12, tab13
     "Product Demand Forecasting",
     "Reorder Recommendation Engine", 
     "Academy & Training Intelligence",
-    "Automated Data Validation"
+    "Automated Data Validation",
+    "Advanced AI Forecasting"
     ])
 
 with tab1:
@@ -3879,3 +4064,122 @@ with tab23:
         </div>
     </div>
     """, unsafe_allow_html=True)
+
+with tab24:
+
+    st.markdown(
+        '<div class="section-title">Advanced AI Forecasting Engine</div>',
+        unsafe_allow_html=True
+    )
+
+    st.markdown(
+        '<div class="section-note">Machine learning demand forecasting with six-month predictions, confidence intervals, trend detection, anomaly detection, and forecast accuracy metrics.</div>',
+        unsafe_allow_html=True
+    )
+
+    if ai_forecast_df.empty:
+        st.warning("Not enough historical sales data to generate advanced AI forecasts. At least 6 months of product-level sales history is recommended.")
+
+    else:
+        avg_confidence = ai_forecast_df["Forecast_Confidence"].mean()
+        avg_mape = forecast_accuracy_df["Forecast_MAPE"].mean()
+        avg_rmse = forecast_accuracy_df["Forecast_RMSE"].mean()
+        anomaly_count = len(forecast_anomaly_df)
+
+        f1, f2, f3, f4 = st.columns(4)
+
+        f1.metric("Avg Forecast Confidence", f"{avg_confidence:.1f}%")
+        f2.metric("Avg MAPE", f"{avg_mape:.1f}%")
+        f3.metric("Avg RMSE", f"{avg_rmse:.1f}")
+        f4.metric("Detected Anomalies", f"{anomaly_count:,}")
+
+        st.markdown("<br>", unsafe_allow_html=True)
+
+        selected_forecast_product = st.selectbox(
+            "Select Product for AI Forecast",
+            sorted(ai_forecast_df["Product_Name"].unique())
+        )
+
+        product_ai_forecast = ai_forecast_df[
+            ai_forecast_df["Product_Name"] == selected_forecast_product
+        ].copy()
+
+        fig_ai_forecast = px.line(
+            product_ai_forecast,
+            x="Forecast_Month",
+            y="AI_Forecast_Units",
+            color="Salon_Location",
+            markers=True,
+            title=f"6-Month AI Demand Forecast: {selected_forecast_product}"
+        )
+
+        fig_ai_forecast.update_traces(mode="lines+markers")
+
+        st.plotly_chart(
+            chart_layout(fig_ai_forecast, 540),
+            use_container_width=True
+        )
+
+        st.markdown("### Forecast Detail with Confidence Intervals")
+
+        st.dataframe(
+            product_ai_forecast[[
+                "Salon_Location",
+                "Brand",
+                "Product_Name",
+                "Forecast_Month",
+                "AI_Forecast_Units",
+                "Forecast_Lower_Bound",
+                "Forecast_Upper_Bound",
+                "Forecast_MAPE",
+                "Forecast_RMSE",
+                "Forecast_Confidence"
+            ]],
+            use_container_width=True,
+            height=420
+        )
+
+        st.markdown("### Forecast Accuracy & Trend Detection")
+
+        st.dataframe(
+            forecast_accuracy_df.sort_values(
+                "Forecast_Confidence",
+                ascending=False
+            ),
+            use_container_width=True,
+            height=420
+        )
+
+        st.markdown("### Demand Anomaly Detection")
+
+        if forecast_anomaly_df.empty:
+            st.success("No major demand anomalies detected.")
+        else:
+            st.dataframe(
+                forecast_anomaly_df.sort_values("Date", ascending=False),
+                use_container_width=True,
+                height=380
+            )
+
+        strongest_forecast = ai_forecast_df.sort_values(
+            "AI_Forecast_Units",
+            ascending=False
+        ).iloc[0]
+
+        st.markdown(f"""
+        <div class="insight-card">
+            <div class="insight-title">Executive AI Forecasting Summary</div>
+            <div class="insight-body">
+                The advanced forecasting engine uses machine learning to estimate product demand for the next six months.
+                <br><br>
+                The strongest forecasted demand signal is for <b>{strongest_forecast["Product_Name"]}</b>
+                at <b>{strongest_forecast["Salon_Location"]}</b>, with an expected demand of
+                <b>{strongest_forecast["AI_Forecast_Units"]:,.0f}</b> units.
+                <br><br>
+                Average forecast confidence across available products is <b>{avg_confidence:.1f}%</b>.
+                <br><br>
+                This layer strengthens the platform’s alignment with AI-driven analytics, predictive modeling,
+                inventory optimization, and data-driven supply chain decision-making.
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
