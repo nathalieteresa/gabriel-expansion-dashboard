@@ -551,13 +551,19 @@ else:
 # PRODUCT ANALYTICS CALCULATIONS
 # ---------------------------------
 
-sales_df["Date"] = pd.to_datetime(
-    sales_df["Date"],
-    errors="coerce",
-    unit="D",
-    origin="1899-12-30"
-)
-
+if pd.api.types.is_numeric_dtype(sales_df["Date"]):
+    sales_df["Date"] = pd.to_datetime(
+        sales_df["Date"],
+        errors="coerce",
+        unit="D",
+        origin="1899-12-30"
+    )
+else:
+    sales_df["Date"] = pd.to_datetime(
+        sales_df["Date"],
+        errors="coerce"
+    )
+sales_df = sales_df.dropna(subset=["Date"])
 sales_df["Units_Sold"] = pd.to_numeric(
     sales_df["Units_Sold"],
     errors="coerce"
