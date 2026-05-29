@@ -907,6 +907,232 @@ reorder_df["Reorder_Recommendation"] = reorder_df.apply(
     axis=1
 )
 
+# ---------------------------------
+# ADVANCED SUPPLY CHAIN OPTIMIZATION ENGINE
+# ---------------------------------
+
+import numpy as np
+
+# Ensure required supply chain columns exist
+default_supply_chain_values = {
+    "Supplier": "Default Supplier",
+    "Lead_Time_Days": 14,
+    "Lead_Time_Std_Days": 3,
+    "Supplier_Reliability": 0.90,
+    "On_Time_Delivery_Rate": 0.88,
+    "Fill_Rate": 0.92,
+    "Shipping_Cost_Per_Unit": 1.25,
+    "Warehouse_Cost_Per_Unit": 0.40,
+    "Fulfillment_Cost_Per_Unit": 0.85
+}
+
+for col, default_value in default_supply_chain_values.items():
+    if col not in inventory_df.columns:
+        inventory_df[col] = default_value
+
+# Clean numeric columns
+supply_numeric_cols = [
+    "Lead_Time_Days",
+    "Lead_Time_Std_Days",
+    "Supplier_Reliability",
+    "On_Time_Delivery_Rate",
+    "Fill_Rate",
+    "Shipping_Cost_Per_Unit",
+    "Warehouse_Cost_Per_Unit",
+    "Fulfillment_Cost_Per_Unit"
+]
+
+for col in supply_numeric_cols:
+    inventory_df[col] = pd.to_numeric(
+        inventory_df[col],
+        errors="coerce"
+    ).fillna(default_supply_chain_values[col])
+
+# Merge inventory with forecast
+supply_chain_df = inventory_df.merge(
+    product_forecast,
+    on=["Salon_Location", "Brand", "Product_ID", "Product_Name"],
+    how="left"
+)
+
+supply_chain_df["Forecast_Next_Month_Units"] = supply_chain_df["Forecast_Next_Month_Units"].fillna(0)
+
+# Estimate daily demand
+supply_chain_df["Avg_Daily_Demand"] = (
+    supply_chain_df["Forecast_Next_Month_Units"] / 30
+).replace([np.inf, -np.inf], 0).fillna(0)
+
+# Demand variability based on monthly sales history
+demand_variability = (
+    monthly_product_sales
+    .groupby(["Salon_Location", "Brand", "Product_ID", "Product_Name"], as_index=False)
+    .agg(
+        Demand_Std_Monthly=("Monthly_Units_Sold", "std"),
+        Avg_Monthly_Demand=("Monthly_Units_Sold", "mean")
+    )
+)
+
+demand_variability["Demand_Std_Daily"] = (
+    demand_variability["Demand_Std_Monthly"] / 30
+).fillna(0)
+
+supply_chain_df = supply_chain_df.merge(
+    demand_variability[
+        ["Salon_Location", "Brand", "Product_ID", "Product_Name", "Demand_Std_Daily", "Avg_Monthly_Demand"]
+    ],
+    on=["Salon_Location", "Brand", "Product_ID", "Product_Name"],
+    how="left"
+)
+
+supply_chain_df["Demand_Std_Daily"] = supply_chain_df["Demand_Std_Daily"].fillna(0)
+supply_chain_df["Avg_Monthly_Demand"] = supply_chain_df["Avg_Monthly_Demand"].fillna(0)
+
+# Service level selector later will update Z value in tab, but default here is 95%
+service_level_z = 1.65
+
+# Safety Stock = Z * sigma_d * sqrt(lead time)
+supply_chain_df["Safety_Stock"] = (
+    service_level_z
+    * supply_chain_df["Demand_Std_Daily"]
+    * np.sqrt(supply_chain_df["Lead_Time_Days"])
+).round(0)
+
+# Reorder Point = demand during lead time + safety stock
+supply_chain_df["Optimized_Reorder_Point"] = (
+    supply_chain_df["Avg_Daily_Demand"] * supply_chain_df["Lead_Time_Days"]
+    + supply_chain_df["Safety_Stock"]
+).round(0)
+
+# Stockout risk logic
+supply_chain_df["Projected_Stock_During_Lead_Time"] = (
+    supply_chain_df["Current_Stock"]
+    - (supply_chain_df["Avg_Daily_Demand"] * supply_chain_df["Lead_Time_Days"])
+)
+
+supply_chain_df["Stockout_Risk_%"] = supply_chain_df.apply(
+    lambda row:
+    95 if row["Projected_Stock_During_Lead_Time"] <= 0
+    else max(
+        0,
+        min(
+            95,
+            100 - ((row["Projected_Stock_During_Lead_Time"] / max(row["Optimized_Reorder_Point"], 1)) * 100)
+        )
+    ),
+    axis=1
+).round(1)
+
+# Optimized reorder quantity
+supply_chain_df["Optimized_Reorder_Qty"] = supply_chain_df.apply(
+    lambda row: max(
+        0,
+        (row["Optimized_Reorder_Point"] + row["Forecast_Next_Month_Units"]) - row["Current_Stock"]
+    ),
+    axis=1
+).round(0)
+
+# Inventory value and turnover
+supply_chain_df["Inventory_Value"] = (
+    supply_chain_df["Current_Stock"]
+    * supply_chain_df.get("Unit_Cost", 0)
+)
+
+if "Unit_Cost" not in supply_chain_df.columns:
+    unit_cost_lookup = sales_df.groupby(
+        ["Brand", "Product_ID", "Product_Name"],
+        as_index=False
+    ).agg(Unit_Cost=("Unit_Cost", "mean"))
+
+    supply_chain_df = supply_chain_df.merge(
+        unit_cost_lookup,
+        on=["Brand", "Product_ID", "Product_Name"],
+        how="left"
+    )
+
+supply_chain_df["Unit_Cost"] = supply_chain_df["Unit_Cost"].fillna(0)
+
+supply_chain_df["Inventory_Value"] = (
+    supply_chain_df["Current_Stock"] * supply_chain_df["Unit_Cost"]
+)
+
+supply_chain_df["Annualized_COGS"] = (
+    supply_chain_df["Forecast_Next_Month_Units"] * 12 * supply_chain_df["Unit_Cost"]
+)
+
+supply_chain_df["Inventory_Turnover"] = supply_chain_df.apply(
+    lambda row: row["Annualized_COGS"] / row["Inventory_Value"]
+    if row["Inventory_Value"] > 0 else 0,
+    axis=1
+).round(2)
+
+# ABC classification based on revenue contribution
+abc_base = product_summary.copy()
+abc_base = abc_base.sort_values("Revenue", ascending=False)
+abc_base["Revenue_Share"] = abc_base["Revenue"] / abc_base["Revenue"].sum()
+abc_base["Cumulative_Revenue_Share"] = abc_base["Revenue_Share"].cumsum()
+
+abc_base["ABC_Class"] = abc_base["Cumulative_Revenue_Share"].apply(
+    lambda x: "A" if x <= 0.80 else "B" if x <= 0.95 else "C"
+)
+
+supply_chain_df = supply_chain_df.merge(
+    abc_base[["Brand", "Product_ID", "Product_Name", "ABC_Class"]],
+    on=["Brand", "Product_ID", "Product_Name"],
+    how="left"
+)
+
+supply_chain_df["ABC_Class"] = supply_chain_df["ABC_Class"].fillna("C")
+
+# Supplier performance score
+supply_chain_df["Supplier_Performance_Score"] = (
+    supply_chain_df["Supplier_Reliability"] * 0.40
+    + supply_chain_df["On_Time_Delivery_Rate"] * 0.35
+    + supply_chain_df["Fill_Rate"] * 0.25
+) * 100
+
+supply_chain_df["Supplier_Performance_Score"] = supply_chain_df["Supplier_Performance_Score"].round(1)
+
+# Logistics cost
+supply_chain_df["Total_Logistics_Cost_Per_Unit"] = (
+    supply_chain_df["Shipping_Cost_Per_Unit"]
+    + supply_chain_df["Warehouse_Cost_Per_Unit"]
+    + supply_chain_df["Fulfillment_Cost_Per_Unit"]
+).round(2)
+
+supply_chain_df["Projected_Logistics_Cost"] = (
+    supply_chain_df["Optimized_Reorder_Qty"]
+    * supply_chain_df["Total_Logistics_Cost_Per_Unit"]
+).round(2)
+
+# Supply chain risk classification
+supply_chain_df["Supply_Chain_Risk_Level"] = supply_chain_df.apply(
+    lambda row:
+    "High Risk"
+    if row["Stockout_Risk_%"] >= 70 or row["Supplier_Performance_Score"] < 75
+    else "Medium Risk"
+    if row["Stockout_Risk_%"] >= 40 or row["Supplier_Performance_Score"] < 85
+    else "Low Risk",
+    axis=1
+)
+
+# Supplier scorecard
+supplier_scorecard_df = supply_chain_df.groupby(
+    "Supplier",
+    as_index=False
+).agg(
+    Avg_Lead_Time=("Lead_Time_Days", "mean"),
+    Avg_Supplier_Reliability=("Supplier_Reliability", "mean"),
+    Avg_OTIF=("On_Time_Delivery_Rate", "mean"),
+    Avg_Fill_Rate=("Fill_Rate", "mean"),
+    Avg_Performance_Score=("Supplier_Performance_Score", "mean"),
+    Total_Projected_Logistics_Cost=("Projected_Logistics_Cost", "sum"),
+    High_Risk_Items=("Supply_Chain_Risk_Level", lambda x: (x == "High Risk").sum())
+)
+
+supplier_scorecard_df["Avg_Supplier_Reliability"] = supplier_scorecard_df["Avg_Supplier_Reliability"] * 100
+supplier_scorecard_df["Avg_OTIF"] = supplier_scorecard_df["Avg_OTIF"] * 100
+supplier_scorecard_df["Avg_Fill_Rate"] = supplier_scorecard_df["Avg_Fill_Rate"] * 100
+
 if "City" not in df.columns:
     st.error("Your CSV must include a column named 'City'.")
     st.stop()
@@ -2163,7 +2389,7 @@ with k9:
 
 st.markdown("<br>", unsafe_allow_html=True)
 
-tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9, tab10, tab11, tab12, tab13, tab14, tab15, tab16, tab17, tab18, tab19, tab20, tab21, tab22, tab23, tab24 = st.tabs([
+tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9, tab10, tab11, tab12, tab13, tab14, tab15, tab16, tab17, tab18, tab19, tab20, tab21, tab22, tab23, tab24, tab25 = st.tabs([
     "Overview",
     "Market Ranking",
     "Financial Scenario",
@@ -2187,7 +2413,8 @@ tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9, tab10, tab11, tab12, tab13
     "Reorder Recommendation Engine", 
     "Academy & Training Intelligence",
     "Automated Data Validation",
-    "Advanced AI Forecasting"
+    "Advanced AI Forecasting",
+    "Advanced Supply Chain Optimization"
     ])
 
 with tab1:
@@ -4189,3 +4416,232 @@ with tab24:
             </div>
         </div>
         """, unsafe_allow_html=True)
+
+with tab25:
+
+    st.markdown(
+        '<div class="section-title">Advanced Supply Chain Optimization Engine</div>',
+        unsafe_allow_html=True
+    )
+
+    st.markdown(
+        '<div class="section-note">Enterprise supply chain logic with safety stock, service level optimization, lead time intelligence, supplier scorecards, ABC classification, stockout risk, inventory turnover, and logistics cost analysis.</div>',
+        unsafe_allow_html=True
+    )
+
+    service_level_option = st.selectbox(
+        "Select Target Service Level",
+        ["95%", "98%", "99%"]
+    )
+
+    z_score_map = {
+        "95%": 1.65,
+        "98%": 2.05,
+        "99%": 2.33
+    }
+
+    selected_z = z_score_map[service_level_option]
+
+    temp_supply_df = supply_chain_df.copy()
+
+    temp_supply_df["Safety_Stock"] = (
+        selected_z
+        * temp_supply_df["Demand_Std_Daily"]
+        * np.sqrt(temp_supply_df["Lead_Time_Days"])
+    ).round(0)
+
+    temp_supply_df["Optimized_Reorder_Point"] = (
+        temp_supply_df["Avg_Daily_Demand"] * temp_supply_df["Lead_Time_Days"]
+        + temp_supply_df["Safety_Stock"]
+    ).round(0)
+
+    temp_supply_df["Optimized_Reorder_Qty"] = temp_supply_df.apply(
+        lambda row: max(
+            0,
+            (row["Optimized_Reorder_Point"] + row["Forecast_Next_Month_Units"]) - row["Current_Stock"]
+        ),
+        axis=1
+    ).round(0)
+
+    temp_supply_df["Projected_Logistics_Cost"] = (
+        temp_supply_df["Optimized_Reorder_Qty"]
+        * temp_supply_df["Total_Logistics_Cost_Per_Unit"]
+    ).round(2)
+
+    high_risk_items = len(temp_supply_df[temp_supply_df["Supply_Chain_Risk_Level"] == "High Risk"])
+    avg_stockout_risk = temp_supply_df["Stockout_Risk_%"].mean()
+    total_safety_stock = temp_supply_df["Safety_Stock"].sum()
+    total_logistics_cost = temp_supply_df["Projected_Logistics_Cost"].sum()
+
+    s1, s2, s3, s4 = st.columns(4)
+
+    s1.metric("High Risk Items", f"{high_risk_items:,}")
+    s2.metric("Avg Stockout Risk", f"{avg_stockout_risk:.1f}%")
+    s3.metric("Total Safety Stock", f"{total_safety_stock:,.0f}")
+    s4.metric("Projected Logistics Cost", f"${total_logistics_cost:,.0f}")
+
+    st.markdown("<br>", unsafe_allow_html=True)
+
+    c1, c2 = st.columns(2)
+
+    with c1:
+        st.markdown("### Safety Stock by Product")
+
+        fig_safety = px.bar(
+            temp_supply_df.sort_values("Safety_Stock", ascending=False).head(15),
+            x="Product_Name",
+            y="Safety_Stock",
+            color="ABC_Class",
+            text="Safety_Stock",
+            color_discrete_sequence=[
+                GOLD,
+                GOLD_LIGHT,
+                "#7D6838"
+            ]
+        )
+
+        st.plotly_chart(
+            chart_layout(fig_safety, 540),
+            use_container_width=True
+        )
+
+    with c2:
+        st.markdown("### Stockout Risk by Product")
+
+        fig_stockout = px.bar(
+            temp_supply_df.sort_values("Stockout_Risk_%", ascending=False).head(15),
+            x="Product_Name",
+            y="Stockout_Risk_%",
+            color="Supply_Chain_Risk_Level",
+            text="Stockout_Risk_%",
+            color_discrete_map={
+                "High Risk": "#B22222",
+                "Medium Risk": "#C6A052",
+                "Low Risk": "#8A8A8A"
+            }
+        )
+
+        st.plotly_chart(
+            chart_layout(fig_stockout, 540),
+            use_container_width=True
+        )
+
+    st.markdown("### Supplier Performance Scorecard")
+
+    fig_supplier = px.bar(
+        supplier_scorecard_df.sort_values("Avg_Performance_Score", ascending=False),
+        x="Supplier",
+        y="Avg_Performance_Score",
+        color="High_Risk_Items",
+        text="Avg_Performance_Score",
+        color_continuous_scale=[
+            "#EFE2BD",
+            "#C6A052",
+            "#7D6838"
+        ]
+    )
+
+    st.plotly_chart(
+        chart_layout(fig_supplier, 520),
+        use_container_width=True
+    )
+
+    st.dataframe(
+        supplier_scorecard_df,
+        use_container_width=True,
+        height=360
+    )
+
+    st.markdown("### ABC Inventory Classification")
+
+    abc_summary = temp_supply_df.groupby(
+        "ABC_Class",
+        as_index=False
+    ).agg(
+        Products=("Product_ID", "count"),
+        Total_Current_Stock=("Current_Stock", "sum"),
+        Total_Safety_Stock=("Safety_Stock", "sum"),
+        Total_Optimized_Reorder_Qty=("Optimized_Reorder_Qty", "sum"),
+        Avg_Stockout_Risk=("Stockout_Risk_%", "mean"),
+        Avg_Inventory_Turnover=("Inventory_Turnover", "mean")
+    )
+
+    fig_abc = px.pie(
+        abc_summary,
+        names="ABC_Class",
+        values="Products",
+        color_discrete_sequence=[
+            GOLD,
+            GOLD_LIGHT,
+            "#7D6838"
+        ]
+    )
+
+    st.plotly_chart(
+        chart_layout(fig_abc, 480),
+        use_container_width=True
+    )
+
+    st.dataframe(
+        abc_summary,
+        use_container_width=True,
+        height=280
+    )
+
+    st.markdown("### Advanced Supply Chain Detail Table")
+
+    detail_cols = [
+        "Salon_Location",
+        "Supplier",
+        "Brand",
+        "Product_Name",
+        "ABC_Class",
+        "Current_Stock",
+        "Forecast_Next_Month_Units",
+        "Lead_Time_Days",
+        "Safety_Stock",
+        "Optimized_Reorder_Point",
+        "Optimized_Reorder_Qty",
+        "Stockout_Risk_%",
+        "Inventory_Turnover",
+        "Supplier_Performance_Score",
+        "Total_Logistics_Cost_Per_Unit",
+        "Projected_Logistics_Cost",
+        "Supply_Chain_Risk_Level"
+    ]
+
+    available_detail_cols = [
+        col for col in detail_cols
+        if col in temp_supply_df.columns
+    ]
+
+    st.dataframe(
+        temp_supply_df[available_detail_cols].sort_values(
+            "Stockout_Risk_%",
+            ascending=False
+        ),
+        use_container_width=True,
+        height=480
+    )
+
+    highest_risk_item = temp_supply_df.sort_values(
+        "Stockout_Risk_%",
+        ascending=False
+    ).iloc[0]
+
+    st.markdown(f"""
+    <div class="insight-card">
+        <div class="insight-title">Executive Supply Chain Optimization Summary</div>
+        <div class="insight-body">
+            Under a <b>{service_level_option}</b> target service level, the engine recommends a total safety stock of
+            <b>{total_safety_stock:,.0f}</b> units across the analyzed product portfolio.
+            <br><br>
+            The highest stockout risk item is <b>{highest_risk_item["Product_Name"]}</b>,
+            with a stockout risk of <b>{highest_risk_item["Stockout_Risk_%"]:.1f}%</b>.
+            <br><br>
+            This layer strengthens the platform’s alignment with enterprise supply chain optimization,
+            supplier performance analytics, lead time intelligence, inventory risk management,
+            and logistics cost optimization.
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
