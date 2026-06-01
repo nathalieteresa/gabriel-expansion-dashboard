@@ -450,6 +450,197 @@ instructor_summary["Graduation_Rate"] = (
     instructor_summary["Graduation_Rate"] * 100
 )
 
+
+# ---------------------------------
+# FRANCHISE OPERATIONAL INTELLIGENCE DATA
+# ---------------------------------
+
+franchise_file = Path("Gabriel_Samra_Franchise.xlsx")
+
+if franchise_file.exists():
+    franchise_ops_df = pd.read_excel(
+        franchise_file,
+        sheet_name="Franchise_Operations"
+    )
+else:
+    # Fallback dataset so the dashboard can run before the real franchise file is connected.
+    # Replace this by uploading Gabriel_Samra_Franchise.xlsx with sheet Franchise_Operations.
+    salon_base = store_summary.copy() if "store_summary" in globals() else pd.DataFrame()
+
+    if not salon_base.empty:
+        franchise_ops_df = salon_base.rename(columns={
+            "Salon_Location": "Location_Name",
+            "Revenue": "Monthly_Revenue",
+            "Gross_Profit": "Gross_Profit"
+        })
+        franchise_ops_df["Location_Type"] = "Salon"
+        franchise_ops_df["Monthly_Cost"] = franchise_ops_df["Monthly_Revenue"] - franchise_ops_df["Gross_Profit"]
+        franchise_ops_df["Chairs"] = 8
+        franchise_ops_df["Stylists"] = 6
+        franchise_ops_df["Months_Open"] = 36
+        franchise_ops_df["Customer_Count"] = (franchise_ops_df["Units_Sold"] * 1.8).round(0)
+        franchise_ops_df["Owner_Type"] = "Company-Owned"
+    else:
+        franchise_ops_df = pd.DataFrame(columns=[
+            "Location_Name", "Location_Type", "Monthly_Revenue", "Monthly_Cost",
+            "Chairs", "Stylists", "Months_Open", "Customer_Count", "Owner_Type"
+        ])
+
+    demo_franchise_rows = pd.DataFrame([
+        {
+            "Location_Name": "Franchise - Doral",
+            "Location_Type": "Franchise",
+            "Monthly_Revenue": 82000,
+            "Monthly_Cost": 61000,
+            "Chairs": 9,
+            "Stylists": 7,
+            "Months_Open": 18,
+            "Customer_Count": 520,
+            "Owner_Type": "Franchise-Owned"
+        },
+        {
+            "Location_Name": "Franchise - Aventura",
+            "Location_Type": "Franchise",
+            "Monthly_Revenue": 94000,
+            "Monthly_Cost": 69000,
+            "Chairs": 10,
+            "Stylists": 8,
+            "Months_Open": 30,
+            "Customer_Count": 610,
+            "Owner_Type": "Franchise-Owned"
+        }
+    ])
+
+    academy_row = pd.DataFrame([{
+        "Location_Name": "Gabriel Samra Academy",
+        "Location_Type": "Academy",
+        "Monthly_Revenue": academy_revenue,
+        "Monthly_Cost": academy_revenue * 0.58,
+        "Chairs": 0,
+        "Stylists": 0,
+        "Months_Open": 24,
+        "Customer_Count": total_students,
+        "Owner_Type": "Company-Owned"
+    }])
+
+    franchise_ops_df = pd.concat(
+        [franchise_ops_df, demo_franchise_rows, academy_row],
+        ignore_index=True
+    )
+
+franchise_ops_df.columns = franchise_ops_df.columns.str.strip()
+
+franchise_required_cols = {
+    "Location_Name": "Unknown Location",
+    "Location_Type": "Franchise",
+    "Monthly_Revenue": 0,
+    "Monthly_Cost": 0,
+    "Chairs": 1,
+    "Stylists": 1,
+    "Months_Open": 1,
+    "Customer_Count": 0,
+    "Owner_Type": "Unknown"
+}
+
+for col, default_value in franchise_required_cols.items():
+    if col not in franchise_ops_df.columns:
+        franchise_ops_df[col] = default_value
+
+franchise_numeric_cols = [
+    "Monthly_Revenue",
+    "Monthly_Cost",
+    "Chairs",
+    "Stylists",
+    "Months_Open",
+    "Customer_Count"
+]
+
+for col in franchise_numeric_cols:
+    franchise_ops_df[col] = pd.to_numeric(
+        franchise_ops_df[col],
+        errors="coerce"
+    ).fillna(0)
+
+franchise_ops_df["Monthly_Profit"] = (
+    franchise_ops_df["Monthly_Revenue"] - franchise_ops_df["Monthly_Cost"]
+)
+
+franchise_ops_df["Profit_Margin_%"] = franchise_ops_df.apply(
+    lambda row: (row["Monthly_Profit"] / row["Monthly_Revenue"] * 100)
+    if row["Monthly_Revenue"] > 0 else 0,
+    axis=1
+).round(1)
+
+franchise_ops_df["Revenue_Per_Chair"] = franchise_ops_df.apply(
+    lambda row: row["Monthly_Revenue"] / row["Chairs"]
+    if row["Chairs"] > 0 else 0,
+    axis=1
+).round(0)
+
+franchise_ops_df["Revenue_Per_Stylist"] = franchise_ops_df.apply(
+    lambda row: row["Monthly_Revenue"] / row["Stylists"]
+    if row["Stylists"] > 0 else 0,
+    axis=1
+).round(0)
+
+franchise_ops_df["Revenue_Per_Customer"] = franchise_ops_df.apply(
+    lambda row: row["Monthly_Revenue"] / row["Customer_Count"]
+    if row["Customer_Count"] > 0 else 0,
+    axis=1
+).round(0)
+
+franchise_ops_df["Location_Maturity"] = franchise_ops_df["Months_Open"].apply(
+    lambda x: "Mature" if x >= 36 else "Scaling" if x >= 18 else "New"
+)
+
+franchise_ops_df["Location_Maturity_Score"] = franchise_ops_df["Months_Open"].apply(
+    lambda x: min(100, (x / 36) * 100)
+).round(1)
+
+def normalize_franchise_metric(series):
+    min_value = series.min()
+    max_value = series.max()
+    if pd.isna(min_value) or pd.isna(max_value) or max_value == min_value:
+        return pd.Series([50] * len(series), index=series.index)
+    return ((series - min_value) / (max_value - min_value) * 100).clip(0, 100)
+
+franchise_ops_df["Revenue_Score"] = normalize_franchise_metric(franchise_ops_df["Monthly_Revenue"])
+franchise_ops_df["Profitability_Score"] = normalize_franchise_metric(franchise_ops_df["Profit_Margin_%"])
+franchise_ops_df["Productivity_Score"] = normalize_franchise_metric(franchise_ops_df["Revenue_Per_Stylist"])
+franchise_ops_df["Maturity_Score"] = franchise_ops_df["Location_Maturity_Score"]
+
+franchise_ops_df["Franchise_Operational_Score"] = (
+    franchise_ops_df["Revenue_Score"] * 0.30
+    + franchise_ops_df["Profitability_Score"] * 0.30
+    + franchise_ops_df["Productivity_Score"] * 0.25
+    + franchise_ops_df["Maturity_Score"] * 0.15
+).round(1)
+
+franchise_ops_df["Performance_Tier"] = franchise_ops_df["Franchise_Operational_Score"].apply(
+    lambda score: "Top Performer" if score >= 80
+    else "Strong Performer" if score >= 65
+    else "Needs Validation" if score >= 50
+    else "Operational Risk"
+)
+
+franchise_type_summary = franchise_ops_df.groupby(
+    "Location_Type",
+    as_index=False
+).agg(
+    Locations=("Location_Name", "count"),
+    Monthly_Revenue=("Monthly_Revenue", "sum"),
+    Monthly_Cost=("Monthly_Cost", "sum"),
+    Monthly_Profit=("Monthly_Profit", "sum"),
+    Avg_Profit_Margin=("Profit_Margin_%", "mean"),
+    Avg_Revenue_Per_Chair=("Revenue_Per_Chair", "mean"),
+    Avg_Revenue_Per_Stylist=("Revenue_Per_Stylist", "mean"),
+    Avg_Operational_Score=("Franchise_Operational_Score", "mean")
+)
+
+franchise_type_summary["Avg_Profit_Margin"] = franchise_type_summary["Avg_Profit_Margin"].round(1)
+franchise_type_summary["Avg_Operational_Score"] = franchise_type_summary["Avg_Operational_Score"].round(1)
+
+
 # ---------------------------------
 # AUTOMATED DATA VALIDATION ENGINE
 # ---------------------------------
@@ -2389,7 +2580,7 @@ with k9:
 
 st.markdown("<br>", unsafe_allow_html=True)
 
-tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9, tab10, tab11, tab12, tab13, tab14, tab15, tab16, tab17, tab18, tab19, tab20, tab21, tab22, tab23, tab24, tab25 = st.tabs([
+tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9, tab10, tab11, tab12, tab13, tab14, tab15, tab16, tab17, tab18, tab19, tab20, tab21, tab22, tab23, tab24, tab25, tab26, tab27, tab28 = st.tabs([
     "Overview",
     "Market Ranking",
     "Financial Scenario",
@@ -2414,7 +2605,10 @@ tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9, tab10, tab11, tab12, tab13
     "Academy & Training Intelligence",
     "Automated Data Validation",
     "Advanced AI Forecasting",
-    "Advanced Supply Chain Optimization"
+    "Advanced Supply Chain Optimization",
+    "Franchise Performance Dashboard",
+    "Franchise Profitability",
+    "Multi-Location Benchmarking"
     ])
 
 with tab1:
@@ -4642,6 +4836,343 @@ with tab25:
             This layer strengthens the platform’s alignment with enterprise supply chain optimization,
             supplier performance analytics, lead time intelligence, inventory risk management,
             and logistics cost optimization.
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+
+with tab26:
+
+    st.markdown(
+        '<div class="section-title">Franchise Performance Dashboard</div>',
+        unsafe_allow_html=True
+    )
+
+    st.markdown(
+        '<div class="section-note">Operational intelligence for franchise locations, salons, and academy performance alignment.</div>',
+        unsafe_allow_html=True
+    )
+
+    fp1, fp2, fp3, fp4 = st.columns(4)
+
+    total_franchise_locations = len(franchise_ops_df)
+    total_franchise_revenue = franchise_ops_df["Monthly_Revenue"].sum()
+    total_franchise_profit = franchise_ops_df["Monthly_Profit"].sum()
+    avg_franchise_score = franchise_ops_df["Franchise_Operational_Score"].mean()
+
+    fp1.metric("Locations Tracked", f"{total_franchise_locations:,}")
+    fp2.metric("Monthly Revenue", f"${total_franchise_revenue:,.0f}")
+    fp3.metric("Monthly Profit", f"${total_franchise_profit:,.0f}")
+    fp4.metric("Avg Operational Score", f"{avg_franchise_score:.1f}/100")
+
+    st.markdown("<br>", unsafe_allow_html=True)
+
+    c1, c2 = st.columns(2)
+
+    with c1:
+        st.markdown("### Operational Score by Location")
+
+        fig_franchise_score = px.bar(
+            franchise_ops_df.sort_values("Franchise_Operational_Score", ascending=False),
+            x="Location_Name",
+            y="Franchise_Operational_Score",
+            color="Performance_Tier",
+            text="Franchise_Operational_Score",
+            color_discrete_sequence=[GOLD_LIGHT, GOLD, "#A9843C", "#7D6838"]
+        )
+
+        fig_franchise_score.update_traces(texttemplate="%{text:.1f}", textposition="outside")
+
+        st.plotly_chart(
+            chart_layout(fig_franchise_score, 540),
+            use_container_width=True
+        )
+
+    with c2:
+        st.markdown("### Location Maturity")
+
+        maturity_summary = franchise_ops_df.groupby(
+            "Location_Maturity",
+            as_index=False
+        ).agg(
+            Locations=("Location_Name", "count"),
+            Avg_Operational_Score=("Franchise_Operational_Score", "mean")
+        )
+
+        fig_maturity = px.pie(
+            maturity_summary,
+            names="Location_Maturity",
+            values="Locations",
+            color_discrete_sequence=[GOLD_LIGHT, GOLD, "#7D6838"]
+        )
+
+        st.plotly_chart(
+            chart_layout(fig_maturity, 540),
+            use_container_width=True
+        )
+
+    st.markdown("### Franchise Operational Detail")
+
+    franchise_display_cols = [
+        "Location_Name",
+        "Location_Type",
+        "Owner_Type",
+        "Monthly_Revenue",
+        "Monthly_Cost",
+        "Monthly_Profit",
+        "Profit_Margin_%",
+        "Chairs",
+        "Stylists",
+        "Revenue_Per_Chair",
+        "Revenue_Per_Stylist",
+        "Months_Open",
+        "Location_Maturity",
+        "Franchise_Operational_Score",
+        "Performance_Tier"
+    ]
+
+    st.dataframe(
+        franchise_ops_df[franchise_display_cols].sort_values(
+            "Franchise_Operational_Score",
+            ascending=False
+        ),
+        use_container_width=True,
+        height=460
+    )
+
+    best_franchise_location = franchise_ops_df.sort_values(
+        "Franchise_Operational_Score",
+        ascending=False
+    ).iloc[0]
+
+    st.markdown(f"""
+    <div class="insight-card">
+        <div class="insight-title">Executive Franchise Performance Summary</div>
+        <div class="insight-body">
+            <b>{best_franchise_location["Location_Name"]}</b> is currently the strongest operating location based on the composite operational score.
+            <br><br>
+            The score combines revenue performance, profitability, productivity per stylist, and location maturity.
+            <br><br>
+            This layer helps Gabriel Samra compare company-owned salons, franchise locations, and the Academy using one consistent operational intelligence framework.
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+with tab27:
+
+    st.markdown(
+        '<div class="section-title">Franchise Profitability Intelligence</div>',
+        unsafe_allow_html=True
+    )
+
+    st.markdown(
+        '<div class="section-note">Profitability, revenue per chair, revenue per stylist, and margin benchmarking by location.</div>',
+        unsafe_allow_html=True
+    )
+
+    pr1, pr2, pr3, pr4 = st.columns(4)
+
+    avg_profit_margin = franchise_ops_df["Profit_Margin_%"].mean()
+    avg_revenue_per_chair = franchise_ops_df[franchise_ops_df["Chairs"] > 0]["Revenue_Per_Chair"].mean()
+    avg_revenue_per_stylist = franchise_ops_df[franchise_ops_df["Stylists"] > 0]["Revenue_Per_Stylist"].mean()
+    profitable_locations = len(franchise_ops_df[franchise_ops_df["Monthly_Profit"] > 0])
+
+    pr1.metric("Avg Profit Margin", f"{avg_profit_margin:.1f}%")
+    pr2.metric("Avg Revenue / Chair", f"${avg_revenue_per_chair:,.0f}")
+    pr3.metric("Avg Revenue / Stylist", f"${avg_revenue_per_stylist:,.0f}")
+    pr4.metric("Profitable Locations", f"{profitable_locations:,}")
+
+    st.markdown("<br>", unsafe_allow_html=True)
+
+    c1, c2 = st.columns(2)
+
+    with c1:
+        st.markdown("### Monthly Revenue vs Cost")
+
+        revenue_cost_franchise = franchise_ops_df.melt(
+            id_vars="Location_Name",
+            value_vars=["Monthly_Revenue", "Monthly_Cost"],
+            var_name="Metric",
+            value_name="Amount"
+        )
+
+        fig_franchise_revenue_cost = px.bar(
+            revenue_cost_franchise,
+            x="Location_Name",
+            y="Amount",
+            color="Metric",
+            barmode="group",
+            text="Amount",
+            color_discrete_sequence=[GOLD_LIGHT, "#8C6F2F"]
+        )
+
+        st.plotly_chart(
+            chart_layout(fig_franchise_revenue_cost, 540),
+            use_container_width=True
+        )
+
+    with c2:
+        st.markdown("### Profit Margin by Location")
+
+        fig_margin = px.bar(
+            franchise_ops_df.sort_values("Profit_Margin_%", ascending=False),
+            x="Location_Name",
+            y="Profit_Margin_%",
+            color="Performance_Tier",
+            text="Profit_Margin_%",
+            color_discrete_sequence=[GOLD_LIGHT, GOLD, "#A9843C", "#7D6838"]
+        )
+
+        fig_margin.update_traces(texttemplate="%{text:.1f}%", textposition="outside")
+
+        st.plotly_chart(
+            chart_layout(fig_margin, 540),
+            use_container_width=True
+        )
+
+    st.markdown("### Productivity Benchmarking")
+
+    productivity_df = franchise_ops_df[
+        franchise_ops_df["Location_Type"].isin(["Salon", "Franchise"])
+    ].copy()
+
+    if productivity_df.empty:
+        st.warning("No salon or franchise locations available for productivity benchmarking.")
+    else:
+        fig_productivity = px.scatter(
+            productivity_df,
+            x="Revenue_Per_Chair",
+            y="Revenue_Per_Stylist",
+            size="Monthly_Revenue",
+            color="Location_Type",
+            hover_name="Location_Name",
+            hover_data={
+                "Profit_Margin_%": ":.1f",
+                "Franchise_Operational_Score": ":.1f"
+            },
+            color_discrete_sequence=[GOLD_LIGHT, GOLD, "#7D6838"]
+        )
+
+        st.plotly_chart(
+            chart_layout(fig_productivity, 560),
+            use_container_width=True
+        )
+
+    st.dataframe(
+        franchise_ops_df[[
+            "Location_Name",
+            "Location_Type",
+            "Monthly_Revenue",
+            "Monthly_Cost",
+            "Monthly_Profit",
+            "Profit_Margin_%",
+            "Revenue_Per_Chair",
+            "Revenue_Per_Stylist",
+            "Revenue_Per_Customer",
+            "Performance_Tier"
+        ]].sort_values("Monthly_Profit", ascending=False),
+        use_container_width=True,
+        height=430
+    )
+
+with tab28:
+
+    st.markdown(
+        '<div class="section-title">Multi-Location Benchmarking</div>',
+        unsafe_allow_html=True
+    )
+
+    st.markdown(
+        '<div class="section-note">Compares salons, academy, and franchise locations under one executive benchmarking view.</div>',
+        unsafe_allow_html=True
+    )
+
+    b1, b2 = st.columns([1, 1])
+
+    with b1:
+        st.markdown("### Performance by Business Type")
+
+        fig_type_score = px.bar(
+            franchise_type_summary.sort_values("Avg_Operational_Score", ascending=False),
+            x="Location_Type",
+            y="Avg_Operational_Score",
+            color="Location_Type",
+            text="Avg_Operational_Score",
+            color_discrete_sequence=[GOLD_LIGHT, GOLD, "#A9843C", "#7D6838"]
+        )
+
+        fig_type_score.update_traces(texttemplate="%{text:.1f}", textposition="outside")
+
+        st.plotly_chart(
+            chart_layout(fig_type_score, 520),
+            use_container_width=True
+        )
+
+    with b2:
+        st.markdown("### Profit by Business Type")
+
+        fig_type_profit = px.bar(
+            franchise_type_summary.sort_values("Monthly_Profit", ascending=False),
+            x="Location_Type",
+            y="Monthly_Profit",
+            color="Location_Type",
+            text="Monthly_Profit",
+            color_discrete_sequence=[GOLD_LIGHT, GOLD, "#A9843C", "#7D6838"]
+        )
+
+        st.plotly_chart(
+            chart_layout(fig_type_profit, 520),
+            use_container_width=True
+        )
+
+    st.markdown("### Business Type Benchmark Table")
+
+    st.dataframe(
+        franchise_type_summary.sort_values("Avg_Operational_Score", ascending=False),
+        use_container_width=True,
+        height=320
+    )
+
+    st.markdown("### Location Benchmark Matrix")
+
+    fig_benchmark_matrix = px.scatter(
+        franchise_ops_df,
+        x="Profit_Margin_%",
+        y="Franchise_Operational_Score",
+        size="Monthly_Revenue",
+        color="Location_Type",
+        hover_name="Location_Name",
+        hover_data={
+            "Revenue_Per_Chair": ":,.0f",
+            "Revenue_Per_Stylist": ":,.0f",
+            "Location_Maturity": True,
+            "Performance_Tier": True
+        },
+        color_discrete_sequence=[GOLD_LIGHT, GOLD, "#A9843C", "#7D6838"]
+    )
+
+    fig_benchmark_matrix.add_hline(
+        y=65,
+        line_dash="dash",
+        line_color="#7A6330",
+        annotation_text="Strong performance threshold",
+        annotation_position="top left"
+    )
+
+    st.plotly_chart(
+        chart_layout(fig_benchmark_matrix, 560),
+        use_container_width=True
+    )
+
+    st.markdown(f"""
+    <div class="insight-card">
+        <div class="insight-title">Executive Multi-Location Benchmarking Summary</div>
+        <div class="insight-body">
+            This benchmarking layer creates a single comparison view across salons, franchise locations, and the Academy.
+            <br><br>
+            It helps leadership identify which business model is generating stronger revenue, profitability, productivity, and operational maturity.
+            <br><br>
+            For Gabriel Samra alignment, this strengthens the platform beyond market expansion by connecting strategy with real franchise operating performance.
         </div>
     </div>
     """, unsafe_allow_html=True)
