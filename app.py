@@ -640,6 +640,248 @@ franchise_type_summary = franchise_ops_df.groupby(
 franchise_type_summary["Avg_Profit_Margin"] = franchise_type_summary["Avg_Profit_Margin"].round(1)
 franchise_type_summary["Avg_Operational_Score"] = franchise_type_summary["Avg_Operational_Score"].round(1)
 
+# ---------------------------------
+# CRM / CUSTOMER INTELLIGENCE DATA
+# ---------------------------------
+
+crm_file = Path("Gabriel_Samra_CRM.xlsx")
+
+if crm_file.exists():
+    crm_df = pd.read_excel(
+        crm_file,
+        sheet_name="Customer_Transactions"
+    )
+else:
+    # Fallback CRM dataset so the dashboard can run before the real CRM file is connected.
+    # Replace by uploading Gabriel_Samra_CRM.xlsx with sheet Customer_Transactions.
+    crm_rows = []
+    location_options = (
+        sales_df["Salon_Location"].dropna().unique().tolist()
+        if "Salon_Location" in sales_df.columns and not sales_df.empty
+        else ["Miami Salon", "Doral Salon", "Aventura Salon"]
+    )
+    service_options = [
+        "Color", "Haircut", "Blow Dry", "Extensions", "Treatment", "Retail Product"
+    ]
+    channel_options = ["Online Booking", "Phone", "Walk-In", "Instagram", "Referral"]
+    campaign_options = ["Organic", "Instagram Ads", "Email Campaign", "Referral Program", "Google Search"]
+
+    np.random.seed(42)
+
+    customer_names = [
+        "Customer 001", "Customer 002", "Customer 003", "Customer 004", "Customer 005",
+        "Customer 006", "Customer 007", "Customer 008", "Customer 009", "Customer 010",
+        "Customer 011", "Customer 012", "Customer 013", "Customer 014", "Customer 015",
+        "Customer 016", "Customer 017", "Customer 018", "Customer 019", "Customer 020",
+        "Customer 021", "Customer 022", "Customer 023", "Customer 024", "Customer 025"
+    ]
+
+    start_date = pd.Timestamp.today().normalize() - pd.DateOffset(months=12)
+
+    visit_id = 1
+    for customer_index, customer_name in enumerate(customer_names, start=1):
+        visit_count = np.random.randint(1, 9)
+        preferred_location = np.random.choice(location_options)
+
+        for _ in range(visit_count):
+            visit_date = start_date + pd.DateOffset(days=int(np.random.randint(0, 365)))
+            service = np.random.choice(service_options)
+
+            if service == "Extensions":
+                revenue = np.random.randint(450, 1200)
+            elif service == "Color":
+                revenue = np.random.randint(180, 520)
+            elif service == "Treatment":
+                revenue = np.random.randint(120, 350)
+            elif service == "Retail Product":
+                revenue = np.random.randint(35, 180)
+            else:
+                revenue = np.random.randint(65, 220)
+
+            crm_rows.append({
+                "Visit_ID": f"V{visit_id:04d}",
+                "Customer_ID": f"C{customer_index:03d}",
+                "Customer_Name": customer_name,
+                "Visit_Date": visit_date,
+                "Salon_Location": preferred_location,
+                "Service_Category": service,
+                "Booking_Channel": np.random.choice(channel_options),
+                "Campaign_Source": np.random.choice(campaign_options),
+                "Revenue": revenue,
+                "Discount_Amount": np.random.choice([0, 0, 0, 10, 20, 30]),
+                "Satisfaction_Score": np.random.choice([3, 4, 4, 5, 5, 5])
+            })
+            visit_id += 1
+
+    crm_df = pd.DataFrame(crm_rows)
+
+crm_df.columns = crm_df.columns.str.strip()
+
+crm_required_cols = {
+    "Visit_ID": "Unknown Visit",
+    "Customer_ID": "Unknown Customer",
+    "Customer_Name": "Unknown Customer",
+    "Visit_Date": pd.Timestamp.today(),
+    "Salon_Location": "Unknown Location",
+    "Service_Category": "Unknown Service",
+    "Booking_Channel": "Unknown Channel",
+    "Campaign_Source": "Unknown Campaign",
+    "Revenue": 0,
+    "Discount_Amount": 0,
+    "Satisfaction_Score": 0
+}
+
+for col, default_value in crm_required_cols.items():
+    if col not in crm_df.columns:
+        crm_df[col] = default_value
+
+crm_df["Visit_Date"] = pd.to_datetime(crm_df["Visit_Date"], errors="coerce")
+crm_df = crm_df.dropna(subset=["Visit_Date"])
+
+crm_numeric_cols = ["Revenue", "Discount_Amount", "Satisfaction_Score"]
+
+for col in crm_numeric_cols:
+    crm_df[col] = pd.to_numeric(crm_df[col], errors="coerce").fillna(0)
+
+crm_df["Net_Revenue"] = crm_df["Revenue"] - crm_df["Discount_Amount"]
+crm_df["Visit_Month"] = crm_df["Visit_Date"].dt.to_period("M").dt.to_timestamp()
+
+analysis_date = crm_df["Visit_Date"].max() + pd.Timedelta(days=1) if not crm_df.empty else pd.Timestamp.today()
+
+customer_summary_df = crm_df.groupby(
+    ["Customer_ID", "Customer_Name"],
+    as_index=False
+).agg(
+    Total_Revenue=("Net_Revenue", "sum"),
+    Total_Visits=("Visit_ID", "count"),
+    First_Visit=("Visit_Date", "min"),
+    Last_Visit=("Visit_Date", "max"),
+    Avg_Ticket=("Net_Revenue", "mean"),
+    Avg_Satisfaction=("Satisfaction_Score", "mean"),
+    Favorite_Location=("Salon_Location", lambda x: x.mode().iloc[0] if not x.mode().empty else "Unknown"),
+    Primary_Channel=("Booking_Channel", lambda x: x.mode().iloc[0] if not x.mode().empty else "Unknown"),
+    Primary_Campaign=("Campaign_Source", lambda x: x.mode().iloc[0] if not x.mode().empty else "Unknown")
+)
+
+customer_summary_df["Customer_Tenure_Days"] = (
+    customer_summary_df["Last_Visit"] - customer_summary_df["First_Visit"]
+).dt.days.clip(lower=1)
+
+customer_summary_df["Days_Since_Last_Visit"] = (
+    analysis_date - customer_summary_df["Last_Visit"]
+).dt.days
+
+customer_summary_df["Booking_Frequency_Per_Month"] = (
+    customer_summary_df["Total_Visits"] / (customer_summary_df["Customer_Tenure_Days"] / 30)
+).replace([np.inf, -np.inf], 0).fillna(0).round(2)
+
+customer_summary_df["Estimated_CLV"] = (
+    customer_summary_df["Avg_Ticket"]
+    * customer_summary_df["Booking_Frequency_Per_Month"]
+    * 12
+).round(0)
+
+customer_summary_df["Retention_Status"] = customer_summary_df["Days_Since_Last_Visit"].apply(
+    lambda x: "Active" if x <= 60
+    else "At Risk" if x <= 120
+    else "Likely Churned"
+)
+
+customer_summary_df["Churn_Risk_%"] = customer_summary_df.apply(
+    lambda row: min(
+        95,
+        max(
+            5,
+            row["Days_Since_Last_Visit"] * 0.55
+            - row["Total_Visits"] * 4
+            - row["Avg_Satisfaction"] * 3
+        )
+    ),
+    axis=1
+).round(1)
+
+# RFM-style customer segmentation
+customer_summary_df["Recency_Score"] = normalize_franchise_metric(
+    -customer_summary_df["Days_Since_Last_Visit"]
+)
+customer_summary_df["Frequency_Score"] = normalize_franchise_metric(
+    customer_summary_df["Total_Visits"]
+)
+customer_summary_df["Monetary_Score"] = normalize_franchise_metric(
+    customer_summary_df["Total_Revenue"]
+)
+
+customer_summary_df["Customer_Value_Score"] = (
+    customer_summary_df["Recency_Score"] * 0.30
+    + customer_summary_df["Frequency_Score"] * 0.30
+    + customer_summary_df["Monetary_Score"] * 0.40
+).round(1)
+
+customer_summary_df["Customer_Segment"] = customer_summary_df.apply(
+    lambda row: "VIP / High Value" if row["Customer_Value_Score"] >= 80
+    else "Loyal Repeat Customer" if row["Total_Visits"] >= 4 and row["Days_Since_Last_Visit"] <= 90
+    else "At-Risk Valuable Customer" if row["Total_Revenue"] >= customer_summary_df["Total_Revenue"].median() and row["Days_Since_Last_Visit"] > 90
+    else "New / Developing Customer" if row["Total_Visits"] <= 2 and row["Days_Since_Last_Visit"] <= 90
+    else "Low Engagement Customer",
+    axis=1
+)
+
+customer_segment_summary_df = customer_summary_df.groupby(
+    "Customer_Segment",
+    as_index=False
+).agg(
+    Customers=("Customer_ID", "count"),
+    Total_Revenue=("Total_Revenue", "sum"),
+    Avg_CLV=("Estimated_CLV", "mean"),
+    Avg_Churn_Risk=("Churn_Risk_%", "mean"),
+    Avg_Visits=("Total_Visits", "mean")
+)
+
+customer_segment_summary_df["Avg_CLV"] = customer_segment_summary_df["Avg_CLV"].round(0)
+customer_segment_summary_df["Avg_Churn_Risk"] = customer_segment_summary_df["Avg_Churn_Risk"].round(1)
+customer_segment_summary_df["Avg_Visits"] = customer_segment_summary_df["Avg_Visits"].round(1)
+
+campaign_attribution_df = crm_df.groupby(
+    "Campaign_Source",
+    as_index=False
+).agg(
+    Customers=("Customer_ID", "nunique"),
+    Visits=("Visit_ID", "count"),
+    Revenue=("Net_Revenue", "sum"),
+    Avg_Ticket=("Net_Revenue", "mean"),
+    Avg_Satisfaction=("Satisfaction_Score", "mean")
+)
+
+campaign_attribution_df["Revenue_Per_Customer"] = campaign_attribution_df.apply(
+    lambda row: row["Revenue"] / row["Customers"] if row["Customers"] > 0 else 0,
+    axis=1
+).round(0)
+
+location_customer_df = crm_df.groupby(
+    "Salon_Location",
+    as_index=False
+).agg(
+    Customers=("Customer_ID", "nunique"),
+    Visits=("Visit_ID", "count"),
+    Revenue=("Net_Revenue", "sum"),
+    Avg_Ticket=("Net_Revenue", "mean"),
+    Avg_Satisfaction=("Satisfaction_Score", "mean")
+)
+
+location_customer_df["Revenue_Per_Customer"] = location_customer_df.apply(
+    lambda row: row["Revenue"] / row["Customers"] if row["Customers"] > 0 else 0,
+    axis=1
+).round(0)
+
+monthly_customer_trend_df = crm_df.groupby(
+    "Visit_Month",
+    as_index=False
+).agg(
+    Visits=("Visit_ID", "count"),
+    Unique_Customers=("Customer_ID", "nunique"),
+    Revenue=("Net_Revenue", "sum")
+)
+
 
 # ---------------------------------
 # AUTOMATED DATA VALIDATION ENGINE
@@ -2580,7 +2822,7 @@ with k9:
 
 st.markdown("<br>", unsafe_allow_html=True)
 
-tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9, tab10, tab11, tab12, tab13, tab14, tab15, tab16, tab17, tab18, tab19, tab20, tab21, tab22, tab23, tab24, tab25, tab26, tab27, tab28 = st.tabs([
+tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9, tab10, tab11, tab12, tab13, tab14, tab15, tab16, tab17, tab18, tab19, tab20, tab21, tab22, tab23, tab24, tab25, tab26, tab27, tab28, tab29, tab30, tab31 = st.tabs([
     "Overview",
     "Market Ranking",
     "Financial Scenario",
@@ -2608,7 +2850,10 @@ tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9, tab10, tab11, tab12, tab13
     "Advanced Supply Chain Optimization",
     "Franchise Performance Dashboard",
     "Franchise Profitability",
-    "Multi-Location Benchmarking"
+    "Multi-Location Benchmarking",
+    "Customer Intelligence",
+    "Retention & Churn Analytics",
+    "Campaign Attribution"
     ])
 
 with tab1:
@@ -5173,6 +5418,344 @@ with tab28:
             It helps leadership identify which business model is generating stronger revenue, profitability, productivity, and operational maturity.
             <br><br>
             For Gabriel Samra alignment, this strengthens the platform beyond market expansion by connecting strategy with real franchise operating performance.
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+
+with tab29:
+
+    st.markdown(
+        '<div class="section-title">CRM / Customer Intelligence</div>',
+        unsafe_allow_html=True
+    )
+
+    st.markdown(
+        '<div class="section-note">Customer segmentation, repeat visit behavior, lifetime value, booking frequency, and customer value scoring.</div>',
+        unsafe_allow_html=True
+    )
+
+    total_customers = customer_summary_df["Customer_ID"].nunique()
+    repeat_customers = len(customer_summary_df[customer_summary_df["Total_Visits"] >= 2])
+    repeat_rate = (repeat_customers / total_customers * 100) if total_customers > 0 else 0
+    avg_clv = customer_summary_df["Estimated_CLV"].mean() if not customer_summary_df.empty else 0
+    avg_booking_frequency = customer_summary_df["Booking_Frequency_Per_Month"].mean() if not customer_summary_df.empty else 0
+
+    c1, c2, c3, c4 = st.columns(4)
+
+    c1.metric("Total Customers", f"{total_customers:,}")
+    c2.metric("Repeat Customer Rate", f"{repeat_rate:.1f}%")
+    c3.metric("Avg Estimated CLV", f"${avg_clv:,.0f}")
+    c4.metric("Avg Booking Frequency", f"{avg_booking_frequency:.2f} / month")
+
+    st.markdown("<br>", unsafe_allow_html=True)
+
+    left, right = st.columns(2)
+
+    with left:
+        st.markdown("### Customer Segments")
+
+        fig_segments = px.bar(
+            customer_segment_summary_df.sort_values("Total_Revenue", ascending=False),
+            x="Customer_Segment",
+            y="Total_Revenue",
+            color="Customer_Segment",
+            text="Total_Revenue",
+            color_discrete_sequence=[GOLD_LIGHT, GOLD, "#A9843C", "#7D6838", "#8A8A8A"]
+        )
+
+        st.plotly_chart(
+            chart_layout(fig_segments, 520),
+            use_container_width=True
+        )
+
+    with right:
+        st.markdown("### Customer Value vs Churn Risk")
+
+        fig_value_risk = px.scatter(
+            customer_summary_df,
+            x="Customer_Value_Score",
+            y="Churn_Risk_%",
+            size="Total_Revenue",
+            color="Customer_Segment",
+            hover_name="Customer_Name",
+            hover_data={
+                "Total_Visits": True,
+                "Estimated_CLV": ":,.0f",
+                "Days_Since_Last_Visit": True,
+                "Favorite_Location": True
+            },
+            color_discrete_sequence=[GOLD_LIGHT, GOLD, "#A9843C", "#7D6838", "#8A8A8A"]
+        )
+
+        st.plotly_chart(
+            chart_layout(fig_value_risk, 520),
+            use_container_width=True
+        )
+
+    st.markdown("### Customer Segment Summary")
+
+    st.dataframe(
+        customer_segment_summary_df.sort_values("Total_Revenue", ascending=False),
+        use_container_width=True,
+        height=320
+    )
+
+    st.markdown("### Customer Detail Table")
+
+    st.dataframe(
+        customer_summary_df[[
+            "Customer_ID",
+            "Customer_Name",
+            "Customer_Segment",
+            "Total_Revenue",
+            "Total_Visits",
+            "Avg_Ticket",
+            "Estimated_CLV",
+            "Booking_Frequency_Per_Month",
+            "Days_Since_Last_Visit",
+            "Churn_Risk_%",
+            "Retention_Status",
+            "Favorite_Location",
+            "Primary_Channel"
+        ]].sort_values("Customer_Value_Score", ascending=False),
+        use_container_width=True,
+        height=460
+    )
+
+    top_customer = customer_summary_df.sort_values("Estimated_CLV", ascending=False).iloc[0]
+
+    st.markdown(f"""
+    <div class="insight-card">
+        <div class="insight-title">Executive Customer Intelligence Summary</div>
+        <div class="insight-body">
+            The CRM intelligence layer identifies <b>{total_customers:,}</b> customers with a repeat customer rate of
+            <b>{repeat_rate:.1f}%</b>.
+            <br><br>
+            The highest estimated lifetime value customer is <b>{top_customer["Customer_Name"]}</b>, with an estimated CLV of
+            <b>${top_customer["Estimated_CLV"]:,.0f}</b>.
+            <br><br>
+            This layer strengthens digital transformation alignment by connecting operating data to customer behavior,
+            retention, segmentation, booking patterns, and revenue quality.
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+with tab30:
+
+    st.markdown(
+        '<div class="section-title">Retention & Churn Analytics</div>',
+        unsafe_allow_html=True
+    )
+
+    st.markdown(
+        '<div class="section-note">Repeat visit analysis, churn risk, retention status, days since last visit, and booking frequency intelligence.</div>',
+        unsafe_allow_html=True
+    )
+
+    active_customers = len(customer_summary_df[customer_summary_df["Retention_Status"] == "Active"])
+    at_risk_customers = len(customer_summary_df[customer_summary_df["Retention_Status"] == "At Risk"])
+    churned_customers = len(customer_summary_df[customer_summary_df["Retention_Status"] == "Likely Churned"])
+    avg_churn_risk = customer_summary_df["Churn_Risk_%"].mean() if not customer_summary_df.empty else 0
+
+    r1, r2, r3, r4 = st.columns(4)
+
+    r1.metric("Active Customers", f"{active_customers:,}")
+    r2.metric("At-Risk Customers", f"{at_risk_customers:,}")
+    r3.metric("Likely Churned", f"{churned_customers:,}")
+    r4.metric("Avg Churn Risk", f"{avg_churn_risk:.1f}%")
+
+    st.markdown("<br>", unsafe_allow_html=True)
+
+    c1, c2 = st.columns(2)
+
+    with c1:
+        st.markdown("### Retention Status Mix")
+
+        retention_summary = customer_summary_df.groupby(
+            "Retention_Status",
+            as_index=False
+        ).agg(
+            Customers=("Customer_ID", "count"),
+            Revenue=("Total_Revenue", "sum"),
+            Avg_Churn_Risk=("Churn_Risk_%", "mean")
+        )
+
+        fig_retention = px.pie(
+            retention_summary,
+            names="Retention_Status",
+            values="Customers",
+            color_discrete_sequence=[GOLD, GOLD_LIGHT, "#B22222"]
+        )
+
+        st.plotly_chart(
+            chart_layout(fig_retention, 500),
+            use_container_width=True
+        )
+
+    with c2:
+        st.markdown("### Monthly Visits and Customer Activity")
+
+        fig_monthly_customers = px.line(
+            monthly_customer_trend_df,
+            x="Visit_Month",
+            y=["Visits", "Unique_Customers"],
+            markers=True
+        )
+
+        st.plotly_chart(
+            chart_layout(fig_monthly_customers, 500),
+            use_container_width=True
+        )
+
+    st.markdown("### Highest Churn Risk Customers")
+
+    st.dataframe(
+        customer_summary_df[[
+            "Customer_ID",
+            "Customer_Name",
+            "Customer_Segment",
+            "Retention_Status",
+            "Total_Revenue",
+            "Total_Visits",
+            "Days_Since_Last_Visit",
+            "Booking_Frequency_Per_Month",
+            "Avg_Satisfaction",
+            "Churn_Risk_%",
+            "Favorite_Location",
+            "Primary_Campaign"
+        ]].sort_values("Churn_Risk_%", ascending=False),
+        use_container_width=True,
+        height=460
+    )
+
+    high_risk_value = customer_summary_df[
+        customer_summary_df["Churn_Risk_%"] >= 60
+    ]["Total_Revenue"].sum()
+
+    st.markdown(f"""
+    <div class="insight-card">
+        <div class="insight-title">Executive Retention Summary</div>
+        <div class="insight-body">
+            The model currently identifies <b>{at_risk_customers + churned_customers:,}</b> customers requiring retention attention.
+            <br><br>
+            Revenue historically associated with customers above 60% churn risk is approximately
+            <b>${high_risk_value:,.0f}</b>.
+            <br><br>
+            Recommended management action: prioritize reactivation campaigns for high-value customers with high churn risk,
+            especially those with strong prior spend but long time since last visit.
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+with tab31:
+
+    st.markdown(
+        '<div class="section-title">Campaign Attribution & Booking Intelligence</div>',
+        unsafe_allow_html=True
+    )
+
+    st.markdown(
+        '<div class="section-note">Campaign attribution, booking channel performance, revenue per customer, and location-level customer analytics.</div>',
+        unsafe_allow_html=True
+    )
+
+    c1, c2 = st.columns(2)
+
+    with c1:
+        st.markdown("### Revenue by Campaign Source")
+
+        fig_campaign = px.bar(
+            campaign_attribution_df.sort_values("Revenue", ascending=False),
+            x="Campaign_Source",
+            y="Revenue",
+            color="Campaign_Source",
+            text="Revenue",
+            color_discrete_sequence=[GOLD_LIGHT, GOLD, "#A9843C", "#7D6838", "#8A8A8A"]
+        )
+
+        st.plotly_chart(
+            chart_layout(fig_campaign, 520),
+            use_container_width=True
+        )
+
+    with c2:
+        st.markdown("### Booking Channel Revenue")
+
+        booking_channel_df = crm_df.groupby(
+            "Booking_Channel",
+            as_index=False
+        ).agg(
+            Visits=("Visit_ID", "count"),
+            Customers=("Customer_ID", "nunique"),
+            Revenue=("Net_Revenue", "sum"),
+            Avg_Ticket=("Net_Revenue", "mean")
+        )
+
+        fig_channel = px.bar(
+            booking_channel_df.sort_values("Revenue", ascending=False),
+            x="Booking_Channel",
+            y="Revenue",
+            color="Booking_Channel",
+            text="Revenue",
+            color_discrete_sequence=[GOLD_LIGHT, GOLD, "#A9843C", "#7D6838", "#8A8A8A"]
+        )
+
+        st.plotly_chart(
+            chart_layout(fig_channel, 520),
+            use_container_width=True
+        )
+
+    st.markdown("### Location-Level Customer Intelligence")
+
+    fig_location_customer = px.scatter(
+        location_customer_df,
+        x="Customers",
+        y="Revenue_Per_Customer",
+        size="Revenue",
+        color="Salon_Location",
+        hover_name="Salon_Location",
+        hover_data={
+            "Visits": True,
+            "Revenue": ":,.0f",
+            "Avg_Ticket": ":,.0f",
+            "Avg_Satisfaction": ":.1f"
+        },
+        color_discrete_sequence=[GOLD_LIGHT, GOLD, "#A9843C", "#7D6838", "#8A8A8A"]
+    )
+
+    st.plotly_chart(
+        chart_layout(fig_location_customer, 540),
+        use_container_width=True
+    )
+
+    st.markdown("### Campaign Attribution Table")
+
+    st.dataframe(
+        campaign_attribution_df.sort_values("Revenue", ascending=False),
+        use_container_width=True,
+        height=320
+    )
+
+    st.markdown("### Booking Channel Table")
+
+    st.dataframe(
+        booking_channel_df.sort_values("Revenue", ascending=False),
+        use_container_width=True,
+        height=280
+    )
+
+    best_campaign = campaign_attribution_df.sort_values("Revenue", ascending=False).iloc[0]
+
+    st.markdown(f"""
+    <div class="insight-card">
+        <div class="insight-title">Executive Campaign Attribution Summary</div>
+        <div class="insight-body">
+            The strongest campaign source is <b>{best_campaign["Campaign_Source"]}</b>, generating approximately
+            <b>${best_campaign["Revenue"]:,.0f}</b> in attributed revenue.
+            <br><br>
+            This layer supports enterprise CRM intelligence by connecting marketing campaigns, booking behavior,
+            customer value, retention risk, and location-level revenue performance.
         </div>
     </div>
     """, unsafe_allow_html=True)
