@@ -5504,25 +5504,29 @@ with tab29:
 
     st.markdown("### Customer Detail Table")
 
-    st.dataframe(
-        customer_summary_df[[
-            "Customer_ID",
-            "Customer_Name",
-            "Customer_Segment",
-            "Total_Revenue",
-            "Total_Visits",
-            "Avg_Ticket",
-            "Estimated_CLV",
-            "Booking_Frequency_Per_Month",
-            "Days_Since_Last_Visit",
-            "Churn_Risk_%",
-            "Retention_Status",
-            "Favorite_Location",
-            "Primary_Channel"
-        ]].sort_values("Customer_Value_Score", ascending=False),
-        use_container_width=True,
-        height=460
-    )
+    customer_detail_cols = [
+    "Customer_ID",
+    "Customer_Name",
+    "Customer_Segment",
+    "Total_Revenue",
+    "Total_Visits",
+    "Avg_Ticket",
+    "Estimated_CLV",
+    "Booking_Frequency_Per_Month",
+    "Days_Since_Last_Visit",
+    "Churn_Risk_%",
+    "Retention_Status",
+    "Favorite_Location",
+    "Primary_Channel"
+]
+
+st.dataframe(
+    customer_summary_df
+        .sort_values("Customer_Value_Score", ascending=False)
+        [customer_detail_cols],
+    use_container_width=True,
+    height=460
+)
 
     top_customer = customer_summary_df.sort_values("Estimated_CLV", ascending=False).iloc[0]
 
