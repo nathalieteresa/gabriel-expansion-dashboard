@@ -2823,7 +2823,7 @@ with k9:
 
 st.markdown("<br>", unsafe_allow_html=True)
 
-tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9, tab10, tab11, tab12, tab13, tab14, tab15, tab16, tab17, tab18, tab19, tab20, tab21, tab22, tab23, tab24, tab25, tab26, tab27, tab28, tab29, tab30, tab31 = st.tabs([
+tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9, tab10, tab11, tab12, tab13, tab14, tab15, tab16, tab17, tab18, tab19, tab20, tab21, tab22, tab23, tab24, tab25, tab26, tab27, tab28, tab29, tab30, tab31, tab32 = st.tabs([
     "Overview",
     "Market Ranking",
     "Financial Scenario",
@@ -2854,7 +2854,8 @@ tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9, tab10, tab11, tab12, tab13
     "Multi-Location Benchmarking",
     "Customer Intelligence",
     "Retention & Churn Analytics",
-    "Campaign Attribution"
+    "Campaign Attribution",
+    "Transformation Governance"
     ])
 
 with tab1:
@@ -5761,6 +5762,279 @@ with tab31:
             <br><br>
             This layer supports enterprise CRM intelligence by connecting marketing campaigns, booking behavior,
             customer value, retention risk, and location-level revenue performance.
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+with tab32:
+
+    st.markdown(
+        '<div class="section-title">Transformation Governance & Change Management Framework</div>',
+        unsafe_allow_html=True
+    )
+
+    st.markdown(
+        '<div class="section-note">Enterprise change management layer tracking adoption KPIs, organizational readiness, resistance, change velocity, and executive implementation roadmap.</div>',
+        unsafe_allow_html=True
+    )
+
+    # -----------------------------
+    # SAMPLE TRANSFORMATION GOVERNANCE DATA
+    # -----------------------------
+
+    transformation_df = pd.DataFrame({
+        "Department": [
+            "Salon Operations",
+            "Academy",
+            "Franchise Operations",
+            "Marketing",
+            "Finance",
+            "Leadership"
+        ],
+        "System_Adoption_Rate": [82, 76, 69, 88, 73, 91],
+        "Active_Users": [34, 18, 22, 12, 9, 6],
+        "Training_Completion": [79, 84, 65, 92, 71, 100],
+        "Process_Compliance": [74, 81, 62, 86, 77, 94],
+        "Stakeholder_Alignment": [80, 78, 66, 89, 75, 95],
+        "Implementation_Resistance": [28, 22, 41, 18, 30, 10],
+        "Change_Velocity": [72, 69, 58, 84, 64, 90]
+    })
+
+    transformation_df["Transformation_Maturity_Score"] = (
+        transformation_df["System_Adoption_Rate"] * 0.20
+        + transformation_df["Training_Completion"] * 0.20
+        + transformation_df["Process_Compliance"] * 0.20
+        + transformation_df["Stakeholder_Alignment"] * 0.20
+        + transformation_df["Change_Velocity"] * 0.15
+        + (100 - transformation_df["Implementation_Resistance"]) * 0.05
+    ).round(1)
+
+    transformation_df["Readiness_Level"] = transformation_df["Transformation_Maturity_Score"].apply(
+        lambda score:
+        "High Readiness" if score >= 80
+        else "Moderate Readiness" if score >= 65
+        else "Needs Intervention"
+    )
+
+    avg_adoption = transformation_df["System_Adoption_Rate"].mean()
+    avg_training = transformation_df["Training_Completion"].mean()
+    avg_maturity = transformation_df["Transformation_Maturity_Score"].mean()
+    avg_resistance = transformation_df["Implementation_Resistance"].mean()
+
+    c1, c2, c3, c4 = st.columns(4)
+
+    c1.metric("System Adoption Rate", f"{avg_adoption:.1f}%")
+    c2.metric("Training Completion", f"{avg_training:.1f}%")
+    c3.metric("Transformation Maturity", f"{avg_maturity:.1f}/100")
+    c4.metric("Implementation Resistance", f"{avg_resistance:.1f}%")
+
+    st.markdown("<br>", unsafe_allow_html=True)
+
+    # -----------------------------
+    # ADOPTION KPI DASHBOARD
+    # -----------------------------
+
+    left, right = st.columns(2)
+
+    with left:
+        st.markdown("### Adoption KPIs by Department")
+
+        fig_adoption = px.bar(
+            transformation_df,
+            x="Department",
+            y="System_Adoption_Rate",
+            color="Readiness_Level",
+            text="System_Adoption_Rate",
+            color_discrete_sequence=[
+                GOLD_LIGHT,
+                GOLD,
+                "#7D6838"
+            ]
+        )
+
+        fig_adoption.update_traces(
+            texttemplate="%{text:.1f}%",
+            textposition="outside"
+        )
+
+        st.plotly_chart(
+            chart_layout(fig_adoption, 520),
+            use_container_width=True
+        )
+
+    with right:
+        st.markdown("### Transformation Maturity Score")
+
+        fig_maturity = px.bar(
+            transformation_df.sort_values("Transformation_Maturity_Score", ascending=False),
+            x="Department",
+            y="Transformation_Maturity_Score",
+            color="Readiness_Level",
+            text="Transformation_Maturity_Score",
+            color_discrete_sequence=[
+                GOLD,
+                GOLD_LIGHT,
+                "#7D6838"
+            ]
+        )
+
+        fig_maturity.update_traces(
+            texttemplate="%{text:.1f}",
+            textposition="outside"
+        )
+
+        st.plotly_chart(
+            chart_layout(fig_maturity, 520),
+            use_container_width=True
+        )
+
+    # -----------------------------
+    # ORGANIZATIONAL READINESS
+    # -----------------------------
+
+    st.markdown("### Organizational Readiness & Resistance Analysis")
+
+    readiness_cols = [
+        "Department",
+        "Stakeholder_Alignment",
+        "Training_Completion",
+        "Process_Compliance",
+        "Implementation_Resistance",
+        "Change_Velocity",
+        "Transformation_Maturity_Score",
+        "Readiness_Level"
+    ]
+
+    st.dataframe(
+        transformation_df[readiness_cols].sort_values(
+            "Transformation_Maturity_Score",
+            ascending=False
+        ),
+        use_container_width=True,
+        height=380
+    )
+
+    st.markdown("<br>", unsafe_allow_html=True)
+
+    r1, r2 = st.columns(2)
+
+    with r1:
+        st.markdown("### Resistance by Department")
+
+        fig_resistance = px.bar(
+            transformation_df.sort_values("Implementation_Resistance", ascending=False),
+            x="Department",
+            y="Implementation_Resistance",
+            color="Readiness_Level",
+            text="Implementation_Resistance",
+            color_discrete_sequence=[
+                "#B22222",
+                GOLD,
+                GOLD_LIGHT
+            ]
+        )
+
+        fig_resistance.update_traces(
+            texttemplate="%{text:.1f}%",
+            textposition="outside"
+        )
+
+        st.plotly_chart(
+            chart_layout(fig_resistance, 500),
+            use_container_width=True
+        )
+
+    with r2:
+        st.markdown("### Change Velocity")
+
+        fig_velocity = px.bar(
+            transformation_df.sort_values("Change_Velocity", ascending=False),
+            x="Department",
+            y="Change_Velocity",
+            color="Readiness_Level",
+            text="Change_Velocity",
+            color_discrete_sequence=[
+                GOLD_LIGHT,
+                GOLD,
+                "#7D6838"
+            ]
+        )
+
+        fig_velocity.update_traces(
+            texttemplate="%{text:.1f}",
+            textposition="outside"
+        )
+
+        st.plotly_chart(
+            chart_layout(fig_velocity, 500),
+            use_container_width=True
+        )
+
+    # -----------------------------
+    # EXECUTIVE ROADMAP
+    # -----------------------------
+
+    st.markdown("### Executive Transformation Roadmap")
+
+    roadmap_df = pd.DataFrame({
+        "Phase": [
+            "Phase 1",
+            "Phase 2",
+            "Phase 3"
+        ],
+        "Focus": [
+            "Foundation & Alignment",
+            "Adoption & Process Integration",
+            "Scale, Governance & Continuous Improvement"
+        ],
+        "Milestones": [
+            "Define ownership, confirm KPIs, train department leaders, validate data readiness.",
+            "Increase active users, standardize process compliance, monitor resistance, improve reporting cadence.",
+            "Scale governance routines, automate executive dashboards, benchmark locations, institutionalize continuous improvement."
+        ],
+        "Target_Timeframe": [
+            "0–30 Days",
+            "31–90 Days",
+            "90–180 Days"
+        ],
+        "Success_Metric": [
+            "Leadership alignment above 85%",
+            "System adoption above 80%",
+            "Transformation maturity above 85/100"
+        ]
+    })
+
+    st.dataframe(
+        roadmap_df,
+        use_container_width=True,
+        height=260
+    )
+
+    weakest_department = transformation_df.sort_values(
+        "Transformation_Maturity_Score",
+        ascending=True
+    ).iloc[0]
+
+    strongest_department = transformation_df.sort_values(
+        "Transformation_Maturity_Score",
+        ascending=False
+    ).iloc[0]
+
+    st.markdown(f"""
+    <div class="insight-card">
+        <div class="insight-title">Executive Transformation Governance Summary</div>
+        <div class="insight-body">
+            The strongest transformation readiness signal is currently in
+            <b>{strongest_department["Department"]}</b>, with a maturity score of
+            <b>{strongest_department["Transformation_Maturity_Score"]:.1f}/100</b>.
+            <br><br>
+            The department requiring the most change management attention is
+            <b>{weakest_department["Department"]}</b>, with a maturity score of
+            <b>{weakest_department["Transformation_Maturity_Score"]:.1f}/100</b>.
+            <br><br>
+            This governance layer strengthens the platform by moving beyond a simple change readiness score
+            into adoption KPIs, organizational readiness, resistance tracking, change velocity,
+            and an executive transformation roadmap.
         </div>
     </div>
     """, unsafe_allow_html=True)
