@@ -2823,7 +2823,7 @@ with k9:
 
 st.markdown("<br>", unsafe_allow_html=True)
 
-tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9, tab10, tab11, tab12, tab13, tab14, tab15, tab16, tab17, tab18, tab19, tab20, tab21, tab22, tab23, tab24, tab25, tab26, tab27, tab28, tab29, tab30, tab31, tab32 = st.tabs([
+tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9, tab10, tab11, tab12, tab13, tab14, tab15, tab16, tab17, tab18, tab19, tab20, tab21, tab22, tab23, tab24, tab25, tab26, tab27, tab28, tab29, tab30, tab31, tab32, tab33 = st.tabs([
     "Overview",
     "Market Ranking",
     "Financial Scenario",
@@ -2855,7 +2855,8 @@ tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9, tab10, tab11, tab12, tab13
     "Customer Intelligence",
     "Retention & Churn Analytics",
     "Campaign Attribution",
-    "Transformation Governance"
+    "Transformation Governance",
+    "Data Governance Maturity"
     ])
 
 with tab1:
@@ -6035,6 +6036,202 @@ with tab32:
             This governance layer strengthens the platform by moving beyond a simple change readiness score
             into adoption KPIs, organizational readiness, resistance tracking, change velocity,
             and an executive transformation roadmap.
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+with tab33:
+
+    st.markdown(
+        '<div class="section-title">Data Governance Maturity Model</div>',
+        unsafe_allow_html=True
+    )
+
+    st.markdown(
+        '<div class="section-note">Enterprise governance layer evaluating ownership, stewardship, master data consistency, duplicates, policy maturity, lineage, auditability, and source trust.</div>',
+        unsafe_allow_html=True
+    )
+
+    governance_maturity_df = pd.DataFrame({
+        "Domain": [
+            "Market Expansion Data",
+            "Sales Transactions",
+            "Inventory Master Data",
+            "Academy Data",
+            "Franchise Data",
+            "CRM / Customer Data"
+        ],
+        "Data_Ownership": [78, 72, 69, 75, 66, 62],
+        "Data_Stewardship": [74, 70, 68, 73, 61, 59],
+        "Master_Data_Consistency": [82, 76, 71, 79, 64, 60],
+        "Duplicate_Control": [80, 73, 70, 76, 62, 58],
+        "Governance_Policy_Score": [76, 69, 67, 72, 60, 57],
+        "Lineage": [71, 66, 63, 68, 55, 52],
+        "Auditability": [79, 74, 70, 77, 63, 61],
+        "Source_Trust": [84, 78, 72, 80, 65, 62]
+    })
+
+    governance_maturity_df["Governance_Maturity_Score"] = (
+        governance_maturity_df["Data_Ownership"] * 0.15
+        + governance_maturity_df["Data_Stewardship"] * 0.15
+        + governance_maturity_df["Master_Data_Consistency"] * 0.15
+        + governance_maturity_df["Duplicate_Control"] * 0.12
+        + governance_maturity_df["Governance_Policy_Score"] * 0.13
+        + governance_maturity_df["Lineage"] * 0.10
+        + governance_maturity_df["Auditability"] * 0.10
+        + governance_maturity_df["Source_Trust"] * 0.10
+    ).round(1)
+
+    governance_maturity_df["Maturity_Level"] = governance_maturity_df["Governance_Maturity_Score"].apply(
+        lambda score:
+        "Optimized" if score >= 85
+        else "Managed" if score >= 75
+        else "Developing" if score >= 65
+        else "Foundational"
+    )
+
+    avg_governance_maturity = governance_maturity_df["Governance_Maturity_Score"].mean()
+    avg_ownership = governance_maturity_df["Data_Ownership"].mean()
+    avg_lineage = governance_maturity_df["Lineage"].mean()
+    avg_source_trust = governance_maturity_df["Source_Trust"].mean()
+
+    g1, g2, g3, g4 = st.columns(4)
+
+    g1.metric("Governance Maturity", f"{avg_governance_maturity:.1f}/100")
+    g2.metric("Data Ownership", f"{avg_ownership:.1f}%")
+    g3.metric("Lineage Score", f"{avg_lineage:.1f}%")
+    g4.metric("Source Trust", f"{avg_source_trust:.1f}%")
+
+    st.markdown("<br>", unsafe_allow_html=True)
+
+    c1, c2 = st.columns(2)
+
+    with c1:
+        st.markdown("### Governance Maturity by Data Domain")
+
+        fig_gov = px.bar(
+            governance_maturity_df.sort_values("Governance_Maturity_Score", ascending=False),
+            x="Domain",
+            y="Governance_Maturity_Score",
+            color="Maturity_Level",
+            text="Governance_Maturity_Score",
+            color_discrete_sequence=[
+                GOLD_LIGHT,
+                GOLD,
+                "#A9843C",
+                "#7D6838"
+            ]
+        )
+
+        fig_gov.update_traces(
+            texttemplate="%{text:.1f}",
+            textposition="outside"
+        )
+
+        st.plotly_chart(
+            chart_layout(fig_gov, 540),
+            use_container_width=True
+        )
+
+    with c2:
+        st.markdown("### Source Trust Scoring")
+
+        fig_trust = px.bar(
+            governance_maturity_df.sort_values("Source_Trust", ascending=False),
+            x="Domain",
+            y="Source_Trust",
+            color="Maturity_Level",
+            text="Source_Trust",
+            color_discrete_sequence=[
+                GOLD,
+                GOLD_LIGHT,
+                "#7D6838",
+                "#A9843C"
+            ]
+        )
+
+        fig_trust.update_traces(
+            texttemplate="%{text:.1f}%",
+            textposition="outside"
+        )
+
+        st.plotly_chart(
+            chart_layout(fig_trust, 540),
+            use_container_width=True
+        )
+
+    st.markdown("### Data Governance Detail Table")
+
+    st.dataframe(
+        governance_maturity_df.sort_values(
+            "Governance_Maturity_Score",
+            ascending=False
+        ),
+        use_container_width=True,
+        height=420
+    )
+
+    st.markdown("### Governance Risk Register")
+
+    governance_risks_df = pd.DataFrame({
+        "Governance_Risk": [
+            "Unclear data ownership",
+            "Weak stewardship routines",
+            "Inconsistent master data",
+            "Duplicate customer or product records",
+            "Limited data lineage",
+            "Low auditability",
+            "Untrusted source systems"
+        ],
+        "Business_Impact": [
+            "No clear accountability for fixing data issues.",
+            "Data issues may repeat because no one owns monitoring routines.",
+            "Reports may conflict across departments.",
+            "Customer, inventory, or franchise reporting may be overstated or duplicated.",
+            "Leadership cannot easily trace where numbers came from.",
+            "Difficult to prove data quality during executive reviews.",
+            "Decisions may rely on incomplete or unreliable source data."
+        ],
+        "Recommended_Action": [
+            "Assign a business owner for each key data domain.",
+            "Create data steward responsibilities and recurring review cadence.",
+            "Define master data rules for products, locations, customers, and franchise entities.",
+            "Create duplicate detection logic and monthly cleanup review.",
+            "Document source-to-report data flow.",
+            "Maintain change logs, validation checks, and approval history.",
+            "Score each source by completeness, freshness, and reliability."
+        ]
+    })
+
+    st.dataframe(
+        governance_risks_df,
+        use_container_width=True,
+        height=360
+    )
+
+    weakest_domain = governance_maturity_df.sort_values(
+        "Governance_Maturity_Score",
+        ascending=True
+    ).iloc[0]
+
+    strongest_domain = governance_maturity_df.sort_values(
+        "Governance_Maturity_Score",
+        ascending=False
+    ).iloc[0]
+
+    st.markdown(f"""
+    <div class="insight-card">
+        <div class="insight-title">Executive Data Governance Summary</div>
+        <div class="insight-body">
+            The strongest data governance domain is <b>{strongest_domain["Domain"]}</b>,
+            with a maturity score of <b>{strongest_domain["Governance_Maturity_Score"]:.1f}/100</b>.
+            <br><br>
+            The weakest governance domain is <b>{weakest_domain["Domain"]}</b>,
+            with a maturity score of <b>{weakest_domain["Governance_Maturity_Score"]:.1f}/100</b>.
+            <br><br>
+            This layer moves the platform beyond simple completeness scoring by adding data ownership,
+            stewardship, master data consistency, duplicate control, governance policy scoring,
+            lineage, auditability, and source trust scoring.
         </div>
     </div>
     """, unsafe_allow_html=True)
