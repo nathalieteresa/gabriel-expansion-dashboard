@@ -2823,7 +2823,7 @@ with k9:
 
 st.markdown("<br>", unsafe_allow_html=True)
 
-tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9, tab10, tab11, tab12, tab13, tab14, tab15, tab16, tab17, tab18, tab19, tab20, tab21, tab22, tab23, tab24, tab25, tab26, tab27, tab28, tab29, tab30, tab31, tab32, tab33 = st.tabs([
+tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9, tab10, tab11, tab12, tab13, tab14, tab15, tab16, tab17, tab18, tab19, tab20, tab21, tab22, tab23, tab24, tab25, tab26, tab27, tab28, tab29, tab30, tab31, tab32, tab33, tab34 = st.tabs([
     "Overview",
     "Market Ranking",
     "Financial Scenario",
@@ -2856,7 +2856,8 @@ tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9, tab10, tab11, tab12, tab13
     "Retention & Churn Analytics",
     "Campaign Attribution",
     "Transformation Governance",
-    "Data Governance Maturity"
+    "Data Governance Maturity",
+    "Executive Simulation Engine"
     ])
 
 with tab1:
@@ -6232,6 +6233,328 @@ with tab33:
             This layer moves the platform beyond simple completeness scoring by adding data ownership,
             stewardship, master data consistency, duplicate control, governance policy scoring,
             lineage, auditability, and source trust scoring.
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+
+with tab34:
+
+    st.markdown(
+        '<div class="section-title">Executive Simulation Engine</div>',
+        unsafe_allow_html=True
+    )
+
+    st.markdown(
+        '<div class="section-note">Monte Carlo risk analytics for best case, worst case, volatility scenarios, probabilistic ROI, and executive what-if simulation.</div>',
+        unsafe_allow_html=True
+    )
+
+    st.markdown("""
+    <div class="insight-card">
+        <div class="insight-title">Simulation Question</div>
+        <div class="insight-body">
+            This engine answers questions like:
+            <br><br>
+            <b>What happens if rent increases, customer volume decreases, and revenue becomes volatile?</b>
+            <br><br>
+            Instead of showing one fixed result, it runs thousands of possible outcomes and estimates the probability of positive ROI, downside risk, upside potential, and expected profit.
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    st.markdown("<br>", unsafe_allow_html=True)
+
+    selected_market_row = filtered.iloc[0].copy()
+
+    base_rent = float(selected_market_row["Estimated_Monthly_Rent"])
+    base_revenue = float(selected_market_row["Estimated_Monthly_Revenue"])
+    base_cost = float(selected_market_row["Estimated_Monthly_Cost"])
+    base_non_rent_cost = max(0, base_cost - base_rent)
+
+    s_col1, s_col2, s_col3 = st.columns(3)
+
+    with s_col1:
+        simulated_rent_change = st.slider(
+            "Simulated Rent Change %",
+            -50,
+            100,
+            30,
+            key="simulated_rent_change"
+        )
+
+    with s_col2:
+        simulated_customer_volume_change = st.slider(
+            "Simulated Customer Volume Change %",
+            -50,
+            100,
+            -15,
+            key="simulated_customer_volume_change"
+        )
+
+    with s_col3:
+        simulated_ticket_change = st.slider(
+            "Simulated Ticket / Pricing Change %",
+            -50,
+            100,
+            0,
+            key="simulated_ticket_change"
+        )
+
+    v_col1, v_col2, v_col3 = st.columns(3)
+
+    with v_col1:
+        revenue_volatility = st.slider(
+            "Revenue Volatility %",
+            0,
+            50,
+            12,
+            key="revenue_volatility"
+        )
+
+    with v_col2:
+        cost_volatility = st.slider(
+            "Cost Volatility %",
+            0,
+            50,
+            8,
+            key="cost_volatility"
+        )
+
+    with v_col3:
+        simulation_runs = st.selectbox(
+            "Simulation Runs",
+            [1000, 5000, 10000],
+            index=1,
+            key="simulation_runs"
+        )
+
+    np.random.seed(42)
+
+    expected_revenue = (
+        base_revenue
+        * (1 + simulated_ticket_change / 100)
+        * (1 + simulated_customer_volume_change / 100)
+    )
+
+    expected_rent = base_rent * (1 + simulated_rent_change / 100)
+    expected_cost = base_non_rent_cost + expected_rent
+
+    simulated_revenue = np.random.normal(
+        loc=expected_revenue,
+        scale=max(1, expected_revenue * revenue_volatility / 100),
+        size=simulation_runs
+    )
+
+    simulated_rent = np.random.normal(
+        loc=expected_rent,
+        scale=max(1, expected_rent * cost_volatility / 100),
+        size=simulation_runs
+    )
+
+    simulated_non_rent_cost = np.random.normal(
+        loc=base_non_rent_cost,
+        scale=max(1, base_non_rent_cost * cost_volatility / 100),
+        size=simulation_runs
+    )
+
+    simulated_revenue = np.maximum(simulated_revenue, 0)
+    simulated_rent = np.maximum(simulated_rent, 0)
+    simulated_non_rent_cost = np.maximum(simulated_non_rent_cost, 0)
+
+    simulated_total_cost = simulated_rent + simulated_non_rent_cost
+    simulated_profit = simulated_revenue - simulated_total_cost
+
+    simulated_roi = np.where(
+        simulated_total_cost > 0,
+        simulated_profit / simulated_total_cost,
+        0
+    )
+
+    simulation_df = pd.DataFrame({
+        "Scenario_Revenue": simulated_revenue,
+        "Scenario_Rent": simulated_rent,
+        "Scenario_Cost": simulated_total_cost,
+        "Scenario_Profit": simulated_profit,
+        "Scenario_ROI": simulated_roi
+    })
+
+    probability_positive_profit = (simulation_df["Scenario_Profit"] > 0).mean() * 100
+    probability_roi_above_15 = (simulation_df["Scenario_ROI"] >= 0.15).mean() * 100
+    expected_profit = simulation_df["Scenario_Profit"].mean()
+    expected_roi = simulation_df["Scenario_ROI"].mean()
+
+    worst_case_profit = simulation_df["Scenario_Profit"].quantile(0.05)
+    best_case_profit = simulation_df["Scenario_Profit"].quantile(0.95)
+    downside_roi = simulation_df["Scenario_ROI"].quantile(0.05)
+    upside_roi = simulation_df["Scenario_ROI"].quantile(0.95)
+
+    m1, m2, m3, m4 = st.columns(4)
+
+    m1.metric("Expected Profit", f"${expected_profit:,.0f}")
+    m2.metric("Expected ROI", f"{expected_roi:.1%}")
+    m3.metric("Probability of Profit", f"{probability_positive_profit:.1f}%")
+    m4.metric("Probability ROI ≥ 15%", f"{probability_roi_above_15:.1f}%")
+
+    st.markdown("<br>", unsafe_allow_html=True)
+
+    m5, m6, m7, m8 = st.columns(4)
+
+    m5.metric("Worst Case Profit", f"${worst_case_profit:,.0f}")
+    m6.metric("Best Case Profit", f"${best_case_profit:,.0f}")
+    m7.metric("Downside ROI", f"{downside_roi:.1%}")
+    m8.metric("Upside ROI", f"{upside_roi:.1%}")
+
+    st.markdown("<br>", unsafe_allow_html=True)
+
+    c1, c2 = st.columns(2)
+
+    with c1:
+        st.markdown("### Profit Distribution")
+
+        fig_profit_sim = px.histogram(
+            simulation_df,
+            x="Scenario_Profit",
+            nbins=45,
+            title="Monte Carlo Profit Outcomes",
+            color_discrete_sequence=[GOLD]
+        )
+
+        fig_profit_sim.add_vline(
+            x=0,
+            line_dash="dash",
+            line_color="#B22222",
+            annotation_text="Break-even",
+            annotation_position="top left"
+        )
+
+        fig_profit_sim.add_vline(
+            x=expected_profit,
+            line_dash="dash",
+            line_color="#7D6838",
+            annotation_text="Expected Profit",
+            annotation_position="top right"
+        )
+
+        st.plotly_chart(
+            chart_layout(fig_profit_sim, 540),
+            use_container_width=True
+        )
+
+    with c2:
+        st.markdown("### ROI Distribution")
+
+        fig_roi_sim = px.histogram(
+            simulation_df,
+            x="Scenario_ROI",
+            nbins=45,
+            title="Monte Carlo ROI Outcomes",
+            color_discrete_sequence=[GOLD_LIGHT]
+        )
+
+        fig_roi_sim.add_vline(
+            x=0.15,
+            line_dash="dash",
+            line_color="#7D6838",
+            annotation_text="15% ROI Target",
+            annotation_position="top right"
+        )
+
+        st.plotly_chart(
+            chart_layout(fig_roi_sim, 540),
+            use_container_width=True
+        )
+
+    st.markdown("### Best / Base / Worst Case Scenario Table")
+
+    base_case_profit = expected_revenue - expected_cost
+    base_case_roi = base_case_profit / expected_cost if expected_cost > 0 else 0
+
+    scenario_summary_df = pd.DataFrame({
+        "Scenario": [
+            "Worst Case",
+            "Base Case",
+            "Best Case"
+        ],
+        "Revenue": [
+            simulation_df["Scenario_Revenue"].quantile(0.05),
+            expected_revenue,
+            simulation_df["Scenario_Revenue"].quantile(0.95)
+        ],
+        "Cost": [
+            simulation_df["Scenario_Cost"].quantile(0.95),
+            expected_cost,
+            simulation_df["Scenario_Cost"].quantile(0.05)
+        ],
+        "Profit": [
+            worst_case_profit,
+            base_case_profit,
+            best_case_profit
+        ],
+        "ROI": [
+            downside_roi,
+            base_case_roi,
+            upside_roi
+        ],
+        "Executive_Interpretation": [
+            "Downside case under high cost pressure and lower revenue realization.",
+            "Expected case using the selected simulation assumptions.",
+            "Upside case under stronger revenue realization and lower cost pressure."
+        ]
+    })
+
+    st.dataframe(
+        scenario_summary_df.style.format({
+            "Revenue": "${:,.0f}",
+            "Cost": "${:,.0f}",
+            "Profit": "${:,.0f}",
+            "ROI": "{:.1%}"
+        }),
+        use_container_width=True,
+        height=240
+    )
+
+    st.markdown("### Simulation Detail Table")
+
+    simulation_sample = simulation_df.sample(
+        min(500, len(simulation_df)),
+        random_state=42
+    ).copy()
+
+    st.dataframe(
+        simulation_sample.style.format({
+            "Scenario_Revenue": "${:,.0f}",
+            "Scenario_Rent": "${:,.0f}",
+            "Scenario_Cost": "${:,.0f}",
+            "Scenario_Profit": "${:,.0f}",
+            "Scenario_ROI": "{:.1%}"
+        }),
+        use_container_width=True,
+        height=420
+    )
+
+    if probability_roi_above_15 >= 70:
+        simulation_verdict = "Strong risk-adjusted expansion case"
+    elif probability_roi_above_15 >= 45:
+        simulation_verdict = "Moderate risk-adjusted case requiring validation"
+    else:
+        simulation_verdict = "High-risk scenario under current assumptions"
+
+    st.markdown(f"""
+    <div class="insight-card">
+        <div class="insight-title">Executive Simulation Summary</div>
+        <div class="insight-body">
+            For <b>{selected_city}</b>, this Monte Carlo simulation tested <b>{simulation_runs:,}</b> possible outcomes.
+            <br><br>
+            Under the selected assumptions, expected profit is <b>${expected_profit:,.0f}</b> and expected ROI is
+            <b>{expected_roi:.1%}</b>.
+            <br><br>
+            The probability of achieving at least <b>15% ROI</b> is <b>{probability_roi_above_15:.1f}%</b>.
+            <br><br>
+            <b>Executive verdict:</b> {simulation_verdict}.
+            <br><br>
+            This layer elevates the platform from basic sliders into executive risk analytics by adding probabilistic ROI,
+            downside risk, upside potential, volatility scenarios, and Monte Carlo simulation.
         </div>
     </div>
     """, unsafe_allow_html=True)
