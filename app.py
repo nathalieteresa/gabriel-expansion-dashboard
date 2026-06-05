@@ -2823,7 +2823,7 @@ with k9:
 
 st.markdown("<br>", unsafe_allow_html=True)
 
-tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9, tab10, tab11, tab12, tab13, tab14, tab15, tab16, tab17, tab18, tab19, tab20, tab21, tab22, tab23, tab24, tab25, tab26, tab27, tab28, tab29, tab30, tab31, tab32, tab33, tab34 = st.tabs([
+tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9, tab10, tab11, tab12, tab13, tab14, tab15, tab16, tab17, tab18, tab19, tab20, tab21, tab22, tab23, tab24, tab25, tab26, tab27, tab28, tab29, tab30, tab31, tab32, tab33, tab34, tab35 = st.tabs([
     "Overview",
     "Market Ranking",
     "Financial Scenario",
@@ -2857,7 +2857,8 @@ tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9, tab10, tab11, tab12, tab13
     "Campaign Attribution",
     "Transformation Governance",
     "Data Governance Maturity",
-    "Executive Simulation Engine"
+    "Executive Simulation Engine",
+    "Real AI Recommendations"
     ])
 
 with tab1:
@@ -6558,3 +6559,376 @@ with tab34:
         </div>
     </div>
     """, unsafe_allow_html=True)
+
+
+with tab35:
+
+    st.markdown(
+        '<div class="section-title">Real AI Recommendation Engine</div>',
+        unsafe_allow_html=True
+    )
+
+    st.markdown(
+        '<div class="section-note">Machine learning recommendation layer using clustering, anomaly detection, predictive scoring, weighted opportunity ranking, and recommendation confidence.</div>',
+        unsafe_allow_html=True
+    )
+
+    st.markdown("""
+    <div class="insight-card">
+        <div class="insight-title">Why this is different from rules-based recommendations</div>
+        <div class="insight-body">
+            The earlier recommendation logic uses fixed thresholds such as ROI above a target.
+            This layer adds machine learning signals by grouping similar markets, detecting unusual market patterns,
+            estimating recommendation confidence, and creating a weighted AI score across financial, demand, competition,
+            data quality, and implementation readiness variables.
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    st.markdown("<br>", unsafe_allow_html=True)
+
+    from sklearn.cluster import KMeans
+    from sklearn.ensemble import IsolationForest, RandomForestClassifier
+    from sklearn.preprocessing import MinMaxScaler
+
+    ai_rec_df = comparison_df.copy()
+
+    ai_feature_cols = [
+        "Population_Score",
+        "Income_Score",
+        "Beauty_Demand_Signal",
+        "Premium_Fit_Score",
+        "Financial_Viability_Score",
+        "Competitive_Market_Signal",
+        "Saturation_Score",
+        "Forecasted_Demand_Index",
+        "Inventory_Risk_Score",
+        "Supply_Chain_Complexity_Score",
+        "Data_Governance_Score",
+        "Change_Readiness_Score",
+        "Scenario_ROI",
+        "Scenario_Profit"
+    ]
+
+    available_ai_features = [
+        col for col in ai_feature_cols
+        if col in ai_rec_df.columns
+    ]
+
+    for col in available_ai_features:
+        ai_rec_df[col] = pd.to_numeric(
+            ai_rec_df[col],
+            errors="coerce"
+        )
+
+    ai_rec_df[available_ai_features] = ai_rec_df[available_ai_features].replace(
+        [np.inf, -np.inf],
+        np.nan
+    )
+
+    ai_rec_df[available_ai_features] = ai_rec_df[available_ai_features].fillna(
+        ai_rec_df[available_ai_features].median(numeric_only=True)
+    ).fillna(0)
+
+    if len(ai_rec_df) < 3 or len(available_ai_features) < 4:
+        st.warning("Not enough data to run the AI recommendation engine. Add more markets and operational fields to improve machine learning recommendations.")
+
+    else:
+        scaler = MinMaxScaler()
+        X_ai = scaler.fit_transform(ai_rec_df[available_ai_features])
+
+        # -----------------------------
+        # CLUSTERING
+        # -----------------------------
+        cluster_count = min(3, len(ai_rec_df))
+
+        kmeans = KMeans(
+            n_clusters=cluster_count,
+            random_state=42,
+            n_init=10
+        )
+
+        ai_rec_df["AI_Cluster"] = kmeans.fit_predict(X_ai)
+
+        cluster_profile = ai_rec_df.groupby(
+            "AI_Cluster",
+            as_index=False
+        ).agg(
+            Avg_Opportunity_Score=("Final_Opportunity_Score", "mean"),
+            Avg_ROI=("Scenario_ROI", "mean"),
+            Avg_Demand=("Forecasted_Demand_Index", "mean"),
+            Avg_Data_Readiness=("Data_Governance_Score", "mean"),
+            Markets=("City", "count")
+        )
+
+        best_cluster = cluster_profile.sort_values(
+            "Avg_Opportunity_Score",
+            ascending=False
+        ).iloc[0]["AI_Cluster"]
+
+        ai_rec_df["Cluster_Strategy"] = ai_rec_df["AI_Cluster"].apply(
+            lambda cluster: "High-Potential Peer Group"
+            if cluster == best_cluster
+            else "Validation Peer Group"
+        )
+
+        # -----------------------------
+        # ANOMALY DETECTION
+        # -----------------------------
+        contamination_rate = min(0.25, max(0.08, 1 / len(ai_rec_df)))
+
+        anomaly_model = IsolationForest(
+            contamination=contamination_rate,
+            random_state=42
+        )
+
+        ai_rec_df["Anomaly_Flag_Raw"] = anomaly_model.fit_predict(X_ai)
+        ai_rec_df["AI_Anomaly_Status"] = ai_rec_df["Anomaly_Flag_Raw"].apply(
+            lambda value: "Unusual Pattern" if value == -1 else "Normal Pattern"
+        )
+
+        anomaly_scores = anomaly_model.decision_function(X_ai)
+        anomaly_scaled = MinMaxScaler().fit_transform(
+            anomaly_scores.reshape(-1, 1)
+        ).flatten()
+
+        ai_rec_df["Pattern_Normality_Score"] = (anomaly_scaled * 100).round(1)
+
+        # -----------------------------
+        # PREDICTIVE RECOMMENDATION PROBABILITY
+        # -----------------------------
+        ai_rec_df["AI_Target_Label"] = (
+            (ai_rec_df["Final_Opportunity_Score"] >= 65)
+            &
+            (ai_rec_df["Scenario_ROI"] >= 0.15)
+        ).astype(int)
+
+        if ai_rec_df["AI_Target_Label"].nunique() >= 2 and len(ai_rec_df) >= 6:
+            clf = RandomForestClassifier(
+                n_estimators=250,
+                random_state=42,
+                max_depth=4,
+                class_weight="balanced"
+            )
+
+            clf.fit(X_ai, ai_rec_df["AI_Target_Label"])
+            ai_rec_df["Predictive_Recommendation_Probability"] = (
+                clf.predict_proba(X_ai)[:, 1] * 100
+            ).round(1)
+
+        else:
+            # Fallback when there are too few markets/classes for a classifier.
+            ai_rec_df["Predictive_Recommendation_Probability"] = (
+                ai_rec_df["Final_Opportunity_Score"] * 0.65
+                + ai_rec_df["Financial_Viability_Score"] * 0.20
+                + ai_rec_df["Change_Readiness_Score"] * 0.15
+            ).clip(0, 100).round(1)
+
+        # -----------------------------
+        # WEIGHTED ML-STYLE AI SCORE
+        # -----------------------------
+        ai_rec_df["AI_Weighted_Recommendation_Score"] = (
+            ai_rec_df["Final_Opportunity_Score"] * 0.25
+            + ai_rec_df["Predictive_Recommendation_Probability"] * 0.25
+            + ai_rec_df["Forecasted_Demand_Index"] * 0.15
+            + ai_rec_df["Financial_Viability_Score"] * 0.15
+            + ai_rec_df["Change_Readiness_Score"] * 0.10
+            + ai_rec_df["Data_Governance_Score"] * 0.05
+            + ai_rec_df["Pattern_Normality_Score"] * 0.05
+            - ai_rec_df["Saturation_Score"] * 0.05
+            - ai_rec_df["Inventory_Risk_Score"] * 0.03
+        ).clip(0, 100).round(1)
+
+        ai_rec_df["Recommendation_Confidence_%"] = (
+            ai_rec_df["Predictive_Recommendation_Probability"] * 0.45
+            + ai_rec_df["Pattern_Normality_Score"] * 0.25
+            + ai_rec_df["Data_Governance_Score"] * 0.20
+            + ai_rec_df["Change_Readiness_Score"] * 0.10
+        ).clip(0, 100).round(1)
+
+        def ai_recommendation_label(row):
+            if row["AI_Anomaly_Status"] == "Unusual Pattern" and row["AI_Weighted_Recommendation_Score"] < 70:
+                return "Investigate Before Decision"
+            elif row["AI_Weighted_Recommendation_Score"] >= 80 and row["Recommendation_Confidence_%"] >= 70:
+                return "AI Priority Recommendation"
+            elif row["AI_Weighted_Recommendation_Score"] >= 65:
+                return "AI Recommended for Validation"
+            elif row["AI_Weighted_Recommendation_Score"] >= 50:
+                return "Monitor with Additional Data"
+            else:
+                return "Not Recommended Under Current Signals"
+
+        ai_rec_df["AI_Recommendation"] = ai_rec_df.apply(
+            ai_recommendation_label,
+            axis=1
+        )
+
+        ai_rec_df = ai_rec_df.sort_values(
+            "AI_Weighted_Recommendation_Score",
+            ascending=False
+        )
+
+        top_ai_market = ai_rec_df.iloc[0]
+        avg_ai_score = ai_rec_df["AI_Weighted_Recommendation_Score"].mean()
+        avg_confidence = ai_rec_df["Recommendation_Confidence_%"].mean()
+        anomaly_count = len(ai_rec_df[ai_rec_df["AI_Anomaly_Status"] == "Unusual Pattern"])
+        priority_count = len(ai_rec_df[ai_rec_df["AI_Recommendation"] == "AI Priority Recommendation"])
+
+        m1, m2, m3, m4 = st.columns(4)
+
+        m1.metric("Top AI Market", top_ai_market["City"])
+        m2.metric("Avg AI Score", f"{avg_ai_score:.1f}/100")
+        m3.metric("Avg Confidence", f"{avg_confidence:.1f}%")
+        m4.metric("Anomalies Detected", f"{anomaly_count:,}")
+
+        st.markdown("<br>", unsafe_allow_html=True)
+
+        c1, c2 = st.columns(2)
+
+        with c1:
+            st.markdown("### AI Recommendation Score by Market")
+
+            fig_ai_rec = px.bar(
+                ai_rec_df,
+                x="City",
+                y="AI_Weighted_Recommendation_Score",
+                color="AI_Recommendation",
+                text="AI_Weighted_Recommendation_Score",
+                color_discrete_sequence=[GOLD_LIGHT, GOLD, "#A9843C", "#7D6838", "#8A8A8A"]
+            )
+
+            fig_ai_rec.update_traces(
+                texttemplate="%{text:.1f}",
+                textposition="outside"
+            )
+
+            st.plotly_chart(
+                chart_layout(fig_ai_rec, 540),
+                use_container_width=True
+            )
+
+        with c2:
+            st.markdown("### ML Cluster Map")
+
+            fig_cluster = px.scatter(
+                ai_rec_df,
+                x="Financial_Viability_Score",
+                y="Forecasted_Demand_Index",
+                size="AI_Weighted_Recommendation_Score",
+                color="Cluster_Strategy",
+                hover_name="City",
+                hover_data={
+                    "AI_Cluster": True,
+                    "Recommendation_Confidence_%": ":.1f",
+                    "AI_Anomaly_Status": True,
+                    "Scenario_ROI": ":.1%"
+                },
+                color_discrete_sequence=[GOLD, GOLD_LIGHT, "#7D6838"]
+            )
+
+            fig_cluster.update_layout(
+                xaxis_title="Financial Viability Score",
+                yaxis_title="Forecasted Demand Index"
+            )
+
+            st.plotly_chart(
+                chart_layout(fig_cluster, 540),
+                use_container_width=True
+            )
+
+        st.markdown("### Predictive Recommendation Confidence")
+
+        fig_confidence = px.bar(
+            ai_rec_df.sort_values("Recommendation_Confidence_%", ascending=False),
+            x="City",
+            y="Recommendation_Confidence_%",
+            color="AI_Anomaly_Status",
+            text="Recommendation_Confidence_%",
+            color_discrete_map={
+                "Normal Pattern": GOLD,
+                "Unusual Pattern": "#B22222"
+            }
+        )
+
+        fig_confidence.update_traces(
+            texttemplate="%{text:.1f}%",
+            textposition="outside"
+        )
+
+        st.plotly_chart(
+            chart_layout(fig_confidence, 500),
+            use_container_width=True
+        )
+
+        st.markdown("### AI Recommendation Detail Table")
+
+        ai_detail_cols = [
+            "City",
+            "AI_Recommendation",
+            "AI_Weighted_Recommendation_Score",
+            "Recommendation_Confidence_%",
+            "Predictive_Recommendation_Probability",
+            "AI_Anomaly_Status",
+            "Cluster_Strategy",
+            "Final_Opportunity_Score",
+            "Scenario_ROI",
+            "Forecasted_Demand_Index",
+            "Financial_Viability_Score",
+            "Change_Readiness_Score",
+            "Data_Governance_Score",
+            "Inventory_Risk_Score",
+            "Saturation_Score"
+        ]
+
+        available_ai_detail_cols = [
+            col for col in ai_detail_cols
+            if col in ai_rec_df.columns
+        ]
+
+        st.dataframe(
+            ai_rec_df[available_ai_detail_cols].style.format({
+                "AI_Weighted_Recommendation_Score": "{:.1f}",
+                "Recommendation_Confidence_%": "{:.1f}%",
+                "Predictive_Recommendation_Probability": "{:.1f}%",
+                "Final_Opportunity_Score": "{:.1f}",
+                "Scenario_ROI": "{:.1%}",
+                "Forecasted_Demand_Index": "{:.1f}",
+                "Financial_Viability_Score": "{:.1f}",
+                "Change_Readiness_Score": "{:.1f}",
+                "Data_Governance_Score": "{:.1f}",
+                "Inventory_Risk_Score": "{:.1f}",
+                "Saturation_Score": "{:.1f}"
+            }),
+            use_container_width=True,
+            height=480
+        )
+
+        st.markdown("### AI Cluster Profiles")
+
+        st.dataframe(
+            cluster_profile.style.format({
+                "Avg_Opportunity_Score": "{:.1f}",
+                "Avg_ROI": "{:.1%}",
+                "Avg_Demand": "{:.1f}",
+                "Avg_Data_Readiness": "{:.1f}"
+            }),
+            use_container_width=True,
+            height=240
+        )
+
+        st.markdown(f"""
+        <div class="insight-card">
+            <div class="insight-title">Executive AI Recommendation Summary</div>
+            <div class="insight-body">
+                The strongest AI-generated recommendation is <b>{top_ai_market["City"]}</b>, with an AI weighted score of
+                <b>{top_ai_market["AI_Weighted_Recommendation_Score"]:.1f}/100</b> and recommendation confidence of
+                <b>{top_ai_market["Recommendation_Confidence_%"]:.1f}%</b>.
+                <br><br>
+                The engine identified <b>{priority_count}</b> priority recommendation(s) and <b>{anomaly_count}</b> unusual market pattern(s).
+                <br><br>
+                This layer strengthens the platform by moving beyond fixed if/then rules into clustering,
+                anomaly detection, predictive recommendation probability, weighted ML scoring, and confidence-based executive recommendations.
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+
