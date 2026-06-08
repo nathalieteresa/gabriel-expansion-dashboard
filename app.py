@@ -2823,7 +2823,7 @@ with k9:
 
 st.markdown("<br>", unsafe_allow_html=True)
 
-tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9, tab10, tab11, tab12, tab13, tab14, tab15, tab16, tab17, tab18, tab19, tab20, tab21, tab22, tab23, tab24, tab25, tab26, tab27, tab28, tab29, tab30, tab31, tab32, tab33, tab34, tab35, tab36 = st.tabs([
+tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9, tab10, tab11, tab12, tab13, tab14, tab15, tab16, tab17, tab18, tab19, tab20, tab21, tab22, tab23, tab24, tab25, tab26, tab27, tab28, tab29, tab30, tab31, tab32, tab33, tab34, tab35, tab36, tab37 = st.tabs([
     "Overview",
     "Market Ranking",
     "Financial Scenario",
@@ -2859,7 +2859,8 @@ tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9, tab10, tab11, tab12, tab13
     "Data Governance Maturity",
     "Executive Simulation Engine",
     "Real AI Recommendations",
-    "Workforce & Labor Optimization"
+    "Workforce & Labor Optimization",
+    "Executive Architecture Documentation"
     ])
 
 with tab1:
@@ -7421,3 +7422,253 @@ with tab36:
         </div>
     </div>
     """, unsafe_allow_html=True)
+
+with tab37:
+
+    st.markdown('<div class="section-title">Executive Architecture Documentation</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-note">Enterprise-level documentation of the platform architecture, data flows, API layers, governance workflow, and operational decision process. This tab is designed to support executive communication, implementation planning, and NIW evidence.</div>', unsafe_allow_html=True)
+
+    arch_kpi_1, arch_kpi_2, arch_kpi_3, arch_kpi_4 = st.columns(4)
+    arch_kpi_1.metric("Architecture Layers", "6")
+    arch_kpi_2.metric("Data Domains", "9")
+    arch_kpi_3.metric("Decision Engines", "10+")
+    arch_kpi_4.metric("Governance Controls", "8")
+
+    st.markdown("<br>", unsafe_allow_html=True)
+    st.markdown("### Enterprise System Architecture")
+
+    st.graphviz_chart("""
+    digraph G {
+        graph [rankdir=LR, bgcolor="transparent"];
+        node [shape=box, style="rounded,filled", color="#C6A052", fillcolor="#FFF8E6", fontname="Inter", fontsize=10];
+        edge [color="#8A6A24", arrowsize=0.8];
+        DataSources [label="Data Sources\nGoogle Sheets | Excel | APIs | Manual Inputs"];
+        Ingestion [label="Data Ingestion Layer\nCSV Load | Excel Load | API Requests"];
+        Validation [label="Data Validation & Governance\nMissing Values | Duplicates | Trust Scoring"];
+        Analytics [label="Analytics Engines\nForecasting | Supply Chain | CRM | Workforce"];
+        Decision [label="Decision Intelligence Layer\nScoring | Recommendations | Simulations"];
+        ExecutiveUI [label="Executive Streamlit Interface\nDashboards | Reports | Downloadable Evidence"];
+        DataSources -> Ingestion;
+        Ingestion -> Validation;
+        Validation -> Analytics;
+        Analytics -> Decision;
+        Decision -> ExecutiveUI;
+    }
+    """)
+
+    st.markdown("""
+    <div class="insight-card">
+        <div class="insight-title">Architecture Interpretation</div>
+        <div class="insight-body">
+            The platform follows a layered enterprise architecture: data sources feed an ingestion layer, data is validated through governance controls,
+            analytics engines transform operational data into intelligence, and decision engines convert those insights into executive recommendations.
+            <br><br>
+            This supports expansion planning, product intelligence, supply chain optimization, franchise operations, CRM analytics, workforce planning,
+            change management, data governance maturity, and risk simulation.
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    st.markdown("<br>", unsafe_allow_html=True)
+    st.markdown("### Data Flow & Pipeline Documentation")
+
+    pipeline_df = pd.DataFrame({
+        "Pipeline Stage": [
+            "1. Source Data Capture", "2. Data Ingestion", "3. Data Cleaning", "4. Feature Engineering",
+            "5. Analytics Modeling", "6. Decision Scoring", "7. Executive Visualization", "8. Governance Review"
+        ],
+        "Purpose": [
+            "Collect market, sales, inventory, academy, franchise, CRM, labor, and competitor data.",
+            "Load structured data from Google Sheets, Excel workbooks, APIs, and manual assumptions.",
+            "Standardize columns, convert dates, clean numeric fields, and handle missing values.",
+            "Create ROI metrics, utilization ratios, maturity scores, churn signals, forecast features, and risk scores.",
+            "Run forecasting, optimization, segmentation, benchmarking, governance, and simulation logic.",
+            "Translate outputs into opportunity scores, recommendations, risk levels, and operational priorities.",
+            "Present dashboards, charts, tables, executive summaries, and downloadable reports.",
+            "Review completeness, source trust, auditability, ownership, and implementation readiness."
+        ],
+        "Business Value": [
+            "Creates one analytical foundation across multiple business domains.",
+            "Reduces manual reporting effort and improves refreshability.",
+            "Improves decision reliability and reduces data quality risk.",
+            "Turns raw data into management decision variables.",
+            "Enables predictive and prescriptive decision support.",
+            "Supports leadership prioritization and resource allocation.",
+            "Makes complex analytics understandable for executives.",
+            "Supports scalable, auditable, and repeatable transformation governance."
+        ]
+    })
+    st.dataframe(pipeline_df, use_container_width=True, height=360)
+
+    st.markdown("### API & Integration Architecture")
+    api_architecture_df = pd.DataFrame({
+        "Integration Layer": ["Google Sheets API", "Google Places API", "Census API", "Excel Operational Workbooks", "Streamlit Runtime", "Report Generation Layer"],
+        "Current / Planned Role": [
+            "Stores and synchronizes competitor intelligence cache.",
+            "Retrieves live competitor location, rating, and review data.",
+            "Retrieves demographic indicators such as population and median income.",
+            "Stores product, inventory, academy, franchise, CRM, labor, and operational data.",
+            "Runs analytics, scenario logic, dashboard rendering, and user interaction.",
+            "Generates executive PDF outputs and evidence-oriented summaries."
+        ],
+        "Governance Consideration": [
+            "Requires access control and refresh ownership.", "Requires API key security and query monitoring.",
+            "Requires source trust and vintage tracking.", "Requires version control and data owner assignment.",
+            "Requires deployment security and environment configuration.", "Requires consistent assumptions and audit trail."
+        ]
+    })
+    st.dataframe(api_architecture_df, use_container_width=True, height=300)
+
+    st.graphviz_chart("""
+    digraph G {
+        graph [rankdir=TB, bgcolor="transparent"];
+        node [shape=box, style="rounded,filled", color="#C6A052", fillcolor="#FFF8E6", fontname="Inter", fontsize=10];
+        edge [color="#8A6A24", arrowsize=0.8];
+        User [label="Executive User"];
+        Streamlit [label="Streamlit Application"];
+        Sheets [label="Google Sheets API"];
+        Places [label="Google Places API"];
+        Census [label="Census API"];
+        Excel [label="Excel Data Model"];
+        Models [label="Analytics & Optimization Engines"];
+        Reports [label="PDF / Executive Outputs"];
+        User -> Streamlit;
+        Streamlit -> Sheets;
+        Streamlit -> Places;
+        Streamlit -> Census;
+        Streamlit -> Excel;
+        Sheets -> Models;
+        Places -> Models;
+        Census -> Models;
+        Excel -> Models;
+        Models -> Streamlit;
+        Streamlit -> Reports;
+    }
+    """)
+
+    st.markdown("### Governance Flow")
+    governance_flow_df = pd.DataFrame({
+        "Governance Control": ["Data Ownership", "Data Stewardship", "Master Data Consistency", "Duplicate Detection", "Source Trust Scoring", "Lineage Documentation", "Auditability", "Executive Review"],
+        "How It Works in the Platform": [
+            "Assigns accountability to each data domain such as market, inventory, CRM, workforce, and franchise operations.",
+            "Defines who maintains data quality and approves operational updates.",
+            "Standardizes location, product, stylist, customer, and franchise identifiers.",
+            "Flags duplicate customers, products, locations, or transaction records.",
+            "Scores data sources based on reliability, recency, and completeness.",
+            "Documents where each insight originates and how it is transformed.",
+            "Creates repeatable calculations and transparent assumptions.",
+            "Summarizes findings into leadership-ready recommendations and risk flags."
+        ],
+        "Executive Benefit": ["Clear accountability.", "Improved data quality.", "Consistent reporting.", "Reduced reporting distortion.", "Higher confidence in analytics.", "Traceable decisions.", "Defensible outputs.", "Faster decision-making."]
+    })
+    st.dataframe(governance_flow_df, use_container_width=True, height=360)
+
+    st.markdown("### Operational Workflow")
+    st.graphviz_chart("""
+    digraph G {
+        graph [rankdir=LR, bgcolor="transparent"];
+        node [shape=box, style="rounded,filled", color="#C6A052", fillcolor="#FFF8E6", fontname="Inter", fontsize=10];
+        edge [color="#8A6A24", arrowsize=0.8];
+        Input [label="Update Inputs\nMarket | Sales | Labor | CRM | Franchise"];
+        Validate [label="Validate Data\nCompleteness | Duplicates | Trust"];
+        Analyze [label="Run Analytics\nForecast | Optimize | Benchmark"];
+        Interpret [label="Interpret Outputs\nRisk | ROI | Readiness | Confidence"];
+        Act [label="Executive Action\nExpand | Reorder | Staff | Retain | Train"];
+        Monitor [label="Monitor Results\nKPIs | Accuracy | Adoption"];
+        Input -> Validate -> Analyze -> Interpret -> Act -> Monitor -> Input;
+    }
+    """)
+
+    workflow_df = pd.DataFrame({
+        "Workflow Step": ["Update Inputs", "Validate Data", "Run Analytics", "Interpret Outputs", "Take Executive Action", "Monitor Results"],
+        "Operational Example": [
+            "Refresh sales, inventory, customer, workforce, franchise, and market data.",
+            "Check missing values, duplicates, source trust, and governance maturity.",
+            "Run forecasts, reorder logic, workforce utilization, churn risk, and franchise benchmarking.",
+            "Review risk levels, confidence scores, profitability, maturity, and recommendations.",
+            "Adjust staffing, reorder inventory, target customers, validate expansion markets, or update training plans.",
+            "Track adoption, accuracy, profitability, retention, labor efficiency, and operational performance."
+        ]
+    })
+    st.dataframe(workflow_df, use_container_width=True, height=280)
+
+    st.markdown("### Enterprise Module Map")
+    module_map_df = pd.DataFrame({
+        "Platform Module": [
+            "Market Expansion Intelligence", "Competitive Intelligence", "AI Demand Forecasting", "Supply Chain Optimization",
+            "Franchise Operational Intelligence", "CRM / Customer Intelligence", "Change Management Governance", "Data Governance Maturity",
+            "Executive Simulation Engine", "Real AI Recommendation Engine", "Workforce / Labor Optimization"
+        ],
+        "Primary Decision Supported": [
+            "Where to expand next.", "How saturated and attractive each market is.", "What demand may look like over future periods.",
+            "What to reorder, when, and with what risk level.", "Which locations perform best and why.",
+            "Which customer segments to retain, grow, or reactivate.", "How ready the organization is for transformation.",
+            "Whether data is reliable, owned, auditable, and consistent.", "What outcomes are likely under uncertainty.",
+            "Which actions have the highest predicted value.", "How to optimize staffing, utilization, payroll, and service profitability."
+        ],
+        "Architecture Role": [
+            "Strategic planning layer", "External intelligence layer", "Predictive analytics layer", "Prescriptive optimization layer",
+            "Operating model layer", "Customer analytics layer", "Transformation governance layer", "Data control layer",
+            "Risk simulation layer", "AI decision layer", "Workforce planning layer"
+        ]
+    })
+    st.dataframe(module_map_df, use_container_width=True, height=420)
+
+    architecture_markdown = """
+# Executive Architecture Documentation
+
+## Platform Name
+AI-Driven Supply Chain & Retail Technology Strategy Platform
+
+## Purpose
+This platform provides an integrated executive intelligence system for market expansion, supply chain optimization, franchise operations, customer intelligence, workforce planning, governance maturity, and transformation decision-making.
+
+## Enterprise Architecture Layers
+1. Data Sources: Google Sheets, Excel workbooks, APIs, operational inputs, market data, customer data, labor data, and franchise data.
+2. Data Ingestion: CSV loading, Excel workbook loading, API requests, and manual scenario assumptions.
+3. Data Validation & Governance: missing value detection, duplicate detection, source trust scoring, ownership, stewardship, auditability, and lineage.
+4. Analytics Engines: forecasting, supply chain optimization, CRM segmentation, workforce optimization, franchise benchmarking, AI recommendations, and Monte Carlo simulation.
+5. Decision Intelligence: scoring models, confidence metrics, risk classifications, recommendations, and executive summaries.
+6. Executive Interface: Streamlit dashboards, KPI cards, charts, tables, reports, and downloadable documentation.
+
+## Data Flow
+Source data is ingested, cleaned, validated, transformed into analytical features, processed through decision engines, and displayed as executive recommendations.
+
+## API Architecture
+The platform currently supports or is structured for Google Sheets API, Google Places API, Census API, Excel data models, Streamlit runtime logic, and report generation workflows.
+
+## Governance Flow
+The governance model includes data ownership, stewardship, source trust scoring, lineage, auditability, duplicate detection, and executive review.
+
+## Operational Workflow
+1. Refresh data inputs.
+2. Validate and govern data.
+3. Run analytics engines.
+4. Interpret recommendations.
+5. Execute business action.
+6. Monitor results and improve the model.
+
+## NIW Evidence Value
+This architecture demonstrates applied expertise in AI-driven analytics, data governance, supply chain optimization, digital transformation, franchise operations, workforce optimization, and executive decision support.
+"""
+
+    st.download_button(
+        label="Download Architecture Documentation",
+        data=architecture_markdown,
+        file_name="executive_architecture_documentation.md",
+        mime="text/markdown"
+    )
+
+    st.markdown("""
+    <div class="insight-card">
+        <div class="insight-title">Executive Architecture Summary</div>
+        <div class="insight-body">
+            This documentation layer makes the platform look less like a standalone dashboard and more like an enterprise decision architecture.
+            <br><br>
+            It explains how data moves through the system, how APIs and operational files connect, how governance is applied, and how analytics outputs become executive decisions.
+            <br><br>
+            For NIW evidence, this helps show not only that the tool exists, but that it was designed as a scalable digital transformation and decision intelligence framework.
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
