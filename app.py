@@ -2823,7 +2823,7 @@ with k9:
 
 st.markdown("<br>", unsafe_allow_html=True)
 
-tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9, tab10, tab11, tab12, tab13, tab14, tab15, tab16, tab17, tab18, tab19, tab20, tab21, tab22, tab23, tab24, tab25, tab26, tab27, tab28, tab29, tab30, tab31, tab32, tab33, tab34, tab35 = st.tabs([
+tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9, tab10, tab11, tab12, tab13, tab14, tab15, tab16, tab17, tab18, tab19, tab20, tab21, tab22, tab23, tab24, tab25, tab26, tab27, tab28, tab29, tab30, tab31, tab32, tab33, tab34, tab35, tab36 = st.tabs([
     "Overview",
     "Market Ranking",
     "Financial Scenario",
@@ -2858,7 +2858,8 @@ tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9, tab10, tab11, tab12, tab13
     "Transformation Governance",
     "Data Governance Maturity",
     "Executive Simulation Engine",
-    "Real AI Recommendations"
+    "Real AI Recommendations",
+    "Workforce & Labor Optimization"
     ])
 
 with tab1:
@@ -6932,3 +6933,491 @@ with tab35:
         </div>
         """, unsafe_allow_html=True)
 
+
+
+with tab36:
+
+    st.markdown(
+        '<div class="section-title">Workforce & Labor Optimization Intelligence</div>',
+        unsafe_allow_html=True
+    )
+
+    st.markdown(
+        '<div class="section-note">Operational labor intelligence for stylist utilization, labor forecasting, scheduling optimization, payroll efficiency, and service mix profitability.</div>',
+        unsafe_allow_html=True
+    )
+
+    # -----------------------------
+    # WORKFORCE DATA FOUNDATION
+    # -----------------------------
+    workforce_df = sales_df.copy()
+
+    if "Salon_Location" not in workforce_df.columns:
+        workforce_df["Salon_Location"] = "Main Salon"
+
+    if "Date" in workforce_df.columns:
+        workforce_df["Date"] = pd.to_datetime(workforce_df["Date"], errors="coerce")
+    else:
+        workforce_df["Date"] = pd.Timestamp.today()
+
+    workforce_df = workforce_df.dropna(subset=["Date"]).copy()
+
+    if "Revenue" not in workforce_df.columns:
+        workforce_df["Revenue"] = workforce_df.get("Units_Sold", 0) * workforce_df.get("Retail_Price", 0)
+
+    if "Gross_Profit_Calculated" not in workforce_df.columns:
+        workforce_df["Gross_Profit_Calculated"] = workforce_df["Revenue"] - (
+            workforce_df.get("Units_Sold", 0) * workforce_df.get("Unit_Cost", 0)
+        )
+
+    # If the source file does not have service/stylist-level fields yet, create realistic operational assumptions
+    if "Stylist" not in workforce_df.columns:
+        stylist_pool = [
+            "Senior Stylist A", "Senior Stylist B", "Color Specialist A", "Color Specialist B",
+            "Stylist C", "Stylist D", "Stylist E", "Assistant Stylist"
+        ]
+        workforce_df["Stylist"] = [stylist_pool[i % len(stylist_pool)] for i in range(len(workforce_df))]
+
+    if "Service_Category" not in workforce_df.columns:
+        def infer_service_category(row):
+            product_text = str(row.get("Product_Name", "")).lower()
+            brand_text = str(row.get("Brand", "")).lower()
+            if any(word in product_text for word in ["color", "gloss", "toner", "bleach", "developer"]):
+                return "Color Services"
+            if any(word in product_text for word in ["treatment", "mask", "repair", "keratin"]):
+                return "Treatment Services"
+            if any(word in product_text for word in ["extension", "weft", "tape"]):
+                return "Extensions"
+            if any(word in brand_text for word in ["retail", "product"]):
+                return "Retail Support"
+            return "Styling / Blowout"
+
+        workforce_df["Service_Category"] = workforce_df.apply(infer_service_category, axis=1)
+
+    service_hours_map = {
+        "Styling / Blowout": 1.0,
+        "Color Services": 2.5,
+        "Treatment Services": 1.5,
+        "Extensions": 3.0,
+        "Retail Support": 0.4
+    }
+
+    if "Service_Hours" not in workforce_df.columns:
+        workforce_df["Service_Hours"] = workforce_df["Service_Category"].map(service_hours_map).fillna(1.0)
+
+    if "Payroll_Cost" not in workforce_df.columns:
+        stylist_rate_map = {
+            "Senior Stylist A": 42,
+            "Senior Stylist B": 40,
+            "Color Specialist A": 45,
+            "Color Specialist B": 43,
+            "Stylist C": 32,
+            "Stylist D": 31,
+            "Stylist E": 30,
+            "Assistant Stylist": 22
+        }
+        workforce_df["Hourly_Rate"] = workforce_df["Stylist"].map(stylist_rate_map).fillna(32)
+        workforce_df["Payroll_Cost"] = workforce_df["Service_Hours"] * workforce_df["Hourly_Rate"]
+    else:
+        workforce_df["Payroll_Cost"] = pd.to_numeric(workforce_df["Payroll_Cost"], errors="coerce").fillna(0)
+        if "Hourly_Rate" not in workforce_df.columns:
+            workforce_df["Hourly_Rate"] = workforce_df.apply(
+                lambda row: row["Payroll_Cost"] / row["Service_Hours"] if row["Service_Hours"] > 0 else 0,
+                axis=1
+            )
+
+    if "Available_Hours" not in workforce_df.columns:
+        workforce_df["Available_Hours"] = 8
+
+    numeric_workforce_cols = [
+        "Revenue", "Gross_Profit_Calculated", "Service_Hours", "Payroll_Cost", "Available_Hours", "Units_Sold"
+    ]
+
+    for col in numeric_workforce_cols:
+        if col in workforce_df.columns:
+            workforce_df[col] = pd.to_numeric(workforce_df[col], errors="coerce").fillna(0)
+
+    workforce_df["Month"] = workforce_df["Date"].dt.to_period("M").dt.to_timestamp()
+    workforce_df["Weekday"] = workforce_df["Date"].dt.day_name()
+
+    # -----------------------------
+    # STYLIST UTILIZATION
+    # -----------------------------
+    stylist_summary = workforce_df.groupby(
+        ["Salon_Location", "Stylist"],
+        as_index=False
+    ).agg(
+        Appointments_or_Transactions=("Date", "count"),
+        Service_Hours=("Service_Hours", "sum"),
+        Available_Hours=("Available_Hours", "sum"),
+        Revenue=("Revenue", "sum"),
+        Gross_Profit=("Gross_Profit_Calculated", "sum"),
+        Payroll_Cost=("Payroll_Cost", "sum")
+    )
+
+    stylist_summary["Utilization_%"] = stylist_summary.apply(
+        lambda row: (row["Service_Hours"] / row["Available_Hours"] * 100) if row["Available_Hours"] > 0 else 0,
+        axis=1
+    ).clip(0, 140).round(1)
+
+    stylist_summary["Revenue_Per_Service_Hour"] = stylist_summary.apply(
+        lambda row: row["Revenue"] / row["Service_Hours"] if row["Service_Hours"] > 0 else 0,
+        axis=1
+    ).round(2)
+
+    stylist_summary["Profit_Per_Service_Hour"] = stylist_summary.apply(
+        lambda row: row["Gross_Profit"] / row["Service_Hours"] if row["Service_Hours"] > 0 else 0,
+        axis=1
+    ).round(2)
+
+    stylist_summary["Payroll_Efficiency_Ratio"] = stylist_summary.apply(
+        lambda row: row["Revenue"] / row["Payroll_Cost"] if row["Payroll_Cost"] > 0 else 0,
+        axis=1
+    ).round(2)
+
+    stylist_summary["Utilization_Status"] = stylist_summary["Utilization_%"].apply(
+        lambda x: "Over Capacity" if x >= 95 else "Optimized" if x >= 70 else "Underutilized"
+    )
+
+    # -----------------------------
+    # LABOR FORECASTING
+    # -----------------------------
+    monthly_labor = workforce_df.groupby(
+        ["Month", "Salon_Location"],
+        as_index=False
+    ).agg(
+        Revenue=("Revenue", "sum"),
+        Service_Hours=("Service_Hours", "sum"),
+        Payroll_Cost=("Payroll_Cost", "sum"),
+        Transactions=("Date", "count")
+    )
+
+    labor_forecast_base = monthly_labor.sort_values("Month").groupby("Salon_Location").tail(3)
+
+    labor_forecast_df = labor_forecast_base.groupby(
+        "Salon_Location",
+        as_index=False
+    ).agg(
+        Forecast_Next_Month_Service_Hours=("Service_Hours", "mean"),
+        Forecast_Next_Month_Revenue=("Revenue", "mean"),
+        Forecast_Next_Month_Payroll=("Payroll_Cost", "mean"),
+        Forecast_Next_Month_Transactions=("Transactions", "mean")
+    )
+
+    labor_forecast_df["Recommended_FTE"] = (labor_forecast_df["Forecast_Next_Month_Service_Hours"] / 160).round(1)
+    labor_forecast_df["Revenue_Per_Forecasted_Labor_Hour"] = labor_forecast_df.apply(
+        lambda row: row["Forecast_Next_Month_Revenue"] / row["Forecast_Next_Month_Service_Hours"]
+        if row["Forecast_Next_Month_Service_Hours"] > 0 else 0,
+        axis=1
+    ).round(2)
+
+    # -----------------------------
+    # SCHEDULING OPTIMIZATION
+    # -----------------------------
+    weekday_schedule = workforce_df.groupby(
+        ["Salon_Location", "Weekday"],
+        as_index=False
+    ).agg(
+        Demand_Hours=("Service_Hours", "sum"),
+        Revenue=("Revenue", "sum"),
+        Transactions=("Date", "count")
+    )
+
+    weekday_order = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+    weekday_schedule["Weekday"] = pd.Categorical(weekday_schedule["Weekday"], categories=weekday_order, ordered=True)
+    weekday_schedule = weekday_schedule.sort_values(["Salon_Location", "Weekday"])
+
+    avg_daily_hours = weekday_schedule.groupby("Salon_Location")["Demand_Hours"].transform("mean")
+    weekday_schedule["Staffing_Recommendation"] = np.where(
+        weekday_schedule["Demand_Hours"] >= avg_daily_hours * 1.20,
+        "Add Coverage",
+        np.where(
+            weekday_schedule["Demand_Hours"] <= avg_daily_hours * 0.80,
+            "Reduce / Reallocate Hours",
+            "Maintain Coverage"
+        )
+    )
+
+    # -----------------------------
+    # SERVICE MIX PROFITABILITY
+    # -----------------------------
+    service_mix_df = workforce_df.groupby(
+        ["Service_Category"],
+        as_index=False
+    ).agg(
+        Revenue=("Revenue", "sum"),
+        Gross_Profit=("Gross_Profit_Calculated", "sum"),
+        Service_Hours=("Service_Hours", "sum"),
+        Payroll_Cost=("Payroll_Cost", "sum"),
+        Transactions=("Date", "count")
+    )
+
+    service_mix_df["Gross_Margin_%"] = service_mix_df.apply(
+        lambda row: row["Gross_Profit"] / row["Revenue"] * 100 if row["Revenue"] > 0 else 0,
+        axis=1
+    ).round(1)
+
+    service_mix_df["Profit_Per_Service_Hour"] = service_mix_df.apply(
+        lambda row: row["Gross_Profit"] / row["Service_Hours"] if row["Service_Hours"] > 0 else 0,
+        axis=1
+    ).round(2)
+
+    service_mix_df["Payroll_Load_%"] = service_mix_df.apply(
+        lambda row: row["Payroll_Cost"] / row["Revenue"] * 100 if row["Revenue"] > 0 else 0,
+        axis=1
+    ).round(1)
+
+    # -----------------------------
+    # LOCATION LABOR BENCHMARKING
+    # -----------------------------
+    location_labor_df = workforce_df.groupby(
+        "Salon_Location",
+        as_index=False
+    ).agg(
+        Revenue=("Revenue", "sum"),
+        Gross_Profit=("Gross_Profit_Calculated", "sum"),
+        Service_Hours=("Service_Hours", "sum"),
+        Payroll_Cost=("Payroll_Cost", "sum"),
+        Transactions=("Date", "count"),
+        Stylists=("Stylist", "nunique")
+    )
+
+    location_labor_df["Revenue_Per_Stylist"] = location_labor_df.apply(
+        lambda row: row["Revenue"] / row["Stylists"] if row["Stylists"] > 0 else 0,
+        axis=1
+    ).round(2)
+
+    location_labor_df["Revenue_Per_Labor_Hour"] = location_labor_df.apply(
+        lambda row: row["Revenue"] / row["Service_Hours"] if row["Service_Hours"] > 0 else 0,
+        axis=1
+    ).round(2)
+
+    location_labor_df["Payroll_%_of_Revenue"] = location_labor_df.apply(
+        lambda row: row["Payroll_Cost"] / row["Revenue"] * 100 if row["Revenue"] > 0 else 0,
+        axis=1
+    ).round(1)
+
+    location_labor_df["Labor_Productivity_Score"] = (
+        location_labor_df["Revenue_Per_Labor_Hour"].rank(pct=True) * 45
+        + (100 - location_labor_df["Payroll_%_of_Revenue"].rank(pct=True) * 100) * 0.30
+        + location_labor_df["Revenue_Per_Stylist"].rank(pct=True) * 25
+    ).clip(0, 100).round(1)
+
+    location_labor_df["Labor_Action"] = location_labor_df["Labor_Productivity_Score"].apply(
+        lambda score: "Scale Best Practices" if score >= 75 else "Optimize Scheduling" if score >= 50 else "Review Staffing Model"
+    )
+
+    # -----------------------------
+    # KPI ROW
+    # -----------------------------
+    avg_utilization = stylist_summary["Utilization_%"].mean() if not stylist_summary.empty else 0
+    total_labor_cost = workforce_df["Payroll_Cost"].sum()
+    payroll_pct_revenue = (total_labor_cost / workforce_df["Revenue"].sum() * 100) if workforce_df["Revenue"].sum() > 0 else 0
+    avg_revenue_per_labor_hour = (workforce_df["Revenue"].sum() / workforce_df["Service_Hours"].sum()) if workforce_df["Service_Hours"].sum() > 0 else 0
+    underutilized_count = len(stylist_summary[stylist_summary["Utilization_Status"] == "Underutilized"])
+
+    w1, w2, w3, w4, w5 = st.columns(5)
+
+    w1.metric("Avg Stylist Utilization", f"{avg_utilization:.1f}%")
+    w2.metric("Payroll % of Revenue", f"{payroll_pct_revenue:.1f}%")
+    w3.metric("Revenue / Labor Hour", f"${avg_revenue_per_labor_hour:,.0f}")
+    w4.metric("Underutilized Stylists", f"{underutilized_count:,}")
+    w5.metric("Forecasted FTE Needed", f"{labor_forecast_df['Recommended_FTE'].sum():.1f}")
+
+    st.markdown("<br>", unsafe_allow_html=True)
+
+    c1, c2 = st.columns(2)
+
+    with c1:
+        st.markdown("### Stylist Utilization")
+
+        fig_utilization = px.bar(
+            stylist_summary.sort_values("Utilization_%", ascending=False),
+            x="Stylist",
+            y="Utilization_%",
+            color="Utilization_Status",
+            text="Utilization_%",
+            color_discrete_map={
+                "Over Capacity": "#B22222",
+                "Optimized": GOLD,
+                "Underutilized": "#8A8A8A"
+            }
+        )
+
+        fig_utilization.update_traces(
+            texttemplate="%{text:.1f}%",
+            textposition="outside"
+        )
+
+        st.plotly_chart(
+            chart_layout(fig_utilization, 540),
+            use_container_width=True
+        )
+
+    with c2:
+        st.markdown("### Service Mix Profitability")
+
+        fig_service_profit = px.bar(
+            service_mix_df.sort_values("Profit_Per_Service_Hour", ascending=False),
+            x="Service_Category",
+            y="Profit_Per_Service_Hour",
+            color="Payroll_Load_%",
+            text="Profit_Per_Service_Hour",
+            color_continuous_scale=["#EFE2BD", GOLD, "#7D6838"]
+        )
+
+        fig_service_profit.update_traces(
+            texttemplate="$%{text:.0f}",
+            textposition="outside"
+        )
+
+        st.plotly_chart(
+            chart_layout(fig_service_profit, 540),
+            use_container_width=True
+        )
+
+    st.markdown("### Labor Forecasting by Location")
+
+    fig_labor_forecast = px.bar(
+        labor_forecast_df.sort_values("Forecast_Next_Month_Service_Hours", ascending=False),
+        x="Salon_Location",
+        y="Forecast_Next_Month_Service_Hours",
+        color="Recommended_FTE",
+        text="Recommended_FTE",
+        color_continuous_scale=["#EFE2BD", GOLD, "#7D6838"]
+    )
+
+    fig_labor_forecast.update_traces(
+        texttemplate="%{text:.1f} FTE",
+        textposition="outside"
+    )
+
+    st.plotly_chart(
+        chart_layout(fig_labor_forecast, 520),
+        use_container_width=True
+    )
+
+    st.markdown("### Scheduling Optimization by Day")
+
+    fig_schedule = px.bar(
+        weekday_schedule,
+        x="Weekday",
+        y="Demand_Hours",
+        color="Staffing_Recommendation",
+        facet_col="Salon_Location" if weekday_schedule["Salon_Location"].nunique() <= 4 else None,
+        text="Demand_Hours",
+        color_discrete_map={
+            "Add Coverage": "#B22222",
+            "Maintain Coverage": GOLD,
+            "Reduce / Reallocate Hours": "#8A8A8A"
+        }
+    )
+
+    fig_schedule.update_traces(
+        texttemplate="%{text:.0f}h",
+        textposition="outside"
+    )
+
+    st.plotly_chart(
+        chart_layout(fig_schedule, 560),
+        use_container_width=True
+    )
+
+    st.markdown("### Location Labor Benchmarking")
+
+    fig_location_labor = px.scatter(
+        location_labor_df,
+        x="Payroll_%_of_Revenue",
+        y="Revenue_Per_Labor_Hour",
+        size="Revenue",
+        color="Labor_Action",
+        hover_name="Salon_Location",
+        hover_data={
+            "Stylists": True,
+            "Revenue_Per_Stylist": ":$,.0f",
+            "Labor_Productivity_Score": ":.1f"
+        },
+        color_discrete_sequence=[GOLD, GOLD_LIGHT, "#7D6838"]
+    )
+
+    fig_location_labor.update_layout(
+        xaxis_title="Payroll % of Revenue",
+        yaxis_title="Revenue per Labor Hour"
+    )
+
+    st.plotly_chart(
+        chart_layout(fig_location_labor, 540),
+        use_container_width=True
+    )
+
+    st.markdown("### Stylist Performance Detail")
+
+    st.dataframe(
+        stylist_summary.sort_values("Revenue_Per_Service_Hour", ascending=False).style.format({
+            "Service_Hours": "{:,.1f}",
+            "Available_Hours": "{:,.1f}",
+            "Revenue": "${:,.0f}",
+            "Gross_Profit": "${:,.0f}",
+            "Payroll_Cost": "${:,.0f}",
+            "Utilization_%": "{:.1f}%",
+            "Revenue_Per_Service_Hour": "${:,.0f}",
+            "Profit_Per_Service_Hour": "${:,.0f}",
+            "Payroll_Efficiency_Ratio": "{:.2f}x"
+        }),
+        use_container_width=True,
+        height=420
+    )
+
+    st.markdown("### Labor Forecast Detail")
+
+    st.dataframe(
+        labor_forecast_df.style.format({
+            "Forecast_Next_Month_Service_Hours": "{:,.1f}",
+            "Forecast_Next_Month_Revenue": "${:,.0f}",
+            "Forecast_Next_Month_Payroll": "${:,.0f}",
+            "Forecast_Next_Month_Transactions": "{:,.0f}",
+            "Recommended_FTE": "{:.1f}",
+            "Revenue_Per_Forecasted_Labor_Hour": "${:,.0f}"
+        }),
+        use_container_width=True,
+        height=280
+    )
+
+    st.markdown("### Service Mix Profitability Detail")
+
+    st.dataframe(
+        service_mix_df.sort_values("Profit_Per_Service_Hour", ascending=False).style.format({
+            "Revenue": "${:,.0f}",
+            "Gross_Profit": "${:,.0f}",
+            "Service_Hours": "{:,.1f}",
+            "Payroll_Cost": "${:,.0f}",
+            "Gross_Margin_%": "{:.1f}%",
+            "Profit_Per_Service_Hour": "${:,.0f}",
+            "Payroll_Load_%": "{:.1f}%"
+        }),
+        use_container_width=True,
+        height=320
+    )
+
+    top_stylist = stylist_summary.sort_values("Revenue_Per_Service_Hour", ascending=False).iloc[0]
+    top_service = service_mix_df.sort_values("Profit_Per_Service_Hour", ascending=False).iloc[0]
+    highest_demand_day = weekday_schedule.sort_values("Demand_Hours", ascending=False).iloc[0]
+
+    st.markdown(f"""
+    <div class="insight-card">
+        <div class="insight-title">Executive Workforce Optimization Summary</div>
+        <div class="insight-body">
+            The strongest labor productivity signal comes from <b>{top_stylist["Stylist"]}</b>, generating
+            <b>${top_stylist["Revenue_Per_Service_Hour"]:,.0f}</b> per service hour.
+            <br><br>
+            The most profitable service category by labor hour is <b>{top_service["Service_Category"]}</b>, producing
+            <b>${top_service["Profit_Per_Service_Hour"]:,.0f}</b> gross profit per service hour.
+            <br><br>
+            The highest scheduling demand appears on <b>{highest_demand_day["Weekday"]}</b> in
+            <b>{highest_demand_day["Salon_Location"]}</b>, with <b>{highest_demand_day["Demand_Hours"]:,.0f}</b> service hours.
+            <br><br>
+            This layer strengthens the platform with salon-specific labor optimization, stylist utilization,
+            labor forecasting, payroll efficiency, scheduling recommendations, and service mix profitability.
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
