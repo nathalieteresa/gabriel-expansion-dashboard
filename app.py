@@ -2823,7 +2823,7 @@ with k9:
 
 st.markdown("<br>", unsafe_allow_html=True)
 
-tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9, tab10, tab11, tab12, tab13, tab14, tab15, tab16, tab17, tab18, tab19, tab20, tab21, tab22, tab23, tab24, tab25, tab26, tab27, tab28, tab29, tab30, tab31, tab32, tab33, tab34, tab35, tab36, tab37, tab38 = st.tabs([
+tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9, tab10, tab11, tab12, tab13, tab14, tab15, tab16, tab17, tab18, tab19, tab20, tab21, tab22, tab23, tab24, tab25, tab26, tab27, tab28, tab29, tab30, tab31, tab32, tab33, tab34, tab35, tab36, tab37, tab38, tab39 = st.tabs([
     "Overview",
     "Market Ranking",
     "Financial Scenario",
@@ -2861,7 +2861,8 @@ tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9, tab10, tab11, tab12, tab13
     "Real AI Recommendations",
     "Workforce & Labor Optimization",
     "Executive Architecture Documentation",
-    "Security & Enterprise Readiness"
+    "Security & Enterprise Readiness",
+    "KPI Drill-Down Center"
     ])
 
 with tab1:
@@ -8013,3 +8014,434 @@ This framework helps position the platform as an enterprise-ready digital transf
         mime="text/markdown"
     )
 
+
+
+with tab39:
+
+    st.markdown(
+        '<div class="section-title">KPI Drill-Down Center</div>',
+        unsafe_allow_html=True
+    )
+
+    st.markdown(
+        '<div class="section-note">Enterprise drill-down layer for executives to explore KPIs by location, month, product, franchise, employee/stylist, and ZIP or market.</div>',
+        unsafe_allow_html=True
+    )
+
+    # -----------------------------
+    # KPI DRILL-DOWN DATA FOUNDATION
+    # -----------------------------
+    drill_sales_df = sales_df.copy()
+
+    if "Date" in drill_sales_df.columns:
+        drill_sales_df["Date"] = pd.to_datetime(drill_sales_df["Date"], errors="coerce")
+    else:
+        drill_sales_df["Date"] = pd.Timestamp.today()
+
+    drill_sales_df = drill_sales_df.dropna(subset=["Date"]).copy()
+
+    if "Salon_Location" not in drill_sales_df.columns:
+        drill_sales_df["Salon_Location"] = "Main Salon"
+
+    if "Product_Name" not in drill_sales_df.columns:
+        drill_sales_df["Product_Name"] = "General Service / Product"
+
+    if "Brand" not in drill_sales_df.columns:
+        drill_sales_df["Brand"] = "Unassigned Brand"
+
+    if "Units_Sold" not in drill_sales_df.columns:
+        drill_sales_df["Units_Sold"] = 0
+
+    if "Revenue" not in drill_sales_df.columns:
+        drill_sales_df["Revenue"] = drill_sales_df.get("Units_Sold", 0) * drill_sales_df.get("Retail_Price", 0)
+
+    if "Gross_Profit_Calculated" not in drill_sales_df.columns:
+        drill_sales_df["Gross_Profit_Calculated"] = drill_sales_df["Revenue"] - (
+            drill_sales_df.get("Units_Sold", 0) * drill_sales_df.get("Unit_Cost", 0)
+        )
+
+    if "Stylist" not in drill_sales_df.columns:
+        stylist_pool = [
+            "Senior Stylist A", "Senior Stylist B", "Color Specialist",
+            "Extension Specialist", "Junior Stylist", "Retail Advisor"
+        ]
+        drill_sales_df["Stylist"] = [stylist_pool[i % len(stylist_pool)] for i in range(len(drill_sales_df))]
+
+    if "ZIP_Code" not in drill_sales_df.columns:
+        if "Zip" in drill_sales_df.columns:
+            drill_sales_df["ZIP_Code"] = drill_sales_df["Zip"]
+        elif "ZIP" in drill_sales_df.columns:
+            drill_sales_df["ZIP_Code"] = drill_sales_df["ZIP"]
+        else:
+            zip_map = {
+                "Miami": "33131",
+                "Coral Gables": "33134",
+                "Doral": "33166",
+                "Aventura": "33180",
+                "Sunny Isles Beach": "33160",
+                "Fort Lauderdale": "33301",
+                "Orlando": "32801",
+                "Tampa": "33602"
+            }
+            drill_sales_df["ZIP_Code"] = drill_sales_df["Salon_Location"].map(zip_map).fillna("Unassigned ZIP")
+
+    numeric_drill_cols = ["Units_Sold", "Revenue", "Gross_Profit_Calculated"]
+    for col in numeric_drill_cols:
+        drill_sales_df[col] = pd.to_numeric(drill_sales_df[col], errors="coerce").fillna(0)
+
+    drill_sales_df["Month"] = drill_sales_df["Date"].dt.to_period("M").dt.to_timestamp()
+    drill_sales_df["Month_Label"] = drill_sales_df["Month"].dt.strftime("%Y-%m")
+    drill_sales_df["Gross_Margin_%"] = drill_sales_df.apply(
+        lambda row: (row["Gross_Profit_Calculated"] / row["Revenue"] * 100)
+        if row["Revenue"] > 0 else 0,
+        axis=1
+    )
+
+    # -----------------------------
+    # EXECUTIVE FILTERS
+    # -----------------------------
+    filter_col1, filter_col2, filter_col3 = st.columns(3)
+    filter_col4, filter_col5, filter_col6 = st.columns(3)
+
+    with filter_col1:
+        selected_drill_locations = st.multiselect(
+            "Drill Down by Location",
+            sorted(drill_sales_df["Salon_Location"].dropna().astype(str).unique()),
+            default=sorted(drill_sales_df["Salon_Location"].dropna().astype(str).unique())
+        )
+
+    with filter_col2:
+        selected_drill_months = st.multiselect(
+            "Drill Down by Month",
+            sorted(drill_sales_df["Month_Label"].dropna().astype(str).unique()),
+            default=sorted(drill_sales_df["Month_Label"].dropna().astype(str).unique())
+        )
+
+    with filter_col3:
+        selected_drill_products = st.multiselect(
+            "Drill Down by Product",
+            sorted(drill_sales_df["Product_Name"].dropna().astype(str).unique()),
+            default=sorted(drill_sales_df["Product_Name"].dropna().astype(str).unique())[:12]
+        )
+
+    with filter_col4:
+        selected_drill_brands = st.multiselect(
+            "Drill Down by Brand / Product Family",
+            sorted(drill_sales_df["Brand"].dropna().astype(str).unique()),
+            default=sorted(drill_sales_df["Brand"].dropna().astype(str).unique())
+        )
+
+    with filter_col5:
+        selected_drill_employees = st.multiselect(
+            "Drill Down by Employee / Stylist",
+            sorted(drill_sales_df["Stylist"].dropna().astype(str).unique()),
+            default=sorted(drill_sales_df["Stylist"].dropna().astype(str).unique())
+        )
+
+    with filter_col6:
+        selected_drill_zips = st.multiselect(
+            "Drill Down by ZIP Code",
+            sorted(drill_sales_df["ZIP_Code"].dropna().astype(str).unique()),
+            default=sorted(drill_sales_df["ZIP_Code"].dropna().astype(str).unique())
+        )
+
+    drill_filtered_df = drill_sales_df[
+        drill_sales_df["Salon_Location"].astype(str).isin(selected_drill_locations)
+        & drill_sales_df["Month_Label"].astype(str).isin(selected_drill_months)
+        & drill_sales_df["Product_Name"].astype(str).isin(selected_drill_products)
+        & drill_sales_df["Brand"].astype(str).isin(selected_drill_brands)
+        & drill_sales_df["Stylist"].astype(str).isin(selected_drill_employees)
+        & drill_sales_df["ZIP_Code"].astype(str).isin(selected_drill_zips)
+    ].copy()
+
+    if drill_filtered_df.empty:
+        st.warning("No KPI records match the selected drill-down filters.")
+    else:
+        drill_revenue = drill_filtered_df["Revenue"].sum()
+        drill_units = drill_filtered_df["Units_Sold"].sum()
+        drill_profit = drill_filtered_df["Gross_Profit_Calculated"].sum()
+        drill_margin = (drill_profit / drill_revenue * 100) if drill_revenue > 0 else 0
+        drill_transactions = len(drill_filtered_df)
+        drill_avg_ticket = (drill_revenue / drill_transactions) if drill_transactions > 0 else 0
+
+        kpi1, kpi2, kpi3, kpi4, kpi5 = st.columns(5)
+        kpi1.metric("Filtered Revenue", f"${drill_revenue:,.0f}")
+        kpi2.metric("Filtered Units", f"{drill_units:,.0f}")
+        kpi3.metric("Filtered Gross Profit", f"${drill_profit:,.0f}")
+        kpi4.metric("Gross Margin", f"{drill_margin:.1f}%")
+        kpi5.metric("Avg Transaction", f"${drill_avg_ticket:,.0f}")
+
+        st.markdown("<br>", unsafe_allow_html=True)
+
+        chart_col1, chart_col2 = st.columns(2)
+
+        with chart_col1:
+            st.markdown("### KPI Trend by Month")
+
+            monthly_drill = drill_filtered_df.groupby(
+                "Month",
+                as_index=False
+            ).agg(
+                Revenue=("Revenue", "sum"),
+                Gross_Profit=("Gross_Profit_Calculated", "sum"),
+                Units_Sold=("Units_Sold", "sum")
+            )
+
+            fig_month_drill = px.line(
+                monthly_drill,
+                x="Month",
+                y="Revenue",
+                markers=True,
+                title="Revenue Drill-Down Trend"
+            )
+
+            st.plotly_chart(
+                chart_layout(fig_month_drill, 500),
+                use_container_width=True
+            )
+
+        with chart_col2:
+            st.markdown("### KPI by Location")
+
+            location_drill = drill_filtered_df.groupby(
+                "Salon_Location",
+                as_index=False
+            ).agg(
+                Revenue=("Revenue", "sum"),
+                Gross_Profit=("Gross_Profit_Calculated", "sum"),
+                Units_Sold=("Units_Sold", "sum")
+            )
+
+            fig_location_drill = px.bar(
+                location_drill.sort_values("Revenue", ascending=False),
+                x="Salon_Location",
+                y="Revenue",
+                color="Gross_Profit",
+                text="Revenue",
+                color_continuous_scale=["#EFE2BD", "#C6A052", "#7D6838"]
+            )
+
+            st.plotly_chart(
+                chart_layout(fig_location_drill, 500),
+                use_container_width=True
+            )
+
+        chart_col3, chart_col4 = st.columns(2)
+
+        with chart_col3:
+            st.markdown("### KPI by Product")
+
+            product_drill = drill_filtered_df.groupby(
+                ["Product_Name", "Brand"],
+                as_index=False
+            ).agg(
+                Revenue=("Revenue", "sum"),
+                Gross_Profit=("Gross_Profit_Calculated", "sum"),
+                Units_Sold=("Units_Sold", "sum")
+            )
+
+            fig_product_drill = px.bar(
+                product_drill.sort_values("Revenue", ascending=False).head(15),
+                x="Revenue",
+                y="Product_Name",
+                orientation="h",
+                color="Brand",
+                text="Revenue",
+                color_discrete_sequence=[GOLD_LIGHT, GOLD, "#A9843C", "#7D6838"]
+            )
+            fig_product_drill.update_layout(yaxis=dict(autorange="reversed"))
+
+            st.plotly_chart(
+                chart_layout(fig_product_drill, 540),
+                use_container_width=True
+            )
+
+        with chart_col4:
+            st.markdown("### KPI by Employee / Stylist")
+
+            employee_drill = drill_filtered_df.groupby(
+                "Stylist",
+                as_index=False
+            ).agg(
+                Revenue=("Revenue", "sum"),
+                Gross_Profit=("Gross_Profit_Calculated", "sum"),
+                Units_Sold=("Units_Sold", "sum")
+            )
+
+            employee_drill["Revenue_Per_Unit"] = employee_drill.apply(
+                lambda row: row["Revenue"] / row["Units_Sold"] if row["Units_Sold"] > 0 else 0,
+                axis=1
+            )
+
+            fig_employee_drill = px.bar(
+                employee_drill.sort_values("Revenue", ascending=False),
+                x="Stylist",
+                y="Revenue",
+                color="Gross_Profit",
+                text="Revenue",
+                color_continuous_scale=["#EFE2BD", "#C6A052", "#7D6838"]
+            )
+
+            st.plotly_chart(
+                chart_layout(fig_employee_drill, 540),
+                use_container_width=True
+            )
+
+        chart_col5, chart_col6 = st.columns(2)
+
+        with chart_col5:
+            st.markdown("### KPI by ZIP Code")
+
+            zip_drill = drill_filtered_df.groupby(
+                "ZIP_Code",
+                as_index=False
+            ).agg(
+                Revenue=("Revenue", "sum"),
+                Gross_Profit=("Gross_Profit_Calculated", "sum"),
+                Units_Sold=("Units_Sold", "sum")
+            )
+
+            fig_zip_drill = px.bar(
+                zip_drill.sort_values("Revenue", ascending=False),
+                x="ZIP_Code",
+                y="Revenue",
+                color="Gross_Profit",
+                text="Revenue",
+                color_continuous_scale=["#EFE2BD", "#C6A052", "#7D6838"]
+            )
+
+            st.plotly_chart(
+                chart_layout(fig_zip_drill, 500),
+                use_container_width=True
+            )
+
+        with chart_col6:
+            st.markdown("### Franchise / Salon / Academy Benchmark")
+
+            franchise_drill = franchise_ops_df.copy()
+            franchise_drill["Monthly_Revenue"] = pd.to_numeric(franchise_drill["Monthly_Revenue"], errors="coerce").fillna(0)
+            franchise_drill["Monthly_Profit"] = pd.to_numeric(franchise_drill["Monthly_Profit"], errors="coerce").fillna(0)
+
+            fig_franchise_drill = px.scatter(
+                franchise_drill,
+                x="Revenue_Per_Stylist",
+                y="Profit_Margin_%",
+                size="Monthly_Revenue",
+                color="Location_Type",
+                hover_name="Location_Name",
+                color_discrete_sequence=[GOLD_LIGHT, GOLD, "#A9843C", "#7D6838"]
+            )
+
+            st.plotly_chart(
+                chart_layout(fig_franchise_drill, 500),
+                use_container_width=True
+            )
+
+        st.markdown("### Executive Drill-Down Detail Table")
+
+        drill_detail_cols = [
+            "Date", "Month_Label", "Salon_Location", "ZIP_Code", "Stylist",
+            "Brand", "Product_Name", "Units_Sold", "Revenue",
+            "Gross_Profit_Calculated", "Gross_Margin_%"
+        ]
+
+        available_drill_detail_cols = [
+            col for col in drill_detail_cols
+            if col in drill_filtered_df.columns
+        ]
+
+        st.dataframe(
+            drill_filtered_df[available_drill_detail_cols].sort_values("Revenue", ascending=False),
+            use_container_width=True,
+            height=460
+        )
+
+        st.markdown("### KPI Drill-Down Summary by Dimension")
+
+        summary_dimension = st.selectbox(
+            "Select Summary Dimension",
+            [
+                "Salon_Location",
+                "Month_Label",
+                "Product_Name",
+                "Brand",
+                "Stylist",
+                "ZIP_Code"
+            ]
+        )
+
+        drill_dimension_summary = drill_filtered_df.groupby(
+            summary_dimension,
+            as_index=False
+        ).agg(
+            Revenue=("Revenue", "sum"),
+            Gross_Profit=("Gross_Profit_Calculated", "sum"),
+            Units_Sold=("Units_Sold", "sum"),
+            Records=("Date", "count")
+        )
+
+        drill_dimension_summary["Gross_Margin_%"] = drill_dimension_summary.apply(
+            lambda row: (row["Gross_Profit"] / row["Revenue"] * 100)
+            if row["Revenue"] > 0 else 0,
+            axis=1
+        ).round(1)
+
+        st.dataframe(
+            drill_dimension_summary.sort_values("Revenue", ascending=False),
+            use_container_width=True,
+            height=360
+        )
+
+        top_location = location_drill.sort_values("Revenue", ascending=False).iloc[0]["Salon_Location"]
+        top_product = product_drill.sort_values("Revenue", ascending=False).iloc[0]["Product_Name"]
+        top_employee = employee_drill.sort_values("Revenue", ascending=False).iloc[0]["Stylist"]
+
+        st.markdown(f"""
+        <div class="insight-card">
+            <div class="insight-title">Executive KPI Drill-Down Interpretation</div>
+            <div class="insight-body">
+                Under the selected filters, the strongest revenue location is <b>{top_location}</b>,
+                the strongest product is <b>{top_product}</b>, and the strongest employee/stylist signal is <b>{top_employee}</b>.
+                <br><br>
+                Filtered revenue equals <b>${drill_revenue:,.0f}</b>, with gross profit of
+                <b>${drill_profit:,.0f}</b> and margin of <b>{drill_margin:.1f}%</b>.
+                <br><br>
+                This transforms the dashboard from executive summary reporting into a true operational intelligence system,
+                allowing leaders to move from high-level KPI visibility into location, month, product, franchise, employee,
+                and ZIP-level diagnostic analysis.
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+
+        drill_markdown = f"""
+# KPI Drill-Down Center Documentation
+
+## Purpose
+This module allows enterprise executives to drill down from summary KPIs into operational detail.
+
+## Drill-Down Dimensions
+- Location
+- Month
+- Product
+- Brand / Product Family
+- Franchise / Salon / Academy Location Type
+- Employee / Stylist
+- ZIP Code
+
+## Filtered KPI Output
+- Revenue: ${drill_revenue:,.0f}
+- Units Sold: {drill_units:,.0f}
+- Gross Profit: ${drill_profit:,.0f}
+- Gross Margin: {drill_margin:.1f}%
+- Average Transaction: ${drill_avg_ticket:,.0f}
+
+## Executive Value
+This capability supports enterprise reporting, operational diagnostics, franchise benchmarking, workforce accountability, product analysis, and ZIP-level market validation.
+"""
+
+        st.download_button(
+            label="Download KPI Drill-Down Documentation",
+            data=drill_markdown,
+            file_name="kpi_drill_down_center_documentation.md",
+            mime="text/markdown"
+        )
