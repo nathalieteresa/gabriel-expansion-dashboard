@@ -2823,7 +2823,7 @@ with k9:
 
 st.markdown("<br>", unsafe_allow_html=True)
 
-tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9, tab10, tab11, tab12, tab13, tab14, tab15, tab16, tab17, tab18, tab19, tab20, tab21, tab22, tab23, tab24, tab25, tab26, tab27, tab28, tab29, tab30, tab31, tab32, tab33, tab34, tab35, tab36, tab37, tab38, tab39, tab40 = st.tabs([
+tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9, tab10, tab11, tab12, tab13, tab14, tab15, tab16, tab17, tab18, tab19, tab20, tab21, tab22, tab23, tab24, tab25, tab26, tab27, tab28, tab29, tab30, tab31, tab32, tab33, tab34, tab35, tab36, tab37, tab38, tab39, tab40, tab41 = st.tabs([
     "Overview",
     "Market Ranking",
     "Financial Scenario",
@@ -2863,7 +2863,8 @@ tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9, tab10, tab11, tab12, tab13
     "Executive Architecture Documentation",
     "Security & Enterprise Readiness",
     "KPI Drill-Down Center",
-    "Real-Time Operational Alerts"
+    "Real-Time Operational Alerts",
+    "Workflow Automation"
     ])
 
 with tab1:
@@ -8901,6 +8902,464 @@ This notification supports automated monitoring, executive governance, and opera
             <br><br>
             This strengthens the platform’s alignment with enterprise analytics, automated monitoring,
             anomaly detection, governance controls, and executive operational readiness.
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+
+with tab41:
+
+    st.markdown(
+        '<div class="section-title">Workflow Automation Engine</div>',
+        unsafe_allow_html=True
+    )
+
+    st.markdown(
+        '<div class="section-note">Automated operational workflows for replenishment, supplier notifications, escalations, and executive reporting.</div>',
+        unsafe_allow_html=True
+    )
+
+    automation_mode = st.selectbox(
+        "Automation Mode",
+        [
+            "Simulation Only",
+            "Ready for Human Approval",
+            "Auto-Execute Eligible Workflows"
+        ]
+    )
+
+    escalation_sla_hours = st.slider(
+        "Escalation SLA for High-Priority Issues (Hours)",
+        4,
+        72,
+        24
+    )
+
+    auto_replenishment_limit = st.number_input(
+        "Auto-Replenishment Approval Limit ($)",
+        min_value=0,
+        max_value=50000,
+        value=2500,
+        step=250
+    )
+
+    workflow_rows = []
+
+    def add_workflow(workflow_type, priority, location, owner, trigger, action, status, estimated_value, next_step):
+        workflow_rows.append({
+            "Workflow_Type": workflow_type,
+            "Priority": priority,
+            "Location": location,
+            "Owner": owner,
+            "Trigger": trigger,
+            "Automated_Action": action,
+            "Status": status,
+            "Estimated_Value": estimated_value,
+            "Next_Step": next_step
+        })
+
+    # -----------------------------
+    # AUTO-REPLENISHMENT WORKFLOWS
+    # -----------------------------
+
+    replenishment_source = None
+
+    if "supply_chain_df" in globals() and not supply_chain_df.empty:
+        replenishment_source = supply_chain_df.copy()
+    elif "reorder_df" in globals() and not reorder_df.empty:
+        replenishment_source = reorder_df.copy()
+
+    if replenishment_source is not None and not replenishment_source.empty:
+        replenishment_source["Current_Stock"] = pd.to_numeric(
+            replenishment_source.get("Current_Stock", 0),
+            errors="coerce"
+        ).fillna(0)
+
+        if "Optimized_Reorder_Qty" not in replenishment_source.columns:
+            replenishment_source["Optimized_Reorder_Qty"] = pd.to_numeric(
+                replenishment_source.get("Recommended_Reorder_Qty", 0),
+                errors="coerce"
+            ).fillna(0)
+        else:
+            replenishment_source["Optimized_Reorder_Qty"] = pd.to_numeric(
+                replenishment_source["Optimized_Reorder_Qty"],
+                errors="coerce"
+            ).fillna(0)
+
+        if "Unit_Cost" not in replenishment_source.columns:
+            unit_cost_lookup_auto = sales_df.groupby(
+                ["Brand", "Product_ID", "Product_Name"],
+                as_index=False
+            ).agg(Unit_Cost=("Unit_Cost", "mean"))
+
+            replenishment_source = replenishment_source.merge(
+                unit_cost_lookup_auto,
+                on=["Brand", "Product_ID", "Product_Name"],
+                how="left"
+            )
+
+        replenishment_source["Unit_Cost"] = pd.to_numeric(
+            replenishment_source.get("Unit_Cost", 0),
+            errors="coerce"
+        ).fillna(0)
+
+        replenishment_source["Estimated_Replenishment_Value"] = (
+            replenishment_source["Optimized_Reorder_Qty"]
+            * replenishment_source["Unit_Cost"]
+        ).round(2)
+
+        auto_replenishment_items = replenishment_source[
+            replenishment_source["Optimized_Reorder_Qty"] > 0
+        ].copy()
+
+        for _, row in auto_replenishment_items.iterrows():
+            estimated_value = row.get("Estimated_Replenishment_Value", 0)
+            supplier_name = row.get("Supplier", "Assigned Supplier")
+
+            if estimated_value <= auto_replenishment_limit:
+                status = "Auto-Approval Eligible" if automation_mode == "Auto-Execute Eligible Workflows" else "Pending Approval"
+                priority = "High" if row.get("Supply_Chain_Risk_Level", "") == "High Risk" else "Medium"
+                next_step = "Generate supplier purchase request and confirm availability."
+            else:
+                status = "Executive Approval Required"
+                priority = "High"
+                next_step = "Route replenishment request to operations leader for approval."
+
+            add_workflow(
+                "Auto-Replenishment",
+                priority,
+                row.get("Salon_Location", "Unknown Location"),
+                "Inventory / Operations",
+                f"{row.get('Product_Name', 'Product')} requires {row.get('Optimized_Reorder_Qty', 0):,.0f} units",
+                f"Create replenishment workflow for {supplier_name}",
+                status,
+                estimated_value,
+                next_step
+            )
+
+    # -----------------------------
+    # SUPPLIER NOTIFICATION WORKFLOWS
+    # -----------------------------
+
+    if "supplier_scorecard_df" in globals() and not supplier_scorecard_df.empty:
+        supplier_alerts = supplier_scorecard_df.copy()
+
+        supplier_alerts["Avg_Performance_Score"] = pd.to_numeric(
+            supplier_alerts["Avg_Performance_Score"],
+            errors="coerce"
+        ).fillna(0)
+
+        low_supplier_performance = supplier_alerts[
+            supplier_alerts["Avg_Performance_Score"] < 85
+        ].copy()
+
+        for _, row in low_supplier_performance.iterrows():
+            priority = "High" if row["Avg_Performance_Score"] < 75 else "Medium"
+
+            add_workflow(
+                "Supplier Notification",
+                priority,
+                "Supplier Network",
+                "Supply Chain Lead",
+                f"Supplier score below target: {row['Avg_Performance_Score']:.1f}/100",
+                f"Send performance follow-up to {row.get('Supplier', 'supplier')}",
+                "Ready to Send",
+                row.get("Total_Projected_Logistics_Cost", 0),
+                "Request delivery reliability, fill rate, and lead time improvement plan."
+            )
+
+    # -----------------------------
+    # AUTOMATED ESCALATION WORKFLOWS
+    # -----------------------------
+
+    if "alerts_df" in globals() and not alerts_df.empty:
+        escalation_alerts = alerts_df.copy()
+        escalation_alerts = escalation_alerts[
+            escalation_alerts["Severity"].isin(["Critical", "High"])
+        ].copy()
+
+        for _, row in escalation_alerts.head(25).iterrows():
+            owner = "Executive / Operations Lead" if row["Severity"] == "Critical" else "Department Owner"
+
+            add_workflow(
+                "Automated Escalation",
+                row["Severity"],
+                row.get("Location", "Unknown Location"),
+                owner,
+                f"{row.get('Alert_Category', 'Alert')} - {row.get('Metric', 'Metric')}",
+                "Create escalation ticket and assign owner",
+                f"Escalate within {escalation_sla_hours} hours",
+                0,
+                row.get("Recommended_Action", "Review issue and confirm corrective action.")
+            )
+
+    # -----------------------------
+    # AUTOMATED REPORTING WORKFLOWS
+    # -----------------------------
+
+    reporting_recipients = [
+        "Executive Team",
+        "Operations Lead",
+        "Supply Chain Lead",
+        "Franchise Management"
+    ]
+
+    for recipient in reporting_recipients:
+        add_workflow(
+            "Automated Reporting",
+            "Medium",
+            "Enterprise Portfolio",
+            recipient,
+            "Scheduled performance review cycle",
+            f"Generate weekly dashboard summary for {recipient}",
+            "Scheduled",
+            0,
+            "Review KPIs, open alerts, workflow queue, and pending approvals."
+        )
+
+    # -----------------------------
+    # DATA GOVERNANCE / QUALITY WORKFLOWS
+    # -----------------------------
+
+    if "validation_df" in globals() and not validation_df.empty:
+        validation_workflows = validation_df.copy()
+
+        for _, row in validation_workflows.head(20).iterrows():
+            add_workflow(
+                "Data Governance Workflow",
+                row.get("Severity", "Medium"),
+                row.get("Dataset", "Data Platform"),
+                "Data Steward",
+                f"{row.get('Issue_Type', 'Data issue')} in {row.get('Field', 'field')}",
+                "Create data correction task",
+                "Pending Data Steward Review",
+                0,
+                row.get("Recommendation", "Validate source data and correct the issue.")
+            )
+
+    workflow_df = pd.DataFrame(workflow_rows)
+
+    if workflow_df.empty:
+        total_workflows = 0
+        high_priority_workflows = 0
+        auto_eligible_workflows = 0
+        pending_approval_workflows = 0
+    else:
+        total_workflows = len(workflow_df)
+        high_priority_workflows = len(workflow_df[workflow_df["Priority"].isin(["Critical", "High"] )])
+        auto_eligible_workflows = len(workflow_df[workflow_df["Status"] == "Auto-Approval Eligible"])
+        pending_approval_workflows = len(workflow_df[workflow_df["Status"].str.contains("Approval", case=False, na=False)])
+
+    w1, w2, w3, w4 = st.columns(4)
+
+    w1.metric("Active Workflows", f"{total_workflows:,}")
+    w2.metric("High Priority", f"{high_priority_workflows:,}")
+    w3.metric("Auto-Eligible", f"{auto_eligible_workflows:,}")
+    w4.metric("Pending Approval", f"{pending_approval_workflows:,}")
+
+    st.markdown("<br>", unsafe_allow_html=True)
+
+    if workflow_df.empty:
+        st.success("No active automation workflows generated under the current rules.")
+    else:
+        c1, c2 = st.columns(2)
+
+        with c1:
+            st.markdown("### Workflow Queue by Type")
+
+            workflow_type_summary = workflow_df.groupby(
+                "Workflow_Type",
+                as_index=False
+            ).agg(Workflows=("Priority", "count"))
+
+            fig_workflow_type = px.bar(
+                workflow_type_summary.sort_values("Workflows", ascending=False),
+                x="Workflow_Type",
+                y="Workflows",
+                color="Workflow_Type",
+                text="Workflows",
+                color_discrete_sequence=[
+                    GOLD_LIGHT,
+                    GOLD,
+                    "#A9843C",
+                    "#7D6838",
+                    "#3E3E3E"
+                ]
+            )
+
+            fig_workflow_type.update_layout(showlegend=False)
+
+            st.plotly_chart(
+                chart_layout(fig_workflow_type, 480),
+                use_container_width=True
+            )
+
+        with c2:
+            st.markdown("### Workflow Queue by Status")
+
+            workflow_status_summary = workflow_df.groupby(
+                "Status",
+                as_index=False
+            ).agg(Workflows=("Priority", "count"))
+
+            fig_workflow_status = px.bar(
+                workflow_status_summary.sort_values("Workflows", ascending=False),
+                x="Status",
+                y="Workflows",
+                color="Workflows",
+                text="Workflows",
+                color_continuous_scale=[
+                    "#EFE2BD",
+                    "#C6A052",
+                    "#7D6838"
+                ]
+            )
+
+            st.plotly_chart(
+                chart_layout(fig_workflow_status, 480),
+                use_container_width=True
+            )
+
+        st.markdown("### Automation Workflow Queue")
+
+        priority_order = {
+            "Critical": 0,
+            "High": 1,
+            "Medium": 2,
+            "Low": 3
+        }
+
+        workflow_df["Priority_Order"] = workflow_df["Priority"].map(priority_order).fillna(9)
+
+        st.dataframe(
+            workflow_df.sort_values(
+                ["Priority_Order", "Workflow_Type", "Location"]
+            ).drop(columns=["Priority_Order"], errors="ignore"),
+            use_container_width=True,
+            height=520
+        )
+
+    # -----------------------------
+    # SUPPLIER EMAIL TEMPLATE
+    # -----------------------------
+
+    supplier_workflows = workflow_df[
+        workflow_df["Workflow_Type"].isin(["Supplier Notification", "Auto-Replenishment"])
+    ].copy() if not workflow_df.empty else pd.DataFrame()
+
+    if supplier_workflows.empty:
+        supplier_email_body = "No supplier notification or replenishment workflows are currently pending."
+    else:
+        supplier_lines = "\n".join(
+            [
+                f"- {row['Priority']} | {row['Location']} | {row['Trigger']} | Status: {row['Status']}"
+                for _, row in supplier_workflows.head(12).iterrows()
+            ]
+        )
+
+        supplier_email_body = f"""
+Subject: Supplier Workflow Notification - Action Required
+
+Hello,
+
+The Strategic Expansion Intelligence Platform generated the following supplier-related workflows:
+
+{supplier_lines}
+
+Requested action:
+1. Confirm inventory availability and estimated delivery timeline.
+2. Confirm any lead time, fill rate, or shipment constraints.
+3. Provide corrective action plan for any supplier performance issue.
+4. Reply with expected resolution date.
+
+Thank you.
+""".strip()
+
+    st.markdown("### Supplier Notification Template")
+
+    st.text_area(
+        "Copy this message into a supplier email or internal procurement note",
+        supplier_email_body,
+        height=300
+    )
+
+    # -----------------------------
+    # EXECUTIVE REPORTING TEMPLATE
+    # -----------------------------
+
+    if workflow_df.empty:
+        executive_workflow_summary = "No active workflows are currently pending."
+    else:
+        executive_workflow_summary = f"""
+Active workflows: {total_workflows}
+High-priority workflows: {high_priority_workflows}
+Auto-approval eligible workflows: {auto_eligible_workflows}
+Pending approval workflows: {pending_approval_workflows}
+Automation mode: {automation_mode}
+Escalation SLA: {escalation_sla_hours} hours
+""".strip()
+
+    executive_report_body = f"""
+Subject: Weekly Workflow Automation Summary
+
+Hello,
+
+The workflow automation engine generated the following operational summary:
+
+{executive_workflow_summary}
+
+Recommended executive actions:
+1. Approve high-value replenishment workflows above the approval threshold.
+2. Review critical and high-priority escalations.
+3. Confirm supplier corrective action plans where performance is below target.
+4. Review recurring data governance issues that may affect reporting reliability.
+
+This workflow layer supports transformation governance, automated reporting, supplier accountability, replenishment automation, and scalable operating discipline.
+""".strip()
+
+    st.markdown("### Executive Reporting Template")
+
+    st.text_area(
+        "Copy this summary into a weekly executive update",
+        executive_report_body,
+        height=300
+    )
+
+    if not workflow_df.empty:
+        st.download_button(
+            label="Download Workflow Queue CSV",
+            data=workflow_df.drop(columns=["Priority_Order"], errors="ignore").to_csv(index=False),
+            file_name="workflow_automation_queue.csv",
+            mime="text/csv"
+        )
+
+    st.download_button(
+        label="Download Supplier Notification Template",
+        data=supplier_email_body,
+        file_name="supplier_workflow_notification.txt",
+        mime="text/plain"
+    )
+
+    st.download_button(
+        label="Download Executive Workflow Summary",
+        data=executive_report_body,
+        file_name="executive_workflow_summary.txt",
+        mime="text/plain"
+    )
+
+    st.markdown(f"""
+    <div class="insight-card">
+        <div class="insight-title">Executive Workflow Automation Interpretation</div>
+        <div class="insight-body">
+            This module converts operational intelligence into action-oriented workflows.
+            <br><br>
+            It creates automated replenishment workflows, supplier follow-up messages, escalation tasks,
+            governance workflows, and scheduled reporting summaries.
+            <br><br>
+            Current active workflows: <b>{total_workflows:,}</b>. High-priority workflows: <b>{high_priority_workflows:,}</b>.
+            <br><br>
+            This strengthens the platform’s alignment with digital transformation consulting,
+            operating model design, workflow automation, supplier coordination, and executive governance.
         </div>
     </div>
     """, unsafe_allow_html=True)
