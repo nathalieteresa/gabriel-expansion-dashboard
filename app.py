@@ -2823,7 +2823,7 @@ with k9:
 
 st.markdown("<br>", unsafe_allow_html=True)
 
-tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9, tab10, tab11, tab12, tab13, tab14, tab15, tab16, tab17, tab18, tab19, tab20, tab21, tab22, tab23, tab24, tab25, tab26, tab27, tab28, tab29, tab30, tab31, tab32, tab33, tab34, tab35, tab36, tab37, tab38, tab39 = st.tabs([
+tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9, tab10, tab11, tab12, tab13, tab14, tab15, tab16, tab17, tab18, tab19, tab20, tab21, tab22, tab23, tab24, tab25, tab26, tab27, tab28, tab29, tab30, tab31, tab32, tab33, tab34, tab35, tab36, tab37, tab38, tab39, tab40 = st.tabs([
     "Overview",
     "Market Ranking",
     "Financial Scenario",
@@ -2862,7 +2862,8 @@ tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9, tab10, tab11, tab12, tab13
     "Workforce & Labor Optimization",
     "Executive Architecture Documentation",
     "Security & Enterprise Readiness",
-    "KPI Drill-Down Center"
+    "KPI Drill-Down Center",
+    "Real-Time Operational Alerts"
     ])
 
 with tab1:
@@ -8445,3 +8446,461 @@ This capability supports enterprise reporting, operational diagnostics, franchis
             file_name="kpi_drill_down_center_documentation.md",
             mime="text/markdown"
         )
+
+
+with tab40:
+
+    st.markdown(
+        '<div class="section-title">Real-Time Operational Alerts Center</div>',
+        unsafe_allow_html=True
+    )
+
+    st.markdown(
+        '<div class="section-note">Automated threshold monitoring, anomaly detection, operational risk alerts, and email-ready executive notifications.</div>',
+        unsafe_allow_html=True
+    )
+
+    alert_col1, alert_col2, alert_col3, alert_col4 = st.columns(4)
+
+    with alert_col1:
+        low_stock_threshold = st.number_input(
+            "Low Stock Threshold",
+            min_value=0,
+            max_value=500,
+            value=10,
+            step=1
+        )
+
+    with alert_col2:
+        stockout_risk_threshold = st.slider(
+            "Stockout Risk Alert Threshold %",
+            0,
+            100,
+            70
+        )
+
+    with alert_col3:
+        margin_threshold = st.slider(
+            "Low Margin Alert Threshold %",
+            0,
+            100,
+            35
+        )
+
+    with alert_col4:
+        anomaly_sensitivity = st.slider(
+            "Anomaly Sensitivity",
+            1.0,
+            3.0,
+            2.0,
+            0.1
+        )
+
+    alerts = []
+
+    def add_alert(category, severity, location, entity, metric, current_value, threshold, recommendation):
+        alerts.append({
+            "Alert_Category": category,
+            "Severity": severity,
+            "Location": location,
+            "Entity": entity,
+            "Metric": metric,
+            "Current_Value": current_value,
+            "Threshold": threshold,
+            "Recommendation": recommendation
+        })
+
+    # -----------------------------
+    # INVENTORY THRESHOLD ALERTS
+    # -----------------------------
+
+    if "inventory_df" in globals() and not inventory_df.empty:
+        inventory_alert_df = inventory_df.copy()
+        inventory_alert_df["Current_Stock"] = pd.to_numeric(
+            inventory_alert_df.get("Current_Stock", 0),
+            errors="coerce"
+        ).fillna(0)
+
+        inventory_alert_df["Reorder_Point"] = pd.to_numeric(
+            inventory_alert_df.get("Reorder_Point", 0),
+            errors="coerce"
+        ).fillna(0)
+
+        for _, row in inventory_alert_df.iterrows():
+            location_value = row.get("Salon_Location", "Unknown Location")
+            product_value = row.get("Product_Name", "Unknown Product")
+            current_stock = row.get("Current_Stock", 0)
+            reorder_point = row.get("Reorder_Point", 0)
+
+            if current_stock <= low_stock_threshold:
+                add_alert(
+                    "Inventory Threshold",
+                    "High" if current_stock <= 5 else "Medium",
+                    location_value,
+                    product_value,
+                    "Current Stock",
+                    current_stock,
+                    low_stock_threshold,
+                    "Review inventory immediately and prepare replenishment order."
+                )
+
+            if current_stock <= reorder_point:
+                add_alert(
+                    "Reorder Point Breach",
+                    "High",
+                    location_value,
+                    product_value,
+                    "Current Stock vs Reorder Point",
+                    current_stock,
+                    reorder_point,
+                    "Trigger reorder workflow and validate forecasted demand before purchase order approval."
+                )
+
+    # -----------------------------
+    # SUPPLY CHAIN RISK ALERTS
+    # -----------------------------
+
+    if "supply_chain_df" in globals() and not supply_chain_df.empty:
+        supply_alert_df = supply_chain_df.copy()
+        supply_alert_df["Stockout_Risk_%"] = pd.to_numeric(
+            supply_alert_df.get("Stockout_Risk_%", 0),
+            errors="coerce"
+        ).fillna(0)
+
+        supply_alert_df["Supplier_Performance_Score"] = pd.to_numeric(
+            supply_alert_df.get("Supplier_Performance_Score", 100),
+            errors="coerce"
+        ).fillna(100)
+
+        for _, row in supply_alert_df.iterrows():
+            location_value = row.get("Salon_Location", "Unknown Location")
+            product_value = row.get("Product_Name", "Unknown Product")
+            stockout_risk = row.get("Stockout_Risk_%", 0)
+            supplier_score = row.get("Supplier_Performance_Score", 100)
+
+            if stockout_risk >= stockout_risk_threshold:
+                add_alert(
+                    "Stockout Risk",
+                    "Critical" if stockout_risk >= 85 else "High",
+                    location_value,
+                    product_value,
+                    "Stockout Risk %",
+                    f"{stockout_risk:.1f}%",
+                    f"{stockout_risk_threshold}%",
+                    "Increase safety stock, expedite replenishment, or review supplier lead time reliability."
+                )
+
+            if supplier_score < 75:
+                add_alert(
+                    "Supplier Performance",
+                    "High",
+                    location_value,
+                    row.get("Supplier", "Unknown Supplier"),
+                    "Supplier Performance Score",
+                    f"{supplier_score:.1f}",
+                    "75",
+                    "Review supplier scorecard, OTIF, fill rate, and backup supplier options."
+                )
+
+    # -----------------------------
+    # SALES / MARGIN ALERTS
+    # -----------------------------
+
+    if "sales_df" in globals() and not sales_df.empty:
+        sales_alert_df = sales_df.copy()
+
+        sales_alert_df["Revenue"] = pd.to_numeric(
+            sales_alert_df.get("Revenue", 0),
+            errors="coerce"
+        ).fillna(0)
+
+        sales_alert_df["Gross_Profit_Calculated"] = pd.to_numeric(
+            sales_alert_df.get("Gross_Profit_Calculated", 0),
+            errors="coerce"
+        ).fillna(0)
+
+        sales_alert_df["Gross_Margin_%"] = sales_alert_df.apply(
+            lambda row: (row["Gross_Profit_Calculated"] / row["Revenue"] * 100)
+            if row["Revenue"] > 0 else 0,
+            axis=1
+        )
+
+        product_margin_alerts = sales_alert_df.groupby(
+            ["Salon_Location", "Product_Name"],
+            as_index=False
+        ).agg(
+            Revenue=("Revenue", "sum"),
+            Gross_Profit=("Gross_Profit_Calculated", "sum")
+        )
+
+        product_margin_alerts["Gross_Margin_%"] = product_margin_alerts.apply(
+            lambda row: (row["Gross_Profit"] / row["Revenue"] * 100)
+            if row["Revenue"] > 0 else 0,
+            axis=1
+        )
+
+        for _, row in product_margin_alerts.iterrows():
+            margin_value = row["Gross_Margin_%"]
+
+            if row["Revenue"] > 0 and margin_value < margin_threshold:
+                add_alert(
+                    "Profitability Threshold",
+                    "Medium" if margin_value >= 20 else "High",
+                    row.get("Salon_Location", "Unknown Location"),
+                    row.get("Product_Name", "Unknown Product"),
+                    "Gross Margin %",
+                    f"{margin_value:.1f}%",
+                    f"{margin_threshold}%",
+                    "Review discounting, pricing, unit cost, service mix, or product profitability."
+                )
+
+        # -----------------------------
+        # MONTHLY SALES ANOMALY DETECTION
+        # -----------------------------
+
+        sales_alert_df["Date"] = pd.to_datetime(sales_alert_df["Date"], errors="coerce")
+        sales_alert_df = sales_alert_df.dropna(subset=["Date"])
+
+        monthly_location_sales_alerts = (
+            sales_alert_df
+            .groupby([
+                pd.Grouper(key="Date", freq="MS"),
+                "Salon_Location"
+            ], as_index=False)
+            .agg(Revenue=("Revenue", "sum"))
+        )
+
+        anomaly_base = monthly_location_sales_alerts.sort_values("Date").copy()
+        anomaly_base["Rolling_Avg"] = anomaly_base.groupby("Salon_Location")["Revenue"].transform(
+            lambda x: x.rolling(3).mean()
+        )
+        anomaly_base["Rolling_Std"] = anomaly_base.groupby("Salon_Location")["Revenue"].transform(
+            lambda x: x.rolling(3).std()
+        )
+        anomaly_base["High_Threshold"] = anomaly_base["Rolling_Avg"] + anomaly_sensitivity * anomaly_base["Rolling_Std"]
+        anomaly_base["Low_Threshold"] = anomaly_base["Rolling_Avg"] - anomaly_sensitivity * anomaly_base["Rolling_Std"]
+
+        detected_anomalies = anomaly_base[
+            (
+                anomaly_base["Revenue"] > anomaly_base["High_Threshold"]
+            )
+            |
+            (
+                anomaly_base["Revenue"] < anomaly_base["Low_Threshold"]
+            )
+        ].copy()
+
+        for _, row in detected_anomalies.iterrows():
+            anomaly_type = "Revenue Spike" if row["Revenue"] > row["High_Threshold"] else "Revenue Drop"
+            severity = "High" if anomaly_type == "Revenue Drop" else "Medium"
+
+            add_alert(
+                "Anomaly Detection",
+                severity,
+                row.get("Salon_Location", "Unknown Location"),
+                anomaly_type,
+                "Monthly Revenue",
+                f"${row['Revenue']:,.0f}",
+                f"Expected around ${row['Rolling_Avg']:,.0f}",
+                "Investigate operational causes such as campaign activity, staffing changes, stockouts, pricing, or booking volume shifts."
+            )
+
+    # -----------------------------
+    # CUSTOMER / CRM ALERTS
+    # -----------------------------
+
+    if "customer_df" in globals() and not customer_df.empty:
+        crm_alert_df = customer_df.copy()
+
+        if "Churn_Risk_%" in crm_alert_df.columns:
+            crm_alert_df["Churn_Risk_%"] = pd.to_numeric(
+                crm_alert_df["Churn_Risk_%"],
+                errors="coerce"
+            ).fillna(0)
+
+            high_churn_customers = crm_alert_df[crm_alert_df["Churn_Risk_%"] >= 70]
+
+            if len(high_churn_customers) > 0:
+                add_alert(
+                    "Customer Churn Risk",
+                    "High",
+                    "CRM Portfolio",
+                    "High-risk customer segment",
+                    "Customers with churn risk >= 70%",
+                    len(high_churn_customers),
+                    "0",
+                    "Launch retention outreach, service follow-up, loyalty offer, or rebooking campaign."
+                )
+
+    alerts_df = pd.DataFrame(alerts)
+
+    if alerts_df.empty:
+        total_alerts = 0
+        critical_alerts = 0
+        high_alerts = 0
+        medium_alerts = 0
+    else:
+        total_alerts = len(alerts_df)
+        critical_alerts = len(alerts_df[alerts_df["Severity"] == "Critical"])
+        high_alerts = len(alerts_df[alerts_df["Severity"] == "High"])
+        medium_alerts = len(alerts_df[alerts_df["Severity"] == "Medium"])
+
+    a1, a2, a3, a4 = st.columns(4)
+
+    a1.metric("Total Active Alerts", f"{total_alerts:,}")
+    a2.metric("Critical Alerts", f"{critical_alerts:,}")
+    a3.metric("High Alerts", f"{high_alerts:,}")
+    a4.metric("Medium Alerts", f"{medium_alerts:,}")
+
+    st.markdown("<br>", unsafe_allow_html=True)
+
+    if alerts_df.empty:
+        st.success("No active operational alerts detected under the selected thresholds.")
+    else:
+        severity_order = {"Critical": 0, "High": 1, "Medium": 2, "Low": 3}
+        alerts_df["Severity_Order"] = alerts_df["Severity"].map(severity_order).fillna(9)
+        alerts_df = alerts_df.sort_values(["Severity_Order", "Alert_Category", "Location"])
+
+        c1, c2 = st.columns(2)
+
+        with c1:
+            st.markdown("### Alerts by Severity")
+
+            severity_summary = alerts_df.groupby(
+                "Severity",
+                as_index=False
+            ).agg(Alerts=("Alert_Category", "count"))
+
+            fig_alert_severity = px.bar(
+                severity_summary,
+                x="Severity",
+                y="Alerts",
+                color="Severity",
+                text="Alerts",
+                color_discrete_map={
+                    "Critical": "#7A0000",
+                    "High": "#B22222",
+                    "Medium": "#C6A052",
+                    "Low": "#8A8A8A"
+                }
+            )
+
+            st.plotly_chart(
+                chart_layout(fig_alert_severity, 460),
+                use_container_width=True
+            )
+
+        with c2:
+            st.markdown("### Alerts by Category")
+
+            category_summary = alerts_df.groupby(
+                "Alert_Category",
+                as_index=False
+            ).agg(Alerts=("Severity", "count"))
+
+            fig_alert_category = px.bar(
+                category_summary.sort_values("Alerts", ascending=False),
+                x="Alert_Category",
+                y="Alerts",
+                color="Alerts",
+                text="Alerts",
+                color_continuous_scale=[
+                    "#EFE2BD",
+                    "#C6A052",
+                    "#7D6838"
+                ]
+            )
+
+            st.plotly_chart(
+                chart_layout(fig_alert_category, 460),
+                use_container_width=True
+            )
+
+        st.markdown("### Active Operational Alert Queue")
+
+        st.dataframe(
+            alerts_df.drop(columns=["Severity_Order"], errors="ignore"),
+            use_container_width=True,
+            height=480
+        )
+
+    # -----------------------------
+    # EMAIL-READY NOTIFICATION REPORT
+    # -----------------------------
+
+    if alerts_df.empty:
+        email_summary = "No active operational alerts were detected under the current thresholds."
+        top_alert_lines = "No action required at this time."
+    else:
+        top_alert_lines = "\n".join(
+            [
+                f"- [{row['Severity']}] {row['Alert_Category']} | {row['Location']} | {row['Entity']} | {row['Metric']}: {row['Current_Value']}"
+                for _, row in alerts_df.head(10).iterrows()
+            ]
+        )
+
+        email_summary = f"""
+Active alert count: {total_alerts}
+Critical alerts: {critical_alerts}
+High alerts: {high_alerts}
+Medium alerts: {medium_alerts}
+""".strip()
+
+    alert_email_body = f"""
+Subject: Operational Alert Summary - Strategic Expansion Intelligence Platform
+
+Hello,
+
+The operational monitoring engine has completed its latest threshold and anomaly scan.
+
+{email_summary}
+
+Top alerts:
+{top_alert_lines}
+
+Recommended next actions:
+1. Review critical and high alerts first.
+2. Validate whether alerts are caused by stockouts, supplier delays, pricing issues, campaign spikes, or data quality problems.
+3. Assign an owner for each high-priority issue.
+4. Re-run the dashboard after corrective actions are completed.
+
+This notification supports automated monitoring, executive governance, and operational risk management.
+""".strip()
+
+    st.markdown("### Email-Ready Alert Notification")
+    st.text_area(
+        "Copy this alert summary into an email or internal message",
+        alert_email_body,
+        height=300
+    )
+
+    st.download_button(
+        label="Download Alert Report CSV",
+        data=alerts_df.drop(columns=["Severity_Order"], errors="ignore").to_csv(index=False),
+        file_name="real_time_operational_alerts.csv",
+        mime="text/csv"
+    )
+
+    st.download_button(
+        label="Download Email Alert Summary",
+        data=alert_email_body,
+        file_name="operational_alert_email_summary.txt",
+        mime="text/plain"
+    )
+
+    st.markdown(f"""
+    <div class="insight-card">
+        <div class="insight-title">Executive Alerting Interpretation</div>
+        <div class="insight-body">
+            This module converts the platform from passive reporting into active operational monitoring.
+            <br><br>
+            It continuously evaluates inventory thresholds, reorder breaches, stockout risk, supplier performance,
+            margin pressure, revenue anomalies, and customer risk signals when available.
+            <br><br>
+            Current active alerts: <b>{total_alerts:,}</b>. Critical alerts: <b>{critical_alerts:,}</b>.
+            <br><br>
+            This strengthens the platform’s alignment with enterprise analytics, automated monitoring,
+            anomaly detection, governance controls, and executive operational readiness.
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
