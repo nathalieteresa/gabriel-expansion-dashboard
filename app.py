@@ -2823,7 +2823,7 @@ with k9:
 
 st.markdown("<br>", unsafe_allow_html=True)
 
-tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9, tab10, tab11, tab12, tab13, tab14, tab15, tab16, tab17, tab18, tab19, tab20, tab21, tab22, tab23, tab24, tab25, tab26, tab27, tab28, tab29, tab30, tab31, tab32, tab33, tab34, tab35, tab36, tab37, tab38, tab39, tab40, tab41 = st.tabs([
+tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9, tab10, tab11, tab12, tab13, tab14, tab15, tab16, tab17, tab18, tab19, tab20, tab21, tab22, tab23, tab24, tab25, tab26, tab27, tab28, tab29, tab30, tab31, tab32, tab33, tab34, tab35, tab36, tab37, tab38, tab39, tab40, tab41, tab42 = st.tabs([
     "Overview",
     "Market Ranking",
     "Financial Scenario",
@@ -2864,7 +2864,8 @@ tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9, tab10, tab11, tab12, tab13
     "Security & Enterprise Readiness",
     "KPI Drill-Down Center",
     "Real-Time Operational Alerts",
-    "Workflow Automation"
+    "Workflow Automation",
+    "Strategic Consulting Layer"
     ])
 
 with tab1:
@@ -9360,6 +9361,475 @@ This workflow layer supports transformation governance, automated reporting, sup
             <br><br>
             This strengthens the platform’s alignment with digital transformation consulting,
             operating model design, workflow automation, supplier coordination, and executive governance.
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+
+
+with tab42:
+
+    st.markdown(
+        '<div class="section-title">Strategic Consulting Layer</div>',
+        unsafe_allow_html=True
+    )
+
+    st.markdown(
+        '<div class="section-note">Consulting-oriented maturity assessment and transformation roadmap generator across AI, supply chain, digital, operational, and governance capabilities.</div>',
+        unsafe_allow_html=True
+    )
+
+    # -----------------------------
+    # STRATEGIC MATURITY ASSESSMENT ENGINE
+    # -----------------------------
+
+    def maturity_stage(score):
+        if score < 40:
+            return "Foundational"
+        elif score < 60:
+            return "Emerging"
+        elif score < 75:
+            return "Scaling"
+        elif score < 90:
+            return "Advanced"
+        else:
+            return "Leading Practice"
+
+    def maturity_recommendation(capability, score):
+        if capability == "AI Maturity":
+            if score < 60:
+                return "Expand predictive models, improve forecast history, and add model performance monitoring."
+            elif score < 80:
+                return "Operationalize AI outputs into workflows, alerts, and executive decision routines."
+            else:
+                return "Move toward governed AI portfolio management and continuous model improvement."
+        elif capability == "Supply Chain Maturity":
+            if score < 60:
+                return "Standardize safety stock, lead time, supplier reliability, and reorder governance."
+            elif score < 80:
+                return "Improve service level optimization, supplier scorecards, and cost-to-serve analytics."
+            else:
+                return "Advance toward predictive supply chain control tower capabilities."
+        elif capability == "Digital Maturity":
+            if score < 60:
+                return "Define core digital workflows, system ownership, adoption KPIs, and security controls."
+            elif score < 80:
+                return "Automate recurring workflows and integrate operational alerts with management routines."
+            else:
+                return "Scale digital operating model across locations with governance and automation."
+        elif capability == "Operational Maturity":
+            if score < 60:
+                return "Standardize location KPIs, labor utilization, customer metrics, and franchise benchmarking."
+            elif score < 80:
+                return "Use drill-down analytics to manage performance by location, employee, product, and customer segment."
+            else:
+                return "Build cross-location operating discipline and continuous improvement cadence."
+        else:
+            if score < 60:
+                return "Assign data owners, clean master data, document lineage, and reduce duplication."
+            elif score < 80:
+                return "Formalize governance policy scoring, auditability, and source trust monitoring."
+            else:
+                return "Scale data governance council routines and enterprise reporting controls."
+
+    # AI maturity
+    try:
+        ai_forecast_available = 0 if ai_forecast_df.empty else 1
+        ai_confidence_component = min(100, max(0, ai_forecast_df["Forecast_Confidence"].mean())) if ai_forecast_available else 35
+        ai_maturity_score = (
+            ai_confidence_component * 0.45
+            + (80 if ai_forecast_available else 20) * 0.35
+            + (75 if "ml_recommendations_df" in globals() else 45) * 0.20
+        )
+    except Exception:
+        ai_maturity_score = 45
+
+    # Supply chain maturity
+    try:
+        avg_supplier_score = supplier_scorecard_df["Avg_Performance_Score"].mean() if not supplier_scorecard_df.empty else 50
+        avg_stockout = supply_chain_df["Stockout_Risk_%"].mean() if not supply_chain_df.empty else 50
+        supply_chain_maturity_score = (
+            avg_supplier_score * 0.40
+            + (100 - avg_stockout) * 0.35
+            + (85 if "supply_chain_df" in globals() else 40) * 0.25
+        )
+    except Exception:
+        supply_chain_maturity_score = 50
+
+    # Digital maturity
+    try:
+        security_score = enterprise_security_score if "enterprise_security_score" in globals() else 60
+        workflow_score = 85 if "workflow_df" in globals() and not workflow_df.empty else 55
+        alert_score = 85 if "alert_df" in globals() and not alert_df.empty else 55
+        digital_maturity_score = security_score * 0.35 + workflow_score * 0.35 + alert_score * 0.30
+    except Exception:
+        digital_maturity_score = 60
+
+    # Operational maturity
+    try:
+        franchise_score = franchise_operational_score if "franchise_operational_score" in globals() else 65
+        labor_score = labor_optimization_score if "labor_optimization_score" in globals() else 60
+        drilldown_score = 85 if "kpi_drilldown_df" in globals() else 60
+        operational_maturity_score = franchise_score * 0.35 + labor_score * 0.35 + drilldown_score * 0.30
+    except Exception:
+        operational_maturity_score = 62
+
+    # Governance maturity
+    try:
+        governance_policy_score = governance_maturity_score if "governance_maturity_score" in globals() else data_validation_score
+        source_trust_score = source_trust_summary["Source_Trust_Score"].mean() if "source_trust_summary" in globals() and not source_trust_summary.empty else 65
+        data_governance_maturity_score = governance_policy_score * 0.60 + source_trust_score * 0.40
+    except Exception:
+        data_governance_maturity_score = data_validation_score if "data_validation_score" in globals() else 60
+
+    consulting_maturity_df = pd.DataFrame({
+        "Capability": [
+            "AI Maturity",
+            "Supply Chain Maturity",
+            "Digital Maturity",
+            "Operational Maturity",
+            "Data Governance Maturity"
+        ],
+        "Maturity_Score": [
+            round(ai_maturity_score, 1),
+            round(supply_chain_maturity_score, 1),
+            round(digital_maturity_score, 1),
+            round(operational_maturity_score, 1),
+            round(data_governance_maturity_score, 1)
+        ]
+    })
+
+    consulting_maturity_df["Maturity_Stage"] = consulting_maturity_df["Maturity_Score"].apply(maturity_stage)
+    consulting_maturity_df["Consulting_Recommendation"] = consulting_maturity_df.apply(
+        lambda row: maturity_recommendation(row["Capability"], row["Maturity_Score"]),
+        axis=1
+    )
+
+    strategic_maturity_score = consulting_maturity_df["Maturity_Score"].mean()
+    weakest_capability = consulting_maturity_df.sort_values("Maturity_Score").iloc[0]
+    strongest_capability = consulting_maturity_df.sort_values("Maturity_Score", ascending=False).iloc[0]
+
+    if strategic_maturity_score >= 80:
+        strategic_position = "Advanced Transformation Platform"
+    elif strategic_maturity_score >= 65:
+        strategic_position = "Scaling Transformation Capability"
+    elif strategic_maturity_score >= 50:
+        strategic_position = "Emerging Consulting Operating Model"
+    else:
+        strategic_position = "Foundational Transformation Readiness"
+
+    c1, c2, c3, c4 = st.columns(4)
+
+    c1.metric("Strategic Maturity Score", f"{strategic_maturity_score:.1f}/100")
+    c2.metric("Maturity Stage", maturity_stage(strategic_maturity_score))
+    c3.metric("Strongest Capability", strongest_capability["Capability"])
+    c4.metric("Highest Gap", weakest_capability["Capability"])
+
+    st.markdown("<br>", unsafe_allow_html=True)
+
+    colA, colB = st.columns([1.2, 1])
+
+    with colA:
+        st.markdown("### Maturity Assessment by Capability")
+
+        fig_maturity = px.bar(
+            consulting_maturity_df.sort_values("Maturity_Score", ascending=False),
+            x="Capability",
+            y="Maturity_Score",
+            color="Maturity_Stage",
+            text="Maturity_Score",
+            color_discrete_sequence=[
+                GOLD_LIGHT,
+                GOLD,
+                "#A9843C",
+                "#7D6838",
+                "#4F9D69"
+            ]
+        )
+
+        fig_maturity.update_traces(
+            texttemplate="%{text:.1f}",
+            textposition="outside"
+        )
+
+        fig_maturity.update_layout(
+            yaxis=dict(range=[0, 110]),
+            xaxis_title="Capability Area",
+            yaxis_title="Maturity Score"
+        )
+
+        st.plotly_chart(
+            chart_layout(fig_maturity, 540),
+            use_container_width=True
+        )
+
+    with colB:
+        st.markdown(f"""
+        <div class="insight-card">
+            <div class="insight-title">Strategic Consulting Interpretation</div>
+            <div class="insight-body">
+                The platform is currently assessed as <b>{strategic_position}</b>, with an overall strategic maturity score of
+                <b>{strategic_maturity_score:.1f}/100</b>.
+                <br><br>
+                Strongest capability: <b>{strongest_capability["Capability"]}</b>.
+                <br><br>
+                Highest improvement gap: <b>{weakest_capability["Capability"]}</b>.
+                <br><br>
+                This transforms the product from a dashboard into a consulting diagnostic tool for digital transformation,
+                AI adoption, operating model redesign, and executive roadmap planning.
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+
+    st.markdown("### Consulting Maturity Detail")
+
+    st.dataframe(
+        consulting_maturity_df,
+        use_container_width=True,
+        height=320
+    )
+
+    # -----------------------------
+    # STRATEGIC ROADMAP GENERATOR
+    # -----------------------------
+
+    st.markdown("### Strategic Roadmap Generator")
+
+    focus_area = st.selectbox(
+        "Select Primary Transformation Focus",
+        [
+            "Balanced Transformation",
+            "AI-Driven Analytics",
+            "Supply Chain Optimization",
+            "Digital Operating Model",
+            "Franchise & Multi-Location Operations",
+            "Data Governance"
+        ]
+    )
+
+    roadmap_items = []
+
+    def add_roadmap_item(horizon, initiative, owner, impact, priority):
+        roadmap_items.append({
+            "Horizon": horizon,
+            "Initiative": initiative,
+            "Recommended_Owner": owner,
+            "Expected_Impact": impact,
+            "Priority": priority
+        })
+
+    # Quick wins
+    add_roadmap_item(
+        "Quick Wins / 0-30 Days",
+        "Standardize executive KPI definitions across expansion, franchise, product, labor, CRM, and supply chain dashboards.",
+        "Management Analyst / Operations Lead",
+        "Improves decision consistency and leadership reporting credibility.",
+        "High"
+    )
+    add_roadmap_item(
+        "Quick Wins / 0-30 Days",
+        "Create a weekly executive operating review using alerts, workflow queue, maturity scores, and drill-down findings.",
+        "Executive Sponsor / Management Analyst",
+        "Turns analytics into recurring management action.",
+        "High"
+    )
+
+    if weakest_capability["Capability"] == "AI Maturity" or focus_area == "AI-Driven Analytics":
+        add_roadmap_item(
+            "Quick Wins / 0-30 Days",
+            "Validate AI forecasting outputs against actual demand and track MAPE, RMSE, and confidence by product/location.",
+            "Analytics Owner",
+            "Improves trust in AI-powered recommendations.",
+            "High"
+        )
+
+    if weakest_capability["Capability"] == "Supply Chain Maturity" or focus_area == "Supply Chain Optimization":
+        add_roadmap_item(
+            "Quick Wins / 0-30 Days",
+            "Review high-risk inventory items and align reorder thresholds with lead time, safety stock, and service level targets.",
+            "Supply Chain / Purchasing Lead",
+            "Reduces stockout exposure and replenishment inconsistency.",
+            "High"
+        )
+
+    if weakest_capability["Capability"] == "Data Governance Maturity" or focus_area == "Data Governance":
+        add_roadmap_item(
+            "Quick Wins / 0-30 Days",
+            "Assign data owners for customers, products, inventory, locations, employees, franchise metrics, and suppliers.",
+            "Data Governance Lead",
+            "Creates accountability for reporting quality and master data reliability.",
+            "High"
+        )
+
+    # Medium term
+    add_roadmap_item(
+        "Medium-Term / 31-90 Days",
+        "Deploy a formal maturity assessment cadence across AI, digital, supply chain, operations, and governance capabilities.",
+        "Transformation Lead",
+        "Creates measurable transformation governance and progress tracking.",
+        "High"
+    )
+    add_roadmap_item(
+        "Medium-Term / 31-90 Days",
+        "Build location-level benchmarking routines for salons, academy programs, franchise locations, labor utilization, CRM retention, and product performance.",
+        "Operations + Analytics Team",
+        "Improves multi-location operating discipline and performance transparency.",
+        "High"
+    )
+    add_roadmap_item(
+        "Medium-Term / 31-90 Days",
+        "Convert alerts and workflow simulations into approval-based operational playbooks for replenishment, supplier follow-up, and executive escalation.",
+        "Operations Lead / Procurement Lead",
+        "Moves from analytics to controlled execution workflows.",
+        "Medium"
+    )
+
+    # Long term
+    add_roadmap_item(
+        "Long-Term / 90-180 Days",
+        "Integrate live operational systems, CRM, inventory, POS, academy, and franchise data into a governed transformation data pipeline.",
+        "Technology / Data Owner",
+        "Creates scalable enterprise intelligence and reduces manual reporting dependence.",
+        "High"
+    )
+    add_roadmap_item(
+        "Long-Term / 90-180 Days",
+        "Establish an executive transformation office with governance routines, adoption KPIs, operating model ownership, and continuous improvement cadence.",
+        "Executive Sponsor",
+        "Institutionalizes the transformation beyond a dashboard into a management system.",
+        "High"
+    )
+    add_roadmap_item(
+        "Long-Term / 90-180 Days",
+        "Develop predictive consulting playbooks that recommend initiatives based on maturity gaps, risk signals, forecast performance, and operational constraints.",
+        "Strategy / Analytics Lead",
+        "Positions the platform as a strategic consulting and transformation engine.",
+        "Medium"
+    )
+
+    roadmap_df = pd.DataFrame(roadmap_items)
+
+    if focus_area != "Balanced Transformation":
+        roadmap_df["Focus_Relevance"] = roadmap_df["Initiative"].apply(
+            lambda x: "Primary" if any(word.lower() in x.lower() for word in focus_area.replace("&", " ").split()) else "Supporting"
+        )
+    else:
+        roadmap_df["Focus_Relevance"] = "Balanced"
+
+    roadmap_priority_order = {"High": 1, "Medium": 2, "Low": 3}
+    roadmap_df["Priority_Order"] = roadmap_df["Priority"].map(roadmap_priority_order).fillna(9)
+    roadmap_df = roadmap_df.sort_values(["Horizon", "Priority_Order"]).drop(columns=["Priority_Order"])
+
+    fig_roadmap = px.timeline(
+        roadmap_df,
+        x_start=roadmap_df["Horizon"].map({
+            "Quick Wins / 0-30 Days": "2026-06-17",
+            "Medium-Term / 31-90 Days": "2026-07-17",
+            "Long-Term / 90-180 Days": "2026-09-17"
+        }),
+        x_end=roadmap_df["Horizon"].map({
+            "Quick Wins / 0-30 Days": "2026-07-17",
+            "Medium-Term / 31-90 Days": "2026-09-17",
+            "Long-Term / 90-180 Days": "2026-12-17"
+        }),
+        y="Initiative",
+        color="Priority",
+        hover_data=["Recommended_Owner", "Expected_Impact", "Focus_Relevance"],
+        color_discrete_map={
+            "High": "#B22222",
+            "Medium": GOLD,
+            "Low": "#8A8A8A"
+        }
+    )
+
+    fig_roadmap.update_yaxes(autorange="reversed")
+
+    st.plotly_chart(
+        chart_layout(fig_roadmap, 620),
+        use_container_width=True
+    )
+
+    st.dataframe(
+        roadmap_df,
+        use_container_width=True,
+        height=460
+    )
+
+    # -----------------------------
+    # EXECUTIVE CONSULTING NARRATIVE
+    # -----------------------------
+
+    quick_wins_text = "\n".join(
+        [f"- {row['Initiative']}" for _, row in roadmap_df[roadmap_df["Horizon"] == "Quick Wins / 0-30 Days"].head(5).iterrows()]
+    )
+
+    medium_term_text = "\n".join(
+        [f"- {row['Initiative']}" for _, row in roadmap_df[roadmap_df["Horizon"] == "Medium-Term / 31-90 Days"].head(5).iterrows()]
+    )
+
+    long_term_text = "\n".join(
+        [f"- {row['Initiative']}" for _, row in roadmap_df[roadmap_df["Horizon"] == "Long-Term / 90-180 Days"].head(5).iterrows()]
+    )
+
+    consulting_summary = f"""
+Strategic Consulting Summary
+
+Overall maturity score: {strategic_maturity_score:.1f}/100
+Strategic position: {strategic_position}
+Strongest capability: {strongest_capability['Capability']} ({strongest_capability['Maturity_Score']:.1f}/100)
+Highest improvement gap: {weakest_capability['Capability']} ({weakest_capability['Maturity_Score']:.1f}/100)
+Primary focus area: {focus_area}
+
+Quick wins / 0-30 days:
+{quick_wins_text}
+
+Medium-term / 31-90 days:
+{medium_term_text}
+
+Long-term / 90-180 days:
+{long_term_text}
+""".strip()
+
+    st.markdown("### Auto-Generated Consulting Summary")
+
+    st.text_area(
+        "Copy this narrative into an executive update, client memo, or NIW evidence note",
+        consulting_summary,
+        height=360
+    )
+
+    st.download_button(
+        label="Download Strategic Maturity Assessment CSV",
+        data=consulting_maturity_df.to_csv(index=False),
+        file_name="strategic_consulting_maturity_assessment.csv",
+        mime="text/csv"
+    )
+
+    st.download_button(
+        label="Download Strategic Transformation Roadmap CSV",
+        data=roadmap_df.to_csv(index=False),
+        file_name="strategic_transformation_roadmap.csv",
+        mime="text/csv"
+    )
+
+    st.download_button(
+        label="Download Consulting Summary TXT",
+        data=consulting_summary,
+        file_name="strategic_consulting_summary.txt",
+        mime="text/plain"
+    )
+
+    st.markdown(f"""
+    <div class="insight-card">
+        <div class="insight-title">Executive Strategic Consulting Interpretation</div>
+        <div class="insight-body">
+            This module reframes the platform as a consulting and transformation engine, not only a dashboard.
+            <br><br>
+            It evaluates maturity across AI, supply chain, digital operations, operational excellence, and data governance;
+            identifies the strongest capability and highest improvement gap; and generates a phased transformation roadmap.
+            <br><br>
+            This strengthens alignment with strategic consulting, digital transformation, change management,
+            operating model design, and executive transformation advisory work.
         </div>
     </div>
     """, unsafe_allow_html=True)
