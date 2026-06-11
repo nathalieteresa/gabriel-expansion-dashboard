@@ -2823,7 +2823,7 @@ with k9:
 
 st.markdown("<br>", unsafe_allow_html=True)
 
-tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9, tab10, tab11, tab12, tab13, tab14, tab15, tab16, tab17, tab18, tab19, tab20, tab21, tab22, tab23, tab24, tab25, tab26, tab27, tab28, tab29, tab30, tab31, tab32, tab33, tab34, tab35, tab36, tab37, tab38, tab39, tab40, tab41, tab42 = st.tabs([
+tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9, tab10, tab11, tab12, tab13, tab14, tab15, tab16, tab17, tab18, tab19, tab20, tab21, tab22, tab23, tab24, tab25, tab26, tab27, tab28, tab29, tab30, tab31, tab32, tab33, tab34, tab35, tab36, tab37, tab38, tab39, tab40, tab41, tab42, tab43, tab44, tab45 = st.tabs([
     "Overview",
     "Market Ranking",
     "Financial Scenario",
@@ -2865,7 +2865,10 @@ tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9, tab10, tab11, tab12, tab13
     "KPI Drill-Down Center",
     "Real-Time Operational Alerts",
     "Workflow Automation",
-    "Strategic Consulting Layer"
+    "Strategic Consulting Layer",
+    "Adoption KPI Center",
+    "Staff Data Literacy",
+    "Supply Chain Traceability"
     ])
 
 with tab1:
@@ -9830,6 +9833,162 @@ Long-term / 90-180 days:
             <br><br>
             This strengthens alignment with strategic consulting, digital transformation, change management,
             operating model design, and executive transformation advisory work.
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+
+with tab43:
+    st.markdown('<div class="section-title">Adoption KPI Center</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-note">Strengthens change management evidence by tracking measurable adoption, onboarding, training, usage, and stakeholder resistance by department.</div>', unsafe_allow_html=True)
+
+    adoption_df = pd.DataFrame({
+        "Department": ["Salon Operations", "Academy", "Franchise Operations", "Marketing", "Finance", "Leadership"],
+        "Target_Users": [42, 24, 30, 14, 10, 7],
+        "Active_Users": [34, 18, 22, 12, 9, 6],
+        "Weekly_Login_Rate_%": [81, 75, 67, 86, 78, 92],
+        "Training_Completion_%": [79, 84, 65, 92, 71, 100],
+        "Avg_Onboarding_Days": [9, 7, 14, 6, 10, 4],
+        "Feature_Usage_%": [72, 69, 61, 83, 70, 88],
+        "Resistance_Risk_%": [28, 22, 41, 18, 30, 10],
+        "Executive_Sponsor_Score": [80, 78, 66, 89, 75, 95]
+    })
+
+    adoption_df["Active_User_%"] = (adoption_df["Active_Users"] / adoption_df["Target_Users"] * 100).round(1)
+    adoption_df["Adoption_Health_Score"] = (
+        adoption_df["Active_User_%"] * 0.20
+        + adoption_df["Weekly_Login_Rate_%"] * 0.20
+        + adoption_df["Training_Completion_%"] * 0.20
+        + adoption_df["Feature_Usage_%"] * 0.20
+        + adoption_df["Executive_Sponsor_Score"] * 0.10
+        + (100 - adoption_df["Resistance_Risk_%"]) * 0.10
+    ).round(1)
+    adoption_df["Adoption_Status"] = adoption_df["Adoption_Health_Score"].apply(lambda x: "Strong Adoption" if x >= 80 else "Needs Reinforcement" if x >= 65 else "At Risk")
+
+    a1, a2, a3, a4 = st.columns(4)
+    a1.metric("Active User Adoption", f"{adoption_df['Active_User_%'].mean():.1f}%")
+    a2.metric("Training Completion", f"{adoption_df['Training_Completion_%'].mean():.1f}%")
+    a3.metric("Avg Onboarding Time", f"{adoption_df['Avg_Onboarding_Days'].mean():.1f} days")
+    a4.metric("Adoption Health", f"{adoption_df['Adoption_Health_Score'].mean():.1f}/100")
+
+    left, right = st.columns(2)
+    with left:
+        fig_adopt = px.bar(adoption_df.sort_values("Adoption_Health_Score", ascending=False), x="Department", y="Adoption_Health_Score", color="Adoption_Status", text="Adoption_Health_Score", color_discrete_sequence=[GOLD, GOLD_LIGHT, "#7D6838"])
+        fig_adopt.update_traces(texttemplate="%{text:.1f}", textposition="outside")
+        st.plotly_chart(chart_layout(fig_adopt, 520), use_container_width=True)
+    with right:
+        fig_onboarding = px.bar(adoption_df.sort_values("Avg_Onboarding_Days", ascending=False), x="Department", y="Avg_Onboarding_Days", color="Adoption_Status", text="Avg_Onboarding_Days", color_discrete_sequence=[GOLD_LIGHT, GOLD, "#7D6838"])
+        fig_onboarding.update_traces(texttemplate="%{text:.0f} days", textposition="outside")
+        st.plotly_chart(chart_layout(fig_onboarding, 520), use_container_width=True)
+
+    st.markdown("### Adoption KPI Detail")
+    st.dataframe(adoption_df, use_container_width=True, height=360)
+
+    interventions_df = pd.DataFrame({
+        "Trigger": ["Active user rate below 70%", "Training completion below 75%", "Onboarding above 10 days", "Resistance risk above 35%", "Feature usage below 65%"],
+        "Change_Management_Action": ["Schedule department-level adoption review and identify blockers.", "Assign refresher training and publish quick-start guides.", "Simplify workflow, clarify role expectations, and create onboarding checklist.", "Conduct stakeholder listening session and executive sponsor follow-up.", "Prioritize highest-value features and demonstrate use cases in weekly review."],
+        "Evidence_Created": ["Adoption log", "Training completion record", "Onboarding tracker", "Stakeholder feedback log", "Feature usage report"]
+    })
+    st.markdown("### Change Management Intervention Rules")
+    st.dataframe(interventions_df, use_container_width=True, height=260)
+
+with tab44:
+    st.markdown('<div class="section-title">Staff Data Literacy Program</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-note">Dedicated module for internal staff data literacy, separate from the external Academy training business.</div>', unsafe_allow_html=True)
+
+    literacy_df = pd.DataFrame({
+        "Staff_Group": ["Salon Managers", "Front Desk", "Academy Coordinators", "Franchise Support", "Marketing", "Leadership"],
+        "Baseline_Data_Literacy_%": [62, 54, 68, 57, 72, 78],
+        "KPI_Understanding_%": [66, 58, 70, 60, 74, 82],
+        "Dashboard_Confidence_%": [60, 52, 65, 55, 76, 84],
+        "Completed_Modules": [3, 2, 4, 2, 4, 5],
+        "Target_Modules": [5, 5, 5, 5, 5, 5]
+    })
+    literacy_df["Program_Completion_%"] = (literacy_df["Completed_Modules"] / literacy_df["Target_Modules"] * 100).round(1)
+    literacy_df["Data_Literacy_Maturity"] = (
+        literacy_df["Baseline_Data_Literacy_%"] * 0.25
+        + literacy_df["KPI_Understanding_%"] * 0.25
+        + literacy_df["Dashboard_Confidence_%"] * 0.25
+        + literacy_df["Program_Completion_%"] * 0.25
+    ).round(1)
+    literacy_df["Readiness_Level"] = literacy_df["Data_Literacy_Maturity"].apply(lambda x: "Advanced" if x >= 80 else "Developing" if x >= 65 else "Foundation Needed")
+
+    l1, l2, l3, l4 = st.columns(4)
+    l1.metric("Data Literacy Maturity", f"{literacy_df['Data_Literacy_Maturity'].mean():.1f}/100")
+    l2.metric("KPI Understanding", f"{literacy_df['KPI_Understanding_%'].mean():.1f}%")
+    l3.metric("Dashboard Confidence", f"{literacy_df['Dashboard_Confidence_%'].mean():.1f}%")
+    l4.metric("Program Completion", f"{literacy_df['Program_Completion_%'].mean():.1f}%")
+
+    fig_lit = px.bar(literacy_df.sort_values("Data_Literacy_Maturity", ascending=False), x="Staff_Group", y="Data_Literacy_Maturity", color="Readiness_Level", text="Data_Literacy_Maturity", color_discrete_sequence=[GOLD, GOLD_LIGHT, "#7D6838"])
+    fig_lit.update_traces(texttemplate="%{text:.1f}", textposition="outside")
+    st.plotly_chart(chart_layout(fig_lit, 540), use_container_width=True)
+
+    st.markdown("### Internal Data Literacy Curriculum")
+    curriculum_df = pd.DataFrame({
+        "Module": ["KPI Basics", "Dashboard Navigation", "Data Quality & Source Trust", "Inventory & Demand Signals", "Executive Storytelling with Data"],
+        "Learning_Objective": ["Understand revenue, margin, ROI, retention, and utilization KPIs.", "Use filters, drill-downs, alerts, and downloadable reports.", "Recognize incomplete, stale, duplicate, or unreliable data.", "Interpret stockout risk, reorder signals, forecast confidence, and supplier performance.", "Translate data findings into decisions, actions, and executive updates."],
+        "Assessment_Method": ["Short quiz", "Guided use case", "Data issue identification", "Scenario exercise", "One-page insight memo"]
+    })
+    st.dataframe(curriculum_df, use_container_width=True, height=280)
+    st.markdown("### Staff Readiness Detail")
+    st.dataframe(literacy_df, use_container_width=True, height=320)
+
+with tab45:
+    st.markdown('<div class="section-title">Supply Chain Traceability & Blockchain Readiness</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-note">Conceptual blockchain-readiness layer for supply chain transparency, focused on traceability, vendor verification, lot-level visibility, and auditability before any blockchain deployment.</div>', unsafe_allow_html=True)
+
+    traceability_df = pd.DataFrame({
+        "Supply_Chain_Node": ["Supplier Master", "Product SKU Master", "Purchase Orders", "Inbound Shipments", "Inventory Receipts", "Store Transfers", "Customer Returns"],
+        "Traceability_Coverage_%": [76, 82, 71, 64, 68, 58, 52],
+        "Digital_Record_Completeness_%": [80, 78, 73, 66, 70, 61, 55],
+        "Vendor_Verification_%": [74, 70, 68, 62, 65, 56, 50],
+        "Audit_Trail_Strength_%": [72, 76, 69, 60, 64, 59, 54],
+        "Blockchain_Readiness_%": [62, 66, 58, 51, 55, 48, 44]
+    })
+    traceability_df["Transparency_Score"] = (
+        traceability_df["Traceability_Coverage_%"] * 0.25
+        + traceability_df["Digital_Record_Completeness_%"] * 0.25
+        + traceability_df["Vendor_Verification_%"] * 0.20
+        + traceability_df["Audit_Trail_Strength_%"] * 0.20
+        + traceability_df["Blockchain_Readiness_%"] * 0.10
+    ).round(1)
+    traceability_df["Traceability_Status"] = traceability_df["Transparency_Score"].apply(lambda x: "Ready to Pilot" if x >= 75 else "Prepare Data Layer" if x >= 60 else "Foundational Gap")
+
+    t1, t2, t3, t4 = st.columns(4)
+    t1.metric("Transparency Score", f"{traceability_df['Transparency_Score'].mean():.1f}/100")
+    t2.metric("Traceability Coverage", f"{traceability_df['Traceability_Coverage_%'].mean():.1f}%")
+    t3.metric("Audit Trail Strength", f"{traceability_df['Audit_Trail_Strength_%'].mean():.1f}%")
+    t4.metric("Blockchain Readiness", f"{traceability_df['Blockchain_Readiness_%'].mean():.1f}%")
+
+    left, right = st.columns(2)
+    with left:
+        fig_trace = px.bar(traceability_df.sort_values("Transparency_Score", ascending=False), x="Supply_Chain_Node", y="Transparency_Score", color="Traceability_Status", text="Transparency_Score", color_discrete_sequence=[GOLD, GOLD_LIGHT, "#7D6838"])
+        fig_trace.update_traces(texttemplate="%{text:.1f}", textposition="outside")
+        st.plotly_chart(chart_layout(fig_trace, 540), use_container_width=True)
+    with right:
+        fig_ready = px.bar(traceability_df.sort_values("Blockchain_Readiness_%", ascending=False), x="Supply_Chain_Node", y="Blockchain_Readiness_%", color="Traceability_Status", text="Blockchain_Readiness_%", color_discrete_sequence=[GOLD_LIGHT, GOLD, "#7D6838"])
+        fig_ready.update_traces(texttemplate="%{text:.1f}%", textposition="outside")
+        st.plotly_chart(chart_layout(fig_ready, 540), use_container_width=True)
+
+    st.markdown("### Traceability Readiness Detail")
+    st.dataframe(traceability_df, use_container_width=True, height=360)
+
+    pilot_df = pd.DataFrame({
+        "Pilot_Phase": ["Phase 1: Data Foundation", "Phase 2: Traceability Pilot", "Phase 3: Blockchain Evaluation"],
+        "Objective": ["Standardize supplier, SKU, PO, receipt, and transfer records.", "Track selected product categories from supplier to location using immutable audit logs.", "Evaluate whether blockchain adds business value beyond standard database audit controls."],
+        "Success_Metric": ["90% complete digital records", "End-to-end traceability for pilot SKUs", "Clear ROI, compliance, or transparency benefit before deployment"]
+    })
+    st.markdown("### Practical Blockchain Implementation Roadmap")
+    st.dataframe(pilot_df, use_container_width=True, height=220)
+
+    st.markdown("""
+    <div class="insight-card">
+        <div class="insight-title">Executive Interpretation</div>
+        <div class="insight-body">
+            This module intentionally treats blockchain as an advanced readiness layer, not an immediate technology purchase.
+            The first management priority is to strengthen supplier master data, SKU-level records, purchase order consistency,
+            shipment documentation, inventory receipt controls, and audit trails. Once those foundations are reliable,
+            leadership can evaluate a limited blockchain or immutable-ledger pilot for high-value or high-risk product categories.
         </div>
     </div>
     """, unsafe_allow_html=True)
