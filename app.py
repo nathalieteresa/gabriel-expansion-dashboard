@@ -1996,7 +1996,10 @@ if use_google_places and not google_cache_df.empty:
         &
         (google_cache_df["selected_trade_area"] == selected_trade_area)
         &
-        (google_cache_df["selected_radius"] == radius_miles)
+        (
+            (google_cache_df["selected_radius"] == radius_miles)
+            | (google_cache_df["selected_radius"].isna())
+        )
         &
         (google_cache_df["selected_keyword"] == competitor_keyword)
     ]
