@@ -1985,10 +1985,6 @@ if not google_cache_df.empty:
     google_cache_df["reviewsCount"] = pd.to_numeric(google_cache_df["reviewsCount"], errors="coerce").fillna(0)
     google_cache_df["selected_radius"] = pd.to_numeric(google_cache_df["selected_radius"], errors="coerce")
 
-st.write("Cache columns:", google_cache_df.columns.tolist())
-st.write("Sample cache data:", google_cache_df[["selected_market","selected_trade_area","selected_radius","selected_keyword"]].drop_duplicates())
-st.write("Currently selected:", selected_city_clean, selected_trade_area, radius_miles, competitor_keyword)
-
 if use_google_places and not google_cache_df.empty:
 
     filtered_cache = google_cache_df[
@@ -2053,6 +2049,13 @@ if selected_trade_area:
 
     lat_col = next((col for col in possible_lat_cols if col in city_competitors.columns), None)
     lon_col = next((col for col in possible_lon_cols if col in city_competitors.columns), None)
+
+    # ---- DEBUG TEMPORAL ----
+    st.write("lat_col encontrado:", lat_col)
+    st.write("lon_col encontrado:", lon_col)
+    if lat_col:
+        st.write("Muestra de lat values:", city_competitors[lat_col].head(5).tolist())
+    # ---- FIN DEBUG ----
 
     if lat_col and lon_col:
         city_competitors[lat_col] = pd.to_numeric(city_competitors[lat_col], errors="coerce")
