@@ -2050,16 +2050,15 @@ if selected_trade_area:
     lat_col = next((col for col in possible_lat_cols if col in city_competitors.columns), None)
     lon_col = next((col for col in possible_lon_cols if col in city_competitors.columns), None)
 
-    # ---- DEBUG TEMPORAL ----
-    st.write("lat_col encontrado:", lat_col)
-    st.write("lon_col encontrado:", lon_col)
-    if lat_col:
-        st.write("Muestra de lat values:", city_competitors[lat_col].head(5).tolist())
-    # ---- FIN DEBUG ----
-
     if lat_col and lon_col:
-        city_competitors[lat_col] = pd.to_numeric(city_competitors[lat_col], errors="coerce")
-        city_competitors[lon_col] = pd.to_numeric(city_competitors[lon_col], errors="coerce")
+        city_competitors[lat_col] = pd.to_numeric(
+            city_competitors[lat_col].astype(str).str.replace(",", ".", regex=False),
+            errors="coerce"
+        )
+        city_competitors[lon_col] = pd.to_numeric(
+            city_competitors[lon_col].astype(str).str.replace(",", ".", regex=False),
+            errors="coerce"
+        )
 
         competitors_with_location = city_competitors.dropna(subset=[lat_col, lon_col]).copy()
 
