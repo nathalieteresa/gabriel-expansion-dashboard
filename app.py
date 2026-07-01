@@ -357,14 +357,51 @@ df.columns = df.columns.str.strip()
 
 product_file = Path("Gabriel_Samra_Inventory.xlsx")
 
+# Support the corrected uploaded workbook name during local testing while keeping
+# the deployment filename as the primary source.
 if not product_file.exists():
-    st.error(f"Product file not found: {product_file.resolve()}")
-    st.stop()
+    alternate_product_file = Path("Gabriel_Samra_Inventory-3.xlsx")
+    if alternate_product_file.exists():
+        product_file = alternate_product_file
+    else:
+        st.error(f"Product file not found: {product_file.resolve()}")
+        st.stop()
 
 sales_df = pd.read_excel(product_file, sheet_name="Sales_Transactions")
 products_df = pd.read_excel(product_file, sheet_name="Products")
 inventory_df = pd.read_excel(product_file, sheet_name="Inventory")
 stores_df = pd.read_excel(product_file, sheet_name="Stores")
+
+# ---------------------------------
+# PRODUCT / STORE DATA GOVERNANCE
+# ---------------------------------
+# Gabriel Samra currently has two real salon retail locations in this model.
+# Candidate expansion markets such as Brickell, Coral Gables, and Miami Design
+# District should not be treated as existing stores in Product & Inventory Intelligence.
+REAL_STORE_NAME_MAP = {
+    "CG-001": "Gabriel Samra Coral Way",
+    "DR-001": "Gabriel Samra Doral"
+}
+REAL_STORE_IDS = list(REAL_STORE_NAME_MAP.keys())
+VALID_PRODUCT_BRANDS = sorted(
+    products_df["Brand"].dropna().astype(str).str.strip().unique().tolist()
+)
+
+def clean_product_operational_data(df_to_clean):
+    df_to_clean = df_to_clean.copy()
+    if "Store_ID" in df_to_clean.columns:
+        df_to_clean = df_to_clean[df_to_clean["Store_ID"].isin(REAL_STORE_IDS)].copy()
+        if "Salon_Location" in df_to_clean.columns:
+            df_to_clean["Salon_Location"] = df_to_clean["Store_ID"].map(REAL_STORE_NAME_MAP)
+    if "Brand" in df_to_clean.columns:
+        df_to_clean["Brand"] = df_to_clean["Brand"].astype(str).str.strip()
+        df_to_clean = df_to_clean[df_to_clean["Brand"].isin(VALID_PRODUCT_BRANDS)].copy()
+    return df_to_clean
+
+sales_df = clean_product_operational_data(sales_df)
+inventory_df = clean_product_operational_data(inventory_df)
+stores_df = stores_df[stores_df["Store_ID"].isin(REAL_STORE_IDS)].copy()
+stores_df["Salon_Location"] = stores_df["Store_ID"].map(REAL_STORE_NAME_MAP)
 
 # ---------------------------------
 # ACADEMY ANALYTICS DATA
@@ -4163,7 +4200,7 @@ with tab19:
     )
 
     st.markdown(
-        '<div class="section-note">AI-driven product analytics, inventory visibility, and retail performance intelligence.</div>',
+        '<div class="section-note">AI-driven product analytics, inventory visibility, and retail performance intelligence for existing Gabriel Samra salon retail locations: Coral Way and Doral.</div>',
         unsafe_allow_html=True
     )
 
@@ -4204,6 +4241,12 @@ with tab19:
     )
 
     st.markdown("<br>", unsafe_allow_html=True)
+
+    st.info(
+        "Product & Inventory Intelligence is filtered to the current Gabriel Samra salon retail footprint: "
+        "Gabriel Samra Coral Way and Gabriel Samra Doral. Candidate expansion markets such as Brickell, "
+        "Coral Gables, and Miami Design District are excluded from store performance reporting."
+    )
 
     # -----------------------------
     # TOP PRODUCTS
@@ -4249,7 +4292,7 @@ with tab19:
     with c2:
 
         st.markdown(
-            "### Revenue by Brand"
+            "### Retail Revenue by Product Brand"
         )
 
         fig_brand = px.pie(
@@ -4356,14 +4399,14 @@ with tab19:
     <div class="insight-card">
         <div class="insight-title">Executive Product Intelligence Summary</div>
         <div class="insight-body">
-            <b>{top_brand}</b> currently represents the strongest revenue-driving brand across the analyzed portfolio.
+            Among retail product brands sold through Gabriel Samra salon locations, <b>{top_brand}</b> currently represents the strongest revenue-driving product brand.
             <br><br>
             The top-performing product is <b>{top_product}</b>, based on total sales revenue.
             <br><br>
             Inventory analysis identified <b>{low_stock_count}</b> products requiring replenishment attention.
             <br><br>
             This intelligence layer supports retail optimization, demand forecasting, inventory planning,
-            and AI-assisted operational decision-making.
+            and AI-assisted operational decision-making for existing salon retail operations only. Candidate expansion markets are analyzed separately in the market-expansion modules.
         </div>
     </div>
     """, unsafe_allow_html=True)
